@@ -22,3 +22,7 @@ Add new decisions with the next number. Never silently reverse one; write the ch
 | D-116 | Money integer cents, USD only; dates in America/Phoenix; injectable clock | Correctness and testable time | Non-USD gifts appear |
 | D-117 | P1 pick: lapsed-donor radar. Beyond-scope pick (if time): events-aware next steps | Brief asks for at least one P1 and one beyond-scope idea | Time runs short; drop events first |
 | D-118 | No LLM features in P0. Later AI drafting uses the OHack AI gateway behind a flag, human approves | Privacy and demo reliability | CIC approves |
+| D-119 | Login rate limit counts `auth.login_failed` rows in `audit_log` (per email or per IP, 15 min) instead of a new table or in-memory counter | Survives restarts and multiple workers; no schema addition | Audit table grows large enough to slow login |
+| D-120 | Python deps managed with uv, `exclude-newer` 14 days back; npm installs with `--before`; exact pins | Enforces ENGINEERING "no packages published in the last 14 days" mechanically | Never this weekend |
+| D-121 | Super admin lifecycle in the CLI adds `activate` (re-activate dormant) alongside create/flatten/transfer/deactivate; `deactivate` also makes the role dormant and scope `anyone` | GOV-2 needs re-activation; a deactivated super admin must not leave members stuck behind SA-only settings | CIC defines another rule |
+| D-122 | gitleaks runs in CI from its Docker image, not the GitHub Action | The Action needs a paid license on organization repos | Org gets a license |
