@@ -33,6 +33,9 @@ extend-exclude = ["alembic/versions"]
 select = ["E", "F", "W", "I", "B", "UP", "S", "SIM", "RUF"]
 ignore = ["S101"]  # assert is fine in tests
 
+[tool.ruff.lint.isort]
+known-third-party = ["alembic"]  # not our local alembic/ folder
+
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S105", "S106"]  # test passwords are not secrets
 
