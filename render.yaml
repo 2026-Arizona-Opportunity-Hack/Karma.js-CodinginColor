@@ -1,0 +1,29 @@
+# Render Blueprint: one Docker web service (FastAPI + built SPA). The database is
+# Neon (free), so no Render database is defined here. See docs/COSTS.md.
+services:
+  - type: web
+    name: cic-compass
+    runtime: docker
+    plan: starter
+    region: oregon
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /healthz
+    autoDeploy: true
+    branch: main
+    envVars:
+      # Neon connection string (postgres://...sslmode=require). Set in the dashboard.
+      - key: DATABASE_URL
+        sync: false
+      - key: APP_ENV
+        value: prod
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: MESSAGING_MODE
+        value: dry_run
+      - key: DEMO_MODE
+        value: "false"
+      # Only needed when MESSAGING_MODE=live (Phase 3+). Set in the dashboard.
+      - key: RESEND_API_KEY
+        sync: false
+      - key: MAIL_FROM
+        sync: false
