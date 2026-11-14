@@ -94,17 +94,17 @@ Backend checks: `uv run ruff check . && uv run mypy app && uv run pytest`.
 
 ## Deploy (Render + Neon)
 
-One Docker web service on Render (Starter) and a free Neon Postgres; costs in [docs/COSTS.md](docs/COSTS.md).
+One Docker web service on Render and a free Neon Postgres: **$0/month** on Render's free instance, about $7/month on Starter for always-on production. Details in [docs/COSTS.md](docs/COSTS.md).
 
-1. **Neon:** create a project (Postgres 16, region US West). Copy the connection string (`postgres://...?sslmode=require`).
+1. **Neon:** in the project, click **Connect**, turn **Connection pooling off**, copy the connection string (`postgresql://...?sslmode=require...`).
 2. **Render:** New → Blueprint → pick this repo. `render.yaml` creates the `cic-compass` service. Paste the Neon string into `DATABASE_URL` when asked; leave `RESEND_API_KEY` and `MAIL_FROM` empty for dry-run.
 3. Deploy. Migrations run on start; check `https://<service>.onrender.com/healthz`.
 4. Create board members from your own machine against Neon (nothing secret is committed):
    ```bash
    cd backend
-   DATABASE_URL='postgres://...neon...' uv run python -m app.cli setup --file ../members.local.json
+   DATABASE_URL='postgresql://...neon...' uv run python -m app.cli setup --file ../members.local.json
    ```
-   Or use the Render dashboard Shell: `python -m app.cli setup`.
+   On a paid instance you can use the Render dashboard Shell instead: `python -m app.cli setup`.
 
 ## Links
 

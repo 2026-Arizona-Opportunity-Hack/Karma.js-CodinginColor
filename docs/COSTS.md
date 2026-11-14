@@ -4,13 +4,17 @@ Budget (NFR-5): **$20/month** recurring, plus $250 one-time. Prices read from ve
 
 ## Monthly total
 
-| Item | Plan | Monthly | Status |
+Two setups: what runs **now** (hackathon demo, everything free) and what CIC should run **in production** (always on).
+
+| Item | Now (demo) | Production for CIC | Status |
 |---|---|---|---|
-| Render web service (FastAPI + SPA, one Docker image) | Starter instance (0.5 CPU, 512 MB) in a Hobby workspace | **≈ $7** | ⚠️ price **unverified**: the pricing page did not render for our fetcher; confirm on render.com/pricing when creating the service |
-| Render workspace | Hobby | $0 | verified |
-| Neon Postgres | Free | $0 | verified |
-| Resend email | Free | $0 | verified; only used when `MESSAGING_MODE=live` |
-| **Total** | | **≈ $7 / month** | within $20 once the Starter price is confirmed |
+| Render web service (FastAPI + SPA, one Docker image) | Free instance (0.1 CPU, 512 MB): **$0**, sleeps after 15 min idle | Starter instance (0.5 CPU, 512 MB): **≈ $7** | ⚠️ Starter price **unverified**: the pricing page did not render for our fetcher; confirm on render.com/pricing |
+| Render workspace | Hobby: $0 | Hobby: $0 | verified |
+| Neon Postgres | Free: $0 | Free: $0 | verified |
+| Resend email | Free: $0 (dry-run, unused) | Free: $0 | verified |
+| **Total** | **$0 / month** | **≈ $7 / month** | both within the $20 budget |
+
+Switching to production is one line: `plan: free` → `plan: starter` in `render.yaml` (or change the instance type in the Render dashboard).
 
 One-time: $0 so far. A sending domain for live email (if CIC does not already own one) is ~$10–15/year at any registrar and would come from the $250 one-time budget.
 
@@ -20,7 +24,8 @@ One-time: $0 so far. A sending domain for live email (if CIC does not already ow
 - "Starter" is the legacy name for plan `0.5c-512mb`: 0.5 CPU, 512 MB. Docs refer pricing to [render.com/pricing](https://render.com/pricing).
 - Hobby workspace: "does not have a monthly fee, so you only pay for usage"; 1 team member, up to 25 services.
 - Included outbound bandwidth on Hobby: 5 GB/month; overage $0.15/GB. A board-sized app stays far below this.
-- Paid web services get dashboard Shell/SSH and a pre-deploy command. The free instance has neither and "spins down" after 15 minutes idle (about one minute to wake), which is why we do not use it for the demo or for CIC.
+- Paid web services get dashboard Shell/SSH and a pre-deploy command. The free instance has neither and "spins down" after 15 minutes idle (about one minute to wake); free instances share 750 instance hours per workspace per month, enough for one service running all month.
+- Free is fine for the demo because migrations run on container start (no pre-deploy needed) and `cli setup` runs from a laptop against Neon (no Shell needed). Open the URL a minute before recording so it is awake. For CIC's daily use, Starter avoids the one-minute wake-up.
 
 **Neon** ([pricing](https://neon.com/pricing), page dated 2026-11-04)
 - Free: $0/month, permanent, no card. 100 projects; 1 GB storage per project; 100 CU-hours per project per month; scales to zero after 5 minutes idle (cannot be turned off on Free); history window 6 hours; 5 GB public egress per project per month. Going over CU-hours or egress suspends compute until the next billing period.

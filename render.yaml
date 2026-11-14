@@ -1,10 +1,12 @@
 # Render Blueprint: one Docker web service (FastAPI + built SPA). The database is
 # Neon (free), so no Render database is defined here. See docs/COSTS.md.
+# Hackathon: free instance ($0; sleeps after 15 min idle). For real use by CIC,
+# change `plan` to `starter` so it stays awake and gets a dashboard Shell.
 services:
   - type: web
     name: cic-compass
     runtime: docker
-    plan: starter
+    plan: free
     region: oregon
     dockerfilePath: ./Dockerfile
     healthCheckPath: /healthz

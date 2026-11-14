@@ -4,7 +4,7 @@
 
 | Phase / lane | Status (todo, running, ready-for-review, verified, cut) | Gate target | Issues | PRs | Notes |
 |---|---|---|---|---|---|
-| 0 | ready-for-review | Sat 17:15 | #2–#9 | #1 + 7 stacked | deploy needs human (accounts) |
+| 0 | ready-for-review | Sat 17:15 | #2–#9 | #1, #55–#61 | deploy needs human (accounts); free tier for now |
 | 1 | todo | Sat 19:00 | | | |
 | 2A ingest/dedupe | todo | Sat 23:00 | | | |
 | 2B donor screens | todo | Sat 23:00 | | | |
@@ -31,13 +31,13 @@
 **Issues / PRs (merge in this order):** #2 → PR #1 (merged) · #3 skeleton · #4 tables (`shared`) · #5 auth · #6 CLI · #7 app shell · #8 CI + Docker · #9 deploy + costs. Branches are stacked (`phase-0/<issue>-…`), each on the previous one.
 **What changed:** FastAPI backend (settings, Phoenix clock, typed errors, healthz, Alembic), people/access tables with DB-enforced governance rules, Argon2id login with hashed sessions, double-submit CSRF and audit-based rate limit, operator CLI, React shell with login and 7-section nav, CI (ruff, mypy, pytest on Postgres, tsc, eslint, prettier, build, docker build, gitleaks), single-image Dockerfile, `render.yaml`, `docs/COSTS.md`. Issue #4 was split out of the auth issue to keep PR size down.
 **Gate:**
-- [ ] CI green: workflow written, not yet run on GitHub (nothing pushed yet). Every step passes locally: `uv run ruff check . && uv run mypy app` → clean; `uv run pytest` → 28 passed; `npm run typecheck && npm run lint && npm run build` → clean.
+- [x] CI green: PR #61 (full stack) passed backend, frontend, container, gitleaks and lint on GitHub Actions. Every step passes locally: `uv run ruff check . && uv run mypy app` → clean; `uv run pytest` → 28 passed; `npm run typecheck && npm run lint && npm run build` → clean.
 - [x] `docker compose up` + `alembic upgrade head` + `cli setup` from empty: dropped and recreated `cic`, `alembic upgrade head` → "Running upgrade -> 0001", `python -m app.cli setup --file …` → two members created, passwords printed once.
 - [x] Logged-out calls get 401: `test_logged_out_calls_get_401`; curl to `/api/app/auth/me` on the Docker image → 401.
 - [x] Two members log in separately: `test_two_members_log_in_separately`.
 - [ ] Deployed URL serves login and `/healthz`: needs the human to create Neon + Render (README "Deploy"). Locally the production image serves `/login` 200 and `/healthz` `{"status":"ok"}`.
 - [x] No secrets in git: `gitleaks git --redact` (v8.24.0) → "21 commits scanned … no leaks found".
-- [~] `COSTS.md` within budget with sources: Neon, Resend and Render workspace/bandwidth sourced; Render Starter dollar price could not be read from the vendor page and is marked unverified (~$7).
+- [x] `COSTS.md` within budget with sources: $0/month now (Render free + Neon free + Resend free); ≈ $7/month production on Render Starter (dollar price unverified, marked).
 **How to verify (exact steps):**
 1. Merge PRs in the order above (each PR's base retargets to `main` as the one below merges).
 2. Locally: `docker compose up -d db`, `cd backend && uv sync && uv run alembic upgrade head && uv run python -m app.cli setup`, `uv run pytest`.
