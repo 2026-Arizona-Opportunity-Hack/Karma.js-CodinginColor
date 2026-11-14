@@ -75,6 +75,16 @@ uv run python -m app.cli setup    # add board members; prints each initial passw
 uv run uvicorn app.main:app --reload   # http://localhost:8000/healthz
 ```
 
+In a second terminal, the web app (proxies `/api` to the backend on :8000):
+
+```bash
+cd frontend
+npm ci
+npm run dev                       # http://localhost:5173, log in with a member from setup
+```
+
+Frontend checks: `npm run typecheck && npm run lint && npm run build`.
+
 `setup` asks for members interactively, or reads `--file members.local.json` (git-ignored):
 `{"members": [{"email": "...", "display_name": "..."}], "super_admin": "optional email"}`.
 The optional super admin is managed only from the CLI:

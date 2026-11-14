@@ -1,0 +1,7 @@
+@import "tailwindcss";
+
+/* Visible focus everywhere (NFR-4). */
+:focus-visible {
+  outline: 3px solid #4338ca;
+  outline-offset: 2px;
+}
