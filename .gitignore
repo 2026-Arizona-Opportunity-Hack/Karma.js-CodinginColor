@@ -27,3 +27,6 @@ target/
 .DS_Store
 Thumbs.db
 *.log
+
+# Local setup input for `python -m app.cli setup` (real names and emails)
+members.local.json
