@@ -1,119 +1,100 @@
-# Karma.js — Coding in Color
+# CIC Compass
 
-Built at [ASU Fall Hackathon 2026 | Phoenix Hackathon for Nonprofits: Nov 14-15](https://www.ohack.dev/hack/fall-2026) for the public good (MIT license).
+A donor stewardship app for [Coding in Color](https://www.ohack.dev/nonprofit/YIXYdYCoxIZC08uQ5DL3) (CIC). It keeps donors and funders in one place so nobody has to hunt through exports from several giving platforms to see who gave, when, and who last got in touch.
 
-> **⚠️ This is your team's ONE repository — all code goes here.** Please don't create
-> another repo (personal or org). Judges, the Team Dashboard's code-activity card,
-> the public project page and the nonprofit all read **this** repo; work pushed
-> anywhere else is invisible to them and won't count. Everyone on the team should be
-> a collaborator here — ask an organizer in Slack if someone can't push.
+Built for CIC's [Donor & Funder Relationship Platform](https://www.ohack.dev/project/e26932c0df1b11f189a8dead68f07eb5) problem statement at the ASU Fall Hackathon 2026 by team Karma.js. Open source under the MIT license.
 
-| | |
-|---|---|
-| **Nonprofit** | [Coding in Color](https://www.ohack.dev/nonprofit/YIXYdYCoxIZC08uQ5DL3) |
-| **Problem statement** | [Donor & Funder Relationship Platform (CIC Problem 2)](https://www.ohack.dev/project/e26932c0df1b11f189a8dead68f07eb5) |
-| **Team page** | [Karma.js](https://www.ohack.dev/hack/fall-2026/team/e66887eee05711f1a967deadb145c312) · [Team Dashboard](https://www.ohack.dev/hack/fall-2026/manageteam) (story, demo video, submit) |
-| **Slack** | team: [#team-karma-js](https://opportunity-hack.slack.com/app_redirect?channel=team-karma-js) · nonprofit: [#npo-coding-in-color](https://opportunity-hack.slack.com/app_redirect?channel=npo-coding-in-color) · help: [#ask-a-mentor](https://opportunity-hack.slack.com/archives/C01E5CGDQ74) |
-| **Created by** | Parthiv Kumbhani |
+**Current version:** 0.1.0 (foundation). See the [changelog](docs/CHANGELOG.md).
 
-## Final day
+## What it does
 
-Start recording your demo video by **Sun Nov 15, 12:00 PM MST** — hacking ends at **Sun Nov 15, 2:00 PM MST**, and a demo you recorded with time to spare beats a feature you finished at 1:59.
+**Available now**
+- Individual board-member accounts with secure login, sessions and CSRF protection.
+- A flat hierarchy by default, with an optional single super admin managed only from the command line.
+- An audit log of logins and governance changes.
+- A web app shell with navigation for Dashboard, Donors, Import, Review, Messages, Reports and Settings.
 
-- Sun Nov 15, 11:00 AM MST — Presentation Feedback Hour
-- **Sun Nov 15, 12:00 PM MST — Start recording your demo video**
-- Sun Nov 15, 12:30 PM MST — Judges Arrive
-- **Sun Nov 15, 2:00 PM MST — 🛑 Submission Deadline: Hacking ends**
-- Sun Nov 15, 2:05 PM MST — Judging Round 1
-- Sun Nov 15, 3:40 PM MST — Judging Final Round
-- Sun Nov 15, 4:30 PM MST — Closing Ceremony: Winners Announced
+**Designed scope** (full requirements in [docs/SRS.md](docs/SRS.md))
+- Import gifts from CSV/XLSX exports (Zeffy, Benevity, a generic template, and CIC's donor spreadsheet) into one de-duplicated donor ledger.
+- Share donors across board members round-robin, with manual reassignment and a visible ownership history.
+- Donor timeline, follow-up reminders and a quarterly touch for every donor.
+- Thank-you and update messages drafted by the system; a person approves and sends every one.
+- Retention view, one-click funder export, and a key-authenticated, aggregate-only read API with a read-only MCP server.
 
-## Before hacking ends — the submission checklist
+## Design principles
 
-Everything is submitted from your [Team Dashboard](https://www.ohack.dev/hack/fall-2026/manageteam); judges read the dashboard, this README and your demo video.
-
-- [ ] **Code pushed** to this repo, in small PRs (see `AGENTS.md`) — judges and future recruiters read the history
-- [ ] **Project story** written on the dashboard (`#project`): the problem, who it helps, what you built, what's next
-- [ ] **Demo video** (4 minutes or less) on YouTube, Vimeo, Loom or Google Drive, linked on the dashboard (`#demo`) — show it working, not slides
-- [ ] **Submit** on the dashboard (you can keep editing until the close)
-- [ ] This README filled in below: team, tech stack, how to run it, live link if you have one
-- Optional: a [DevPost entry](https://opportunity-hack-2026-arizona.devpost.com/) — the dashboard is the submission of record.
-
-Judges score **Scope, Documentation, Polish and Security**, plus a separate **Accessibility** prize — the rubric is at [ohack.dev/hackathon-judging-criteria](https://www.ohack.dev/hackathon-judging-criteria). Document your work as GitHub Issues as you go: that's how you get public credit for it.
-
-## Team
-
-<!-- Replace with real people; link GitHub profiles so this repo works as your portfolio -->
-- [Name](https://github.com/username) — role
-- [Name](https://github.com/username) — role
-
-## What we built
-
-<!-- Two or three sentences: the problem, who it helps, what the nonprofit can do now that they couldn't before -->
+- **A human sends every donor message.** The app drafts; board members approve and send. Email runs in dry-run mode unless explicitly configured for live sending.
+- **Privacy by default.** Every board member sees gift history; contact details are visible only to a donor's owner. The public API returns aggregates only, never donor details.
+- **No secrets in the repository.** Configuration comes from environment variables; `.env` is git-ignored.
+- **Synthetic data only** in this repository.
 
 ## Tech stack
 
-- Frontend: React + Vite + TypeScript, Tailwind CSS, TanStack Query
-- Backend: Python 3.12, FastAPI, SQLAlchemy 2, Alembic
-- Database: PostgreSQL 16 (Docker locally, Neon in production)
-- APIs / services: Render (hosting), Resend (email, dry-run by default)
+| Layer | Technology |
+|---|---|
+| Backend | Python 3.12, FastAPI, SQLAlchemy 2, Alembic, Argon2id |
+| Frontend | React, Vite, TypeScript, Tailwind CSS, TanStack Query |
+| Database | PostgreSQL 16 (Docker locally, [Neon](https://neon.com) hosted) |
+| Hosting | One Docker image on [Render](https://render.com) serving the API and the web app |
+| Email | [Resend](https://resend.com) (optional, off by default) |
+| CI | GitHub Actions: ruff, mypy, pytest, TypeScript, eslint, build, gitleaks |
 
 ## Run it locally
 
-Needs [Docker Desktop](https://www.docker.com/products/docker-desktop/) and [uv](https://docs.astral.sh/uv/) (it installs Python 3.12 for you).
+Needs [Docker Desktop](https://www.docker.com/products/docker-desktop/) and [uv](https://docs.astral.sh/uv/) (it installs Python 3.12), plus Node 22+.
 
 ```bash
 git clone https://github.com/2026-Arizona-Opportunity-Hack/Karma.js-CodinginColor.git
 cd Karma.js-CodinginColor
-cp .env.example .env              # fill in your own values — never commit .env
+cp .env.example .env              # fill in your own values; never commit .env
 docker compose up -d db           # local Postgres on :5432
 
 cd backend
 uv sync                           # install pinned dependencies
 uv run alembic upgrade head       # create tables
 uv run python -m app.cli setup    # add board members; prints each initial password once
-uv run uvicorn app.main:app --reload   # http://localhost:8000/healthz
+uv run uvicorn app.main:app --reload   # API on http://localhost:8000
 ```
 
-In a second terminal, the web app (proxies `/api` to the backend on :8000):
+In a second terminal, the web app (proxies `/api` to the backend):
 
 ```bash
 cd frontend
 npm ci
-npm run dev                       # http://localhost:5173, log in with a member from setup
+npm run dev                       # http://localhost:5173
 ```
-
-Frontend checks: `npm run typecheck && npm run lint && npm run build`.
 
 `setup` asks for members interactively, or reads `--file members.local.json` (git-ignored):
 `{"members": [{"email": "...", "display_name": "..."}], "super_admin": "optional email"}`.
 The optional super admin is managed only from the CLI:
 `uv run python -m app.cli superadmin {create,activate,flatten,transfer,deactivate} [--email X]`.
 
-Backend checks: `uv run ruff check . && uv run mypy app && uv run pytest`.
+## Checks
 
-## Deploy (Render + Neon)
+```bash
+cd backend && uv run ruff check . && uv run mypy app && uv run pytest
+cd frontend && npm run typecheck && npm run lint && npm run build
+```
 
-One Docker web service on Render and a free Neon Postgres: **$0/month** on Render's free instance, about $7/month on Starter for always-on production. Details in [docs/COSTS.md](docs/COSTS.md).
+Backend tests use a separate `cic_test` database on the local Postgres.
 
-1. **Neon:** in the project, click **Connect**, turn **Connection pooling off**, copy the connection string (`postgresql://...?sslmode=require...`).
-2. **Render:** New → Blueprint → pick this repo. `render.yaml` creates the `cic-compass` service. Paste the Neon string into `DATABASE_URL` when asked; leave `RESEND_API_KEY` and `MAIL_FROM` empty for dry-run.
-3. Deploy. Migrations run on start; check `https://<service>.onrender.com/healthz`.
-4. Create board members from your own machine against Neon (nothing secret is committed):
-   ```bash
-   cd backend
-   DATABASE_URL='postgresql://...neon...' uv run python -m app.cli setup --file ../members.local.json
-   ```
-   On a paid instance you can use the Render dashboard Shell instead: `python -m app.cli setup`.
+## Deployment
 
-## Links
+The app ships as one Docker image (`Dockerfile`) with a Render blueprint (`render.yaml`) and a Neon Postgres database. Migrations run when the container starts. Steps, environment variables and costs: [docs/DEPLOY.md](docs/DEPLOY.md) and [docs/COSTS.md](docs/COSTS.md).
 
-- Live demo:
-- Demo video:
-- Design / docs:
+## Documentation
 
-## After the hackathon
+| Document | Contents |
+|---|---|
+| [docs/SRS.md](docs/SRS.md) | Requirements |
+| [docs/DATA_MODEL.md](docs/DATA_MODEL.md) | Tables, rules and visibility policy |
+| [docs/API.md](docs/API.md) | Public read API and app API |
+| [docs/DECISIONS.md](docs/DECISIONS.md) | Design decisions and why |
+| [docs/DEPLOY.md](docs/DEPLOY.md), [docs/COSTS.md](docs/COSTS.md) | Deployment and hosting costs |
+| [docs/CHANGELOG.md](docs/CHANGELOG.md) | Version history |
 
-Winning teams finish the project with the nonprofit — the [Definition of Done](https://www.ohack.dev/about/completion) (deployed, nonprofit sign-off, docs, open source) is tracked on your team page. Keep the repo public and the README honest; recruiters do read these.
+Development process and team notes are in [docs/](docs/): [HACKATHON.md](docs/HACKATHON.md), [PLAN.md](docs/PLAN.md), [ENGINEERING.md](docs/ENGINEERING.md), [PHASE_LOG.md](docs/PHASE_LOG.md).
 
-Need a hand this weekend? [#ask-a-mentor](https://opportunity-hack.slack.com/archives/C01E5CGDQ74) on Slack, or ask in [#team-karma-js](https://opportunity-hack.slack.com/app_redirect?channel=team-karma-js) and a mentor will drop in.
+## License
+
+[MIT](LICENSE)
