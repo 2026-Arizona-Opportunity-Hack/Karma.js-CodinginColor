@@ -1,0 +1,51 @@
+[project]
+name = "cic-compass"
+version = "0.1.0"
+description = "Donor stewardship app for Coding in Color"
+requires-python = ">=3.12,<3.13"
+# Exact pins (docs/ENGINEERING.md section 3). uv refuses anything newer than
+# exclude-newer below, which keeps us off packages published in the last 14 days.
+dependencies = [
+  "fastapi==0.162.0",
+  "uvicorn[standard]==0.54.0",
+  "pydantic==2.14.2",
+  "pydantic-settings==2.16.2",
+  "sqlalchemy==2.1.6",
+  "alembic==1.20.1",
+  "psycopg[binary]==3.3.6",
+  "argon2-cffi==25.1.0",
+  "httpx==0.28.1",
+]
+
+[dependency-groups]
+dev = ["pytest==9.2.0", "ruff==0.17.3", "mypy==2.4.1"]
+
+[tool.uv]
+package = false
+exclude-newer = "2026-10-30T00:00:00Z"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["alembic/versions"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S", "SIM", "RUF"]
+ignore = ["S101"]  # assert is fine in tests
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S105", "S106"]  # test passwords are not secrets
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy"]
+exclude = ["alembic/versions"]
+
+[[tool.mypy.overrides]]
+module = ["tests.*"]
+disallow_untyped_defs = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

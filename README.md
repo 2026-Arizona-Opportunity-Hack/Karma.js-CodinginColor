@@ -53,19 +53,28 @@ Judges score **Scope, Documentation, Polish and Security**, plus a separate **Ac
 
 ## Tech stack
 
-- Frontend:
-- Backend:
-- Database:
-- APIs / services:
+- Frontend: React + Vite + TypeScript, Tailwind CSS, TanStack Query
+- Backend: Python 3.12, FastAPI, SQLAlchemy 2, Alembic
+- Database: PostgreSQL 16 (Docker locally, Neon in production)
+- APIs / services: Render (hosting), Resend (email, dry-run by default)
 
 ## Run it locally
+
+Needs [Docker Desktop](https://www.docker.com/products/docker-desktop/) and [uv](https://docs.astral.sh/uv/) (it installs Python 3.12 for you).
 
 ```bash
 git clone https://github.com/2026-Arizona-Opportunity-Hack/Karma.js-CodinginColor.git
 cd Karma.js-CodinginColor
-cp .env.example .env   # fill in your own values — never commit .env
-# install + start commands here
+cp .env.example .env              # fill in your own values — never commit .env
+docker compose up -d db           # local Postgres on :5432
+
+cd backend
+uv sync                           # install pinned dependencies
+uv run alembic upgrade head       # create tables
+uv run uvicorn app.main:app --reload   # http://localhost:8000/healthz
 ```
+
+Backend checks: `uv run ruff check . && uv run mypy app && uv run pytest`.
 
 ## Links
 
