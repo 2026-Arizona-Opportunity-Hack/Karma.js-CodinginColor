@@ -1,0 +1,24 @@
+# Decisions
+
+Add new decisions with the next number. Never silently reverse one; write the change and reason here.
+
+| ID | Decision | Why | Revisit if |
+|---|---|---|---|
+| D-101 | Problem 2 (donor platform), product name CIC Compass | Team choice; CIC's stated need | Never this weekend |
+| D-102 | FastAPI + Postgres + React/Vite SPA in one Docker service on Render Starter; Neon free Postgres | Fits $20/month (about $7); FastAPI generates OpenAPI for the documented API; Python MCP SDK | COSTS.md shows a breach |
+| D-103 | Flat hierarchy by default; optional single super admin created only by the setup CLI; cannot be deleted; can be flattened (dormant) in-app; re-activation, transfer and deactivation only via CLI | CIC's flat board; no in-app privilege escalation path | CIC defines roles |
+| D-104 | All board members see every donor's gift history and timeline; contact details (email, phone) only for the owner and an active super admin; actions only by owner or active super admin | Analysis needs history; contact details are not needed for analysis (data minimization) | CIC wants contact details open (one setting) |
+| D-105 | Reassignment scope: `anyone` in flat mode; super admin can set `own_only`. Every change audited and shown in owner history | CIC requirement | CIC changes policy |
+| D-106 | Deactivating a member never moves donors; they go to a shared Needs reassignment list for manual reassignment | Requirements unclear; CIC asked for manual | CIC defines a rule |
+| D-107 | Ownership is on the donor; round-robin only for new donors (fewest owned active donors, then oldest last_assigned_at, then id) under an advisory lock | Brief P0; even load | CIC wants weighted loads |
+| D-108 | Reminders are derived by query, never stored; doing the action clears them | No duplicates on re-import; no stale tasks | Performance requires caching |
+| D-109 | Reminder email digest goes only to board members and is sent by a human click, dry-run by default | Brief: "every outbound message or reminder is drafted by the system and sent by a human" | Organizers say internal reminders are exempt |
+| D-110 | Donor messages: draft → approved → sent with DB checks; email via HTTP provider (dry-run default), SMS via `sms:` link + mark sent | Brief; security judging | CIC picks channels |
+| D-111 | Imports: CSV and XLSX only; adapters for CIC spreadsheet (donors), Zeffy-like, Benevity-like, generic template (AZ Gives, United Way); formats modelled on public docs and marked assumed | Brief P0 lists those three; no real files available | CIC shares header rows |
+| D-112 | Dedupe: file hash blocks identical re-upload; deterministic row_key per gift; identity resolution by platform id, then email (no name conflict), else review; never by name alone | Trust in totals; wrong merges are worse than review items | Never |
+| D-113 | Read API aggregates only, API key auth; MCP server read-only over the same API; all writes only via the web app session | Least privilege; donor PII stays inside the app | CIC needs a write integration |
+| D-114 | Rolling 12 vs previous 12 months for retention; calendar option | Avoids mid-year false lapses | CIC uses a fiscal year |
+| D-115 | Thank-you due 2 days (first gift) / 7 days (repeat); quarterly touch 90 days; history older than 60 days at import assumed thanked | Sensible defaults, all settings | CIC answers |
+| D-116 | Money integer cents, USD only; dates in America/Phoenix; injectable clock | Correctness and testable time | Non-USD gifts appear |
+| D-117 | P1 pick: lapsed-donor radar. Beyond-scope pick (if time): events-aware next steps | Brief asks for at least one P1 and one beyond-scope idea | Time runs short; drop events first |
+| D-118 | No LLM features in P0. Later AI drafting uses the OHack AI gateway behind a flag, human approves | Privacy and demo reliability | CIC approves |
