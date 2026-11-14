@@ -71,8 +71,14 @@ docker compose up -d db           # local Postgres on :5432
 cd backend
 uv sync                           # install pinned dependencies
 uv run alembic upgrade head       # create tables
+uv run python -m app.cli setup    # add board members; prints each initial password once
 uv run uvicorn app.main:app --reload   # http://localhost:8000/healthz
 ```
+
+`setup` asks for members interactively, or reads `--file members.local.json` (git-ignored):
+`{"members": [{"email": "...", "display_name": "..."}], "super_admin": "optional email"}`.
+The optional super admin is managed only from the CLI:
+`uv run python -m app.cli superadmin {create,activate,flatten,transfer,deactivate} [--email X]`.
 
 Backend checks: `uv run ruff check . && uv run mypy app && uv run pytest`.
 
