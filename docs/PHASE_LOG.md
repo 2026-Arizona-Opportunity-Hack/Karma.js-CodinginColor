@@ -35,14 +35,14 @@
 - [x] `docker compose up` + `alembic upgrade head` + `cli setup` from empty: dropped and recreated `cic`, `alembic upgrade head` → "Running upgrade -> 0001", `python -m app.cli setup --file …` → two members created, passwords printed once.
 - [x] Logged-out calls get 401: `test_logged_out_calls_get_401`; curl to `/api/app/auth/me` on the Docker image → 401.
 - [x] Two members log in separately: `test_two_members_log_in_separately`.
-- [ ] Deployed URL serves login and `/healthz`: needs the human to create Neon + Render (README "Deploy"). Locally the production image serves `/login` 200 and `/healthz` `{"status":"ok"}`.
+- [ ] Deployed URL serves login and `/healthz`: needs the human to create Neon + Render (docs/DEPLOY.md). Locally the production image serves `/login` 200 and `/healthz` `{"status":"ok"}`.
 - [x] No secrets in git: `gitleaks git --redact` (v8.24.0) → "21 commits scanned … no leaks found".
 - [x] `COSTS.md` within budget with sources: $0/month now (Render free + Neon free + Resend free); ≈ $7/month production on Render Starter (dollar price unverified, marked).
 **How to verify (exact steps):**
 1. Merge PRs in the order above (each PR's base retargets to `main` as the one below merges).
 2. Locally: `docker compose up -d db`, `cd backend && uv sync && uv run alembic upgrade head && uv run python -m app.cli setup`, `uv run pytest`.
 3. `cd frontend && npm ci && npm run dev`, open http://localhost:5173 in two browsers (one private) and log in as two different members; each sees their own name. Log out works; 6 wrong passwords → "Too many attempts".
-4. Follow README "Deploy", then log in on the Render URL in a private window as two members; open `/healthz`.
+4. Follow docs/DEPLOY.md, then log in on the Render URL in a private window as two members; open `/healthz`.
 5. Confirm the Render Starter price on render.com/pricing and edit `docs/COSTS.md`.
 **Decisions made:** D-119 to D-122.
 **Known gaps:**
