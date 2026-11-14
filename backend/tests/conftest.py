@@ -53,7 +53,15 @@ def _truncate_all(conn: Connection) -> None:
     names = ", ".join(f'"{t}"' for t in tables)
     if names:
         conn.execute(text(f"TRUNCATE {names} RESTART IDENTITY CASCADE"))
+    # Rows created by migrations (reference data) come back after every wipe.
     conn.execute(text("INSERT INTO governance (id) VALUES (1) ON CONFLICT DO NOTHING"))
+    conn.execute(
+        text(
+            "INSERT INTO programs (name, slug) VALUES ('AI Academy','ai-academy'),"
+            "('K12 Program','k12-program'),('Summer Camp','summer-camp'),"
+            "('Day of Compute','day-of-compute'),('General','general')"
+        )
+    )
 
 
 @pytest.fixture
