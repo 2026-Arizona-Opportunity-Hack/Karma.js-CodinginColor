@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 
 from app.errors import NotFound, register_error_handlers
+from app.routes import app_auth
 from app.settings import get_settings
 
 
@@ -22,6 +23,8 @@ def create_app() -> FastAPI:
     @app.get("/healthz", tags=["ops"])
     def healthz() -> dict[str, str]:
         return {"status": "ok"}
+
+    app.include_router(app_auth.router)
 
     _mount_spa(app, Path(settings.static_dir))
     return app
