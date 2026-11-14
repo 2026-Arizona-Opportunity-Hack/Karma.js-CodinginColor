@@ -57,6 +57,13 @@ def _truncate_all(conn: Connection) -> None:
     conn.execute(text("INSERT INTO governance (id) VALUES (1) ON CONFLICT DO NOTHING"))
     conn.execute(
         text(
+            "INSERT INTO app_settings (key, value) VALUES ('thank_you_days_first','2'),"
+            "('thank_you_days_repeat','7'),('quarterly_days','90'),('import_cutoff_days','60'),"
+            "('retention_basis','\"rolling\"')"
+        )
+    )
+    conn.execute(
+        text(
             "INSERT INTO programs (name, slug) VALUES ('AI Academy','ai-academy'),"
             "('K12 Program','k12-program'),('Summer Camp','summer-camp'),"
             "('Day of Compute','day-of-compute'),('General','general')"
