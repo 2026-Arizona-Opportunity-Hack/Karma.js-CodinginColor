@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowDown, Mail, Phone } from "lucide-react";
+import { ArrowLeft, ArrowDown, Download, FileText, Mail, Phone } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 
@@ -94,6 +94,23 @@ function Dossier({ id, actorId }: { id: number; actorId: number }) {
             <LogContact donor={d} actorId={actorId} />
             <DonorEntry mode="edit" donor={d} actorId={actorId} />
             <DonorEntry mode="gift" donor={d} actorId={actorId} />
+            {/* RPT-3: one-click funder packet (last 12 months), printable page and CSV. */}
+            <a
+              className="button button-secondary"
+              href={`/api/app/reports/funder/${d.id}`}
+              target="_blank"
+              rel="noopener"
+            >
+              <FileText size={16} aria-hidden="true" /> Funder packet
+              <span className="sr-only"> (opens in a new tab)</span>
+            </a>
+            <a
+              className="button button-secondary"
+              href={`/api/app/reports/funder/${d.id}?format=csv`}
+              download
+            >
+              <Download size={16} aria-hidden="true" /> Download CSV
+            </a>
             <a className="button button-secondary" href="#relationship-timeline">
               Read the timeline <ArrowDown size={16} aria-hidden="true" />
             </a>
