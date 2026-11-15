@@ -10,6 +10,8 @@ from sqlalchemy.orm import Session
 from app.security import hash_password, sha256_hex
 
 _n = itertools.count(1)
+PASSWORD = "correct horse battery"
+_password_hash: str | None = None
 
 
 def _one(db: Session, sql: str, **p: Any) -> int:
@@ -17,13 +19,17 @@ def _one(db: Session, sql: str, **p: Any) -> int:
 
 
 def add_user(db: Session, name: str, *, active: bool = True) -> int:
+    """A board member who can log in with PASSWORD. The hash is computed once (Argon2 is slow)."""
+    global _password_hash
+    if _password_hash is None:
+        _password_hash = hash_password(PASSWORD)
     return _one(
         db,
         "INSERT INTO users (email, display_name, password_hash, is_active) "
         "VALUES (:e, :n, :h, :a) RETURNING id",
         e=f"{name.lower().replace(' ', '.')}@example.org",
         n=name,
-        h=hash_password("correct horse battery"),
+        h=_password_hash,
         a=active,
     )
 

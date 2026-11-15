@@ -6,6 +6,7 @@ live in app_ownership.py (lane A, Phase 3)."""
 from typing import Annotated, Literal
 
 from fastapi import Query, Response
+from fastapi.responses import JSONResponse
 
 from app.routes.deps import DB, ClockDep, CurrentDep
 from app.routes.stubs import session_router, todo
@@ -26,7 +27,7 @@ from app.schemas.donors import (
     PossibleDuplicateOut,
     TimelineOut,
 )
-from app.services.donors import contacts
+from app.services.donors import contacts, writes
 from app.services.donors import service as donors_service
 
 router = session_router("donors")
@@ -54,11 +55,19 @@ def list_donors(
 @router.post(
     "/donors",
     status_code=201,
+    response_model=DonorDetail,
     responses={409: {"model": PossibleDuplicateOut, "description": "Possible duplicate (DED-6)"}},
 )
-def create_donor(body: DonorCreate) -> DonorDetail:
-    """Runs identity matching first; send `confirm_new: true` to create anyway."""
-    todo("lane C, phase 2")
+def create_donor(
+    body: DonorCreate, cur: CurrentDep, db: DB, clock: ClockDep
+) -> DonorDetail | JSONResponse:
+    """Runs identity matching first; send `confirm_new: true` to create anyway.
+
+    The new donor is given an owner by round-robin (OWN-2) in the same transaction."""
+    result = writes.create_donor(db, clock, cur.actor, body)
+    if isinstance(result, PossibleDuplicateOut):
+        return JSONResponse(status_code=409, content=result.model_dump(mode="json"))
+    return result
 
 
 @router.get("/donors/{donor_id}")
@@ -68,14 +77,18 @@ def get_donor(donor_id: int, cur: CurrentDep, db: DB, clock: ClockDep) -> DonorD
 
 
 @router.patch("/donors/{donor_id}")
-def update_donor(donor_id: int, body: DonorUpdate) -> DonorDetail:
-    todo("lane C, phase 2")
+def update_donor(
+    donor_id: int, body: DonorUpdate, cur: CurrentDep, db: DB, clock: ClockDep
+) -> DonorDetail:
+    """Owner and active super admin only (`donor.edit`). Send null to clear an optional field."""
+    return writes.update_donor(db, clock, cur.actor, donor_id, body)
 
 
 @router.delete("/donors/{donor_id}", status_code=204)
-def delete_donor(donor_id: int) -> Response:
-    """Soft delete only (DON-11)."""
-    todo("lane C, phase 2")
+def delete_donor(donor_id: int, cur: CurrentDep, db: DB, clock: ClockDep) -> Response:
+    """Soft delete only (DON-11): gifts and history stay; the donor leaves every list."""
+    writes.delete_donor(db, clock, cur.actor, donor_id)
+    return Response(status_code=204)
 
 
 @router.post("/donors/{donor_id}/merge", responses={409: {"model": ErrorOut}})

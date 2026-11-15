@@ -4601,7 +4601,7 @@
         ]
       },
       "post": {
-        "description": "Runs identity matching first; send `confirm_new: true` to create anyway.",
+        "description": "Runs identity matching first; send `confirm_new: true` to create anyway.\n\nThe new donor is given an owner by round-robin (OWN-2) in the same transaction.",
         "operationId": "create_donor_api_app_donors_post",
         "requestBody": {
           "content": {
@@ -4683,7 +4683,7 @@
     },
     "/api/app/donors/{donor_id}": {
       "delete": {
-        "description": "Soft delete only (DON-11).",
+        "description": "Soft delete only (DON-11): gifts and history stay; the donor leaves every list.",
         "operationId": "delete_donor_api_app_donors__donor_id__delete",
         "parameters": [
           {
@@ -4818,6 +4818,7 @@
         ]
       },
       "patch": {
+        "description": "Owner and active super admin only (`donor.edit`). Send null to clear an optional field.",
         "operationId": "update_donor_api_app_donors__donor_id__patch",
         "parameters": [
           {
