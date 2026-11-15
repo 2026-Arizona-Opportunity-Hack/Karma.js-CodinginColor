@@ -88,7 +88,7 @@ Starlette/httpx TestClient deprecation. See the clock/timeline gap below.
 `CHROME_PATH`). The browser test mocks all API calls with synthetic data and
 checks unchecked defaults, modal focus, Space selection, 390px width, empty
 approvals and an email-only commit payload. Screenshot:
-[donor update review](screenshots/105-donor-updates.png).
+[donor update review](../images/import-update-review.png).
 
 **Known limits:** preview storage remains process-local and expires after 20
 minutes. Import history/reversal and identity review UI remain separate lane B
