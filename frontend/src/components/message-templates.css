@@ -40,8 +40,6 @@
 }
 .template-field > span {
   display: block;
-  padding: 0;
-  background: none;
   margin-bottom: 6px;
   font-size: 12px;
   font-weight: 600;
@@ -63,7 +61,7 @@
   font-family: var(--font-editorial);
   font-size: 15px;
 }
-.template-field :read-only {
+.template-field :is(input, textarea):read-only {
   border-color: var(--color-rule);
   background: var(--color-canvas);
 }
