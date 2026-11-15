@@ -9,6 +9,7 @@
     "src/components/DonorUpdateReview.tsx",
     "src/lib/donorUpdates.ts",
     "src/lib/importReview.ts",
+    "src/lib/donorEntry.ts",
     "src/api/client.ts"
   ]
 }

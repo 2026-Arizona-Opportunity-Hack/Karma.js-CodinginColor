@@ -44,6 +44,8 @@ export function QuickNoteSheet({
   busy,
   onClose,
   children,
+  className = "",
+  eyebrow = "A moment of stewardship",
 }: {
   open: boolean;
   title: string;
@@ -51,6 +53,8 @@ export function QuickNoteSheet({
   busy: boolean;
   onClose: () => void;
   children: ReactNode;
+  className?: string;
+  eyebrow?: string;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
@@ -77,7 +81,7 @@ export function QuickNoteSheet({
   return (
     <dialog
       ref={dialog}
-      className="quick-note-sheet"
+      className={`quick-note-sheet ${className}`}
       aria-labelledby={`${id}-title`}
       aria-describedby={`${id}-donor`}
       onKeyDown={(event) => {
@@ -126,7 +130,7 @@ export function QuickNoteSheet({
     >
       <header className="quick-note-header">
         <div>
-          <p className="eyebrow">A moment of stewardship</p>
+          <p className="eyebrow">{eyebrow}</p>
           <h2 id={`${id}-title`} ref={heading} tabIndex={-1}>
             {title}
           </h2>

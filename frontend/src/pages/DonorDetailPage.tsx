@@ -4,6 +4,7 @@ import { Link, useParams } from "react-router-dom";
 
 import { ApiError } from "../api/client";
 import { LogContact, NextStep } from "../components/DonorStewardship";
+import { DonorEntry } from "../components/DonorEntry";
 import {
   EmptyState,
   ErrorState,
@@ -81,6 +82,8 @@ function Dossier({ id, actorId }: { id: number; actorId: number }) {
               ))}
             </div>
             <LogContact donor={d} actorId={actorId} />
+            <DonorEntry mode="edit" donor={d} actorId={actorId} />
+            <DonorEntry mode="gift" donor={d} actorId={actorId} />
             <a className="button button-secondary" href="#relationship-timeline">
               Read the timeline <ArrowDown size={16} aria-hidden="true" />
             </a>
@@ -244,7 +247,8 @@ function Dossier({ id, actorId }: { id: number; actorId: number }) {
                   </ul>
                 )}
                 <p className="secondary-text">
-                  Earlier gifts appear in the correspondence trail above.
+                  Earlier gifts appear in the correspondence trail above. Gift editing is not
+                  available yet.
                 </p>
               </section>
             </div>
