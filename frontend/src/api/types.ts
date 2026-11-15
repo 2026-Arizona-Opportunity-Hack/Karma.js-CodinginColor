@@ -653,7 +653,10 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Edit Message */
+        /**
+         * Edit Message
+         * @description An edit returns an approved message to draft and clears the approval (MSG-3).
+         */
         patch: operations["edit_message_api_app_messages__message_id__patch"];
         trace?: never;
     };
@@ -666,7 +669,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Approve Message */
+        /**
+         * Approve Message
+         * @description Only a draft; records who and when and fixes the hash of the words (MSG-4).
+         */
         post: operations["approve_message_api_app_messages__message_id__approve_post"];
         delete?: never;
         options?: never;

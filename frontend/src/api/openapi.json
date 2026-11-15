@@ -6725,6 +6725,7 @@
     },
     "/api/app/messages/{message_id}": {
       "patch": {
+        "description": "An edit returns an approved message to draft and clears the approval (MSG-3).",
         "operationId": "edit_message_api_app_messages__message_id__patch",
         "parameters": [
           {
@@ -6817,6 +6818,7 @@
     },
     "/api/app/messages/{message_id}/approve": {
       "post": {
+        "description": "Only a draft; records who and when and fixes the hash of the words (MSG-4).",
         "operationId": "approve_message_api_app_messages__message_id__approve_post",
         "parameters": [
           {
