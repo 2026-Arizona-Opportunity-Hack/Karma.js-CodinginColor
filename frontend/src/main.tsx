@@ -14,6 +14,7 @@ import { DashboardPage } from "./pages/DashboardPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { InvitePage } from "./pages/InvitePage";
 import { ApiKeysPage } from "./pages/ApiKeysPage";
+import { FieldsPage } from "./pages/FieldsPage";
 import { MessagesPage } from "./pages/MessagesPage";
 import { ReportsPage } from "./pages/ReportsPage";
 
@@ -36,6 +37,7 @@ createRoot(document.getElementById("root")!).render(
             <Route path="/reports" element={<ReportsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/settings/api-keys" element={<ApiKeysPage />} />
+            <Route path="/settings/fields" element={<FieldsPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>

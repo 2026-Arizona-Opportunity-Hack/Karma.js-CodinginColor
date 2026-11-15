@@ -1,7 +1,8 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { ApiError } from "../api/client";
 import type { components } from "../api/types";
+import { useFieldMutations } from "../hooks/useFields";
 import { dollars } from "../lib/format";
 import "./import-workspace.css";
 
@@ -131,6 +132,63 @@ export function ReconciliationSummary({
           <p>Mapped to General: {s.unmapped_campaigns.join("; ")}</p>
         )}
       </div>
+    </section>
+  );
+}
+
+/** Columns that matched no field (ING-14). Each can become a field, then the file is re-uploaded. */
+export function IgnoredColumns({ columns }: { columns: components["schemas"]["IgnoredColumn"][] }) {
+  const { create } = useFieldMutations();
+  const [made, setMade] = useState<string[]>([]);
+  if (!columns.length) return null;
+  return (
+    <section className="import-panel" aria-labelledby="ignored-title">
+      <div className="import-section-heading">
+        <div>
+          <p className="eyebrow">Not imported</p>
+          <h2 id="ignored-title">Columns Compass ignored</h2>
+          <p>
+            These columns match no field, so their values are left out. Create a field from a
+            column, then upload the file again to import it.
+          </p>
+        </div>
+      </div>
+      <ul className="invalid-rows">
+        {columns.map((c) => (
+          <li key={c.header}>
+            <strong>{c.header}</strong>
+            {made.includes(c.header) ? (
+              <span role="status">Field created. Upload the file again.</span>
+            ) : (
+              <button
+                className="button button-secondary"
+                disabled={create.isPending}
+                aria-label={`Create field from column ${c.header}`}
+                onClick={() =>
+                  create.mutate(
+                    {
+                      entity: c.suggested_entity,
+                      label: c.header,
+                      type: c.guessed_type,
+                      is_contact: false,
+                      is_required: false,
+                      show_in_list: false,
+                    },
+                    { onSuccess: () => setMade((m) => [...m, c.header]) },
+                  )
+                }
+              >
+                Create field from this column
+              </button>
+            )}
+          </li>
+        ))}
+      </ul>
+      {create.error && (
+        <p role="alert" className="save-error">
+          {create.error.message}
+        </p>
+      )}
     </section>
   );
 }

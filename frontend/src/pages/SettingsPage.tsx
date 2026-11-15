@@ -150,6 +150,7 @@ function Settings({ actor }: { actor: Me }) {
         connected.
       </PageMasthead>
       <p>
+        <Link to="/settings/fields">Donor and gift fields</Link> ·{" "}
         <Link to="/settings/api-keys">API keys for other apps</Link>
       </p>
       <p role="status" className="settings-notice">
