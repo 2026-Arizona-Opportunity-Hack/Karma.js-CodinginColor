@@ -1,4 +1,4 @@
-"""Manage field definitions (CUS-1, CUS-2, D-145). Needs `settings.manage` (GOV-4).
+"""Manage field definitions (CUS-1, CUS-2, D-146). Needs `settings.manage` (GOV-4).
 
 Removing a field deactivates it: values stay and it can be restored. A custom field that never
 held a value can be deleted for good. Built-ins are relabeled, reordered and hidden only."""
