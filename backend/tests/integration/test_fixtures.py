@@ -108,10 +108,12 @@ def record(source: str, r: dict[str, str]) -> dict:
                     bid="", anon=not (full or r["Email"]))  # fmt: skip
     if source == "benevity":
         full = f"{r['Donor First Name']} {r['Donor Last Name']}".strip()
-        hidden = r["Donation Type"] == "Anonymous Donation" or not (full or r["Email"])
+        company = r["Company Name"]
+        # A code such as A1234 instead of a name means the company asked to stay anonymous.
+        employer = "" if re.fullmatch(r"[A-Z]\d{4}", company) else company
         return dict(name=full, first=r["Donor First Name"], last=r["Donor Last Name"] or None,
-                    email=r["Email"], phone="", employer=r["Company"], zid="",
-                    bid=r["Benevity Donor ID"], anon=hidden)  # fmt: skip
+                    email=r["Donor Email"], phone="", employer=employer, zid="", bid="",
+                    anon=not (full or r["Donor Email"]))  # fmt: skip
     first, last = split_name(r["Donor name"])
     return dict(name=r["Donor name"], first=first, last=last, email=r["Email"], phone=r["Phone"],
                 employer=r["Organization"], zid="", bid="",
@@ -127,12 +129,12 @@ def validate(source: str, r: dict[str, str]) -> tuple[str | None, date | None, i
             return "non_usd", None, 0
         if Decimal(r["Refunded amount"] or "0") > 0:
             return "refunded", None, 0
-    if source == "benevity" and r["Currency"].upper() != "USD":
+    if source == "benevity" and r["Donation Currency"].upper() != "USD":
         return "non_usd", None, 0
     when = parse_date(r["Date"] if source in ("zeffy", "generic") else r["Donation Date"])
     if when is None:
         return "bad_date", None, 0
-    cents, why = parse_cents(r["Amount"])
+    cents, why = parse_cents(r["Donation Amount" if source == "benevity" else "Amount"])
     return (why, None, 0) if why else (None, when, cents)  # type: ignore[return-value]
 
 
@@ -209,11 +211,15 @@ def run_imports() -> dict:
                 f["invalid"].append({"row": n, "code": code})
                 continue
             rec = record(source, r)
+            match = 0
+            if source == "benevity" and r["Match Amount"].strip():
+                match = int((Decimal(r["Match Amount"]) * 100).quantize(Decimal(1)))
+            n_gifts = 1 + (match > 0)
             if rec["anon"]:
-                f["gifts"] += 1
-                f["cents"] += cents
-                f["attr"]["anonymous"][0] += 1
-                f["attr"]["anonymous"][1] += cents
+                f["gifts"] += n_gifts
+                f["cents"] += cents + match
+                f["attr"]["anonymous"][0] += n_gifts
+                f["attr"]["anonymous"][1] += cents + match
                 continue
             verdict, did, why = res.decide(rec)
             if verdict == "review":
@@ -221,10 +227,10 @@ def run_imports() -> dict:
                     why = "household"
                 out["review"].append({"file": name, "row": n, "reason": why})
                 if source != "sheet":
-                    f["gifts"] += 1
-                    f["cents"] += cents
-                    f["attr"]["pending_review"][0] += 1
-                    f["attr"]["pending_review"][1] += cents
+                    f["gifts"] += n_gifts
+                    f["cents"] += cents + match
+                    f["attr"]["pending_review"][0] += n_gifts
+                    f["attr"]["pending_review"][1] += cents + match
                 continue
             if verdict == "new":
                 did = res.create(rec)
@@ -233,11 +239,13 @@ def run_imports() -> dict:
                 assert did is not None
                 res.learn(did, rec)
             if source != "sheet":
-                f["gifts"] += 1
-                f["cents"] += cents
-                f["attr"]["linked"][0] += 1
-                f["attr"]["linked"][1] += cents
+                f["gifts"] += n_gifts
+                f["cents"] += cents + match
+                f["attr"]["linked"][0] += n_gifts
+                f["attr"]["linked"][1] += cents + match
                 out["gifts"].setdefault(did, []).append((when, cents))
+                if match:  # the employer's match is credited to the same donor, flagged separately
+                    out["gifts"][did].append((when, match))
         out["files"][name] = f
     out["donors"] = len(res.donors)
     return out
@@ -328,13 +336,31 @@ def test_fixtures_cover_the_designed_edge_cases(result: dict) -> None:
     assert all(v["donors"] > 0 for v in M["retention"]["classes"].values())
 
 
+def test_benevity_file_uses_the_documented_glossary_columns() -> None:
+    """Column names from the Causes Portal Reporting glossary (docs/IMPORT_FORMATS.md)."""
+    headers = set(read_rows(BENEVITY)[0])
+    documented = {
+        "Disbursement ID", "Disbursement Date", "Company Name", "Transaction ID",
+        "Donation Date", "Donation Amount", "Match Amount", "Donation Currency",
+        "Foreign Exchange Rate", "Cause Support Fee", "Merchant Fee", "Donation Frequency",
+        "Donation Type", "Donor First Name", "Donor Last Name", "Donor Email",
+        "Donor Zip / Postal Code",
+    }  # fmt: skip
+    assert documented <= headers
+    rows = read_rows(BENEVITY)
+    assert any(Decimal(r["Match Amount"]) > 0 for r in rows)  # employer matches exist
+    assert any(re.fullmatch(r"[A-Z]\d{4}", r["Company Name"]) for r in rows)  # anonymous companies
+    assert any(Decimal(r["Merchant Fee"]) > 0 for r in rows)  # fees exist
+    assert all(r["Donor Zip / Postal Code"] for r in rows)  # zip defaults to visible
+
+
 def test_synthetic_contact_data_only() -> None:
     """Privacy rule: only reserved or fictional domains and 555-01xx phone numbers."""
     domains, phones = set(), set()
     for name in M["import_order"]:
         for r in read_rows(name):
             for col, val in r.items():
-                if "mail" in col.lower() and val:
+                if "mail" in col.lower() and val and "@" in val:
                     domains.add(val.split("@")[1].lower())
                 if col == "Phone" and val:
                     phones.add(norm_phone(val)[-7:])

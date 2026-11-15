@@ -67,38 +67,46 @@
       }
     },
     "synthetic_benevity_like.csv": {
-      "sha256": "1e2ef840eabfb5f606d5a484912026b8fe40ddd0077c71b898d1ba1d4c84477a",
+      "sha256": "db16c3c996252aa517dd44df6e19c7e0bcfebf6e6d869d553a51fd0dd0bc1f9f",
       "rows": 80,
       "invalid": [
         {
-          "row": 14,
+          "row": 32,
+          "code": "non_usd"
+        },
+        {
+          "row": 47,
           "code": "bad_date"
         },
         {
-          "row": 15,
+          "row": 48,
+          "code": "non_positive_amount"
+        },
+        {
+          "row": 67,
           "code": "non_positive_amount"
         }
       ],
       "created_donors": 26,
-      "valid_gifts": 78,
-      "gross_cents": 592500,
+      "valid_gifts": 91,
+      "gross_cents": 698750,
       "by_attribution": {
         "linked": {
-          "gifts": 58,
-          "cents": 460000
+          "gifts": 70,
+          "cents": 565000
         },
         "pending_review": {
           "gifts": 8,
-          "cents": 75000
+          "cents": 67500
         },
         "anonymous": {
-          "gifts": 12,
-          "cents": 57500
+          "gifts": 13,
+          "cents": 66250
         }
       }
     },
     "synthetic_generic_azgives_like.csv": {
-      "sha256": "0cdc67eb2e0fe94cc8764c7bc442edf6f882b0b833c3acdf3858e940be72e82b",
+      "sha256": "c9366b1113ef25804fb609eab9c659f7cc7994168bd706c65f7fb08a07b36e5c",
       "rows": 40,
       "invalid": [
         {
@@ -116,11 +124,11 @@
       ],
       "created_donors": 13,
       "valid_gifts": 37,
-      "gross_cents": 11435000,
+      "gross_cents": 8670000,
       "by_attribution": {
         "linked": {
           "gifts": 37,
-          "cents": 11435000
+          "cents": 8670000
         },
         "pending_review": {
           "gifts": 0,
@@ -134,8 +142,8 @@
     }
   },
   "totals": {
-    "valid_gifts": 518,
-    "gross_cents": 15602500
+    "valid_gifts": 531,
+    "gross_cents": 12943750
   },
   "donors_created_after_all_imports": 225,
   "review_items": [
@@ -201,12 +209,17 @@
     },
     {
       "file": "synthetic_benevity_like.csv",
-      "row": 27,
+      "row": 16,
       "reason": "name_employer"
     },
     {
       "file": "synthetic_benevity_like.csv",
-      "row": 43,
+      "row": 41,
+      "reason": "name_employer"
+    },
+    {
+      "file": "synthetic_benevity_like.csv",
+      "row": 49,
       "reason": "name_employer"
     },
     {
@@ -221,12 +234,7 @@
     },
     {
       "file": "synthetic_benevity_like.csv",
-      "row": 52,
-      "reason": "name_employer"
-    },
-    {
-      "file": "synthetic_benevity_like.csv",
-      "row": 53,
+      "row": 68,
       "reason": "name_employer"
     },
     {
@@ -240,8 +248,8 @@
     "basis": "rolling",
     "classes": {
       "new": {
-        "donors": 37,
-        "cents_cur": 3242500,
+        "donors": 33,
+        "cents_cur": 687500,
         "cents_prev": 0
       },
       "reactivated": {
@@ -250,24 +258,24 @@
         "cents_prev": 0
       },
       "increased": {
-        "donors": 24,
-        "cents_cur": 1997500,
-        "cents_prev": 697500
+        "donors": 25,
+        "cents_cur": 1812500,
+        "cents_prev": 1212500
       },
       "same": {
-        "donors": 16,
-        "cents_cur": 195000,
-        "cents_prev": 195000
+        "donors": 18,
+        "cents_cur": 712500,
+        "cents_prev": 712500
       },
       "decreased": {
-        "donors": 32,
-        "cents_cur": 1820000,
-        "cents_prev": 4165000
+        "donors": 31,
+        "cents_cur": 1082500,
+        "cents_prev": 2680000
       },
       "lapsed": {
-        "donors": 38,
+        "donors": 40,
         "cents_cur": 0,
-        "cents_prev": 2502500
+        "cents_prev": 3255000
       }
     }
   }
