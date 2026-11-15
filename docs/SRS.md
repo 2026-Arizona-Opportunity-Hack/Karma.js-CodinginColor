@@ -100,7 +100,7 @@ Priority: **M** = must (P0), **S** = should (P0 thin version acceptable), **C** 
 | ING-2 | The user picks the source: **CIC donor spreadsheet** (donor list), **Zeffy payments export**, **Benevity disbursement report**, or **Generic gifts template** (used for AZ Gives, United Way and anything else). Each source has an adapter that maps columns to the normalized shape. | M |
 | ING-3 | Column layouts for Zeffy and Benevity are modelled on their publicly documented formats (Zeffy API payment/contact/campaign objects; Benevity's reporting glossary). Each adapter records where its columns came from in `docs/IMPORT_FORMATS.md`, marked `assumed` until a real CIC file is seen. | M |
 | ING-4 | Import is two-step: **preview** (parse, validate, dedupe, classify every row) then **commit** (single DB transaction). Nothing is written before commit. | M |
-| ING-5 | The preview and the saved batch show an **import summary**: rows read = new gifts + already imported + needs review + invalid; totals in dollars per class; new donors; donors matched. Totals must reconcile exactly or commit is blocked. | M |
+| ING-5 | The preview and saved batch show an **import summary**: physical rows read = new + already imported + needs review + invalid source rows (including donor-only spreadsheet rows). Each class shows a separate gift count, donation cents, employer-match cents and combined gross cents (D-127). Anonymous rows are a subset of new rows. Reconcile both physical rows and total cents exactly or block commit. Show new donors and donors matched. | M |
 | ING-6 | Invalid rows (bad date, non-numeric amount, non-USD, missing amount) are listed with a reason. No row is dropped silently. | M |
 | ING-7 | Each gift gets a program from an editable `source_program_map` (for example Zeffy campaign "Summer Camp 2026" to Summer Camp). Unmapped values go to **General** and are listed in the preview. | M |
 | ING-8 | The CIC spreadsheet import creates or updates **donors only** (people, organizations, funders). Gifts come only from platform files. | M |
@@ -169,7 +169,7 @@ Reminders are **derived from data, never stored**, so re-imports cannot duplicat
 
 | ID | Requirement | Pri |
 |---|---|---|
-| MSG-1 | Templates: **thank-you**, **quarterly update** (P0); lapsed nudge, event invite (later). Merge fields: donor first name, gift amount, gift date, program, owner name, org name. Editable per GOV-4. | M |
+| MSG-1 | Templates: **thank-you**, **quarterly update** (P0); lapsed nudge, event invite (later). Merge fields: donor first name, gift amount, gift date, program, owner name, org name. Pre-filled amounts use employee donations only, excluding employer matches (D-127); board members may edit the amount using donation-only dashboard/reminder data. Editable per GOV-4. | M |
 | MSG-2 | The system creates **drafts** from templates when the owner clicks a reminder action, or in bulk with "Draft quarterly updates for my due donors" (idempotent: never two open drafts of the same kind for the same donor). | M |
 | MSG-3 | State machine: `draft → approved → sent`, plus `sent_manually`, `cancelled`, `failed`. Only a human approves. Editing an approved message returns it to `draft`. The server rejects send from any state but `approved`. Enforced in code **and** by a database check. | M |
 | MSG-4 | Approve and send are separate clicks by the owner (or active super admin). The body hash at approval must equal the body at send. | M |
@@ -183,7 +183,7 @@ Reminders are **derived from data, never stored**, so re-imports cannot duplicat
 | ID | Requirement | Pri |
 |---|---|---|
 | RPT-1 | Dashboard summary for all members: totals this month, quarter, 12 months; by program; by board member (owned donors' giving); counts of open reminders. | M |
-| RPT-2 | **Retention view**: rolling last 12 months versus the previous 12 (calendar year as an option). Classes: new, increased, same, decreased, lapsed, reactivated. Counts, dollar movement, donor lists with drill-down. Shows the "as of" date. | M |
+| RPT-2 | **Retention view**: rolling last 12 months versus the previous 12 (calendar year as an option). Classes: new, increased, same, decreased, lapsed, reactivated. Counts, dollar movement, donor lists with drill-down. Shows the "as of" date. Employee giving, donor totals and lifetime giving exclude employer matches; org revenue includes them (D-127). | M |
 | RPT-3 | **Funder export** (one click, per funder or donor): gift history by program and period plus funded outcomes, as printable HTML and CSV. Outcomes come from a small `program_outcomes` table entered by hand or CSV (stands in for Problem 1 data). | M (thin) |
 
 ### 4.10 API: read API and MCP

@@ -1345,13 +1345,6 @@ export interface components {
              */
             to: string;
         };
-        /** CountCents */
-        CountCents: {
-            /** Cents */
-            cents: number;
-            /** Count */
-            count: number;
-        };
         /** DigestMember */
         DigestMember: {
             member: components["schemas"]["MemberRef"];
@@ -1739,6 +1732,31 @@ export interface components {
             summary?: components["schemas"]["ImportSummary"] | null;
             uploaded_by: components["schemas"]["MemberRef"];
         };
+        /**
+         * ImportClassSummary
+         * @description Physical source rows, independently counted gifts, and gross USD cents.
+         */
+        ImportClassSummary: {
+            /**
+             * Cents
+             * @description Donation cents plus employer-match cents
+             */
+            cents: number;
+            /**
+             * Count
+             * @description Physical source rows in this class
+             */
+            count: number;
+            /** Donation Cents */
+            donation_cents: number;
+            /**
+             * Gift Count
+             * @description Gifts represented by these rows; donor-only rows add 0
+             */
+            gift_count: number;
+            /** Match Cents */
+            match_cents: number;
+        };
         /** ImportListOut */
         ImportListOut: {
             /** Items */
@@ -1758,22 +1776,53 @@ export interface components {
         };
         /**
          * ImportSummary
-         * @description rows_read = new + already_imported + needs_review + invalid; must reconcile (ING-5).
+         * @description Reconcile physical rows and gross cents independently (ING-5, D-127).
+         *
+         *     Anonymous is a subset of new rows; it is excluded from the conservation sum.
+         *     Invalid rows contribute no accepted gifts or cents. Counts include donor-only
+         *     spreadsheet rows; gift_count never counts those as gifts.
          */
         ImportSummary: {
-            already_imported: components["schemas"]["CountCents"];
-            anonymous: components["schemas"]["CountCents"];
+            already_imported: components["schemas"]["ImportClassSummary"];
+            anonymous: components["schemas"]["ImportClassSummary"];
+            /**
+             * Cents Reconcile
+             * @default false
+             */
+            cents_reconcile: boolean;
+            /** Donation Cents */
+            donation_cents: number;
             /** Donors Matched */
             donors_matched: number;
-            invalid: components["schemas"]["CountCents"];
-            needs_review: components["schemas"]["CountCents"];
+            /**
+             * Gift Count
+             * @description Parsed valid gifts, including matches and review gifts
+             */
+            gift_count: number;
+            invalid: components["schemas"]["ImportClassSummary"];
+            /** Match Cents */
+            match_cents: number;
+            needs_review: components["schemas"]["ImportClassSummary"];
             /** New Donors */
             new_donors: number;
-            new_gifts: components["schemas"]["CountCents"];
-            /** Reconciles */
+            new_gifts: components["schemas"]["ImportClassSummary"];
+            /**
+             * Reconciles
+             * @default false
+             */
             reconciles: boolean;
             /** Rows Read */
             rows_read: number;
+            /**
+             * Rows Reconcile
+             * @default false
+             */
+            rows_reconcile: boolean;
+            /**
+             * Total Cents
+             * @description Gross donation plus match cents before fees
+             */
+            total_cents: number;
             /**
              * Unmapped Campaigns
              * @description Raw values that fell back to General

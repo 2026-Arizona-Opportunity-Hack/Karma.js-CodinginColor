@@ -94,3 +94,11 @@ All non-GET calls need header `X-CSRF-Token`. Authorization is decided in `authz
 | Ops | `GET /healthz` (no auth), `POST /demo/reset` (only `DEMO_MODE=true`) |
 
 Status codes: `400` validation, `401` no session, `403` policy denied, `404` not found or not visible, `409` state conflict (sending a draft, duplicate open draft, already-imported file, possible duplicate donor), `413` file too large, `415` wrong file type.
+
+Import summaries (D-127): `rows_read` and each class's `count` measure physical source rows.
+Each class also returns `gift_count`, `donation_cents`, `match_cents` and combined `cents`.
+Summary totals expose `gift_count`, `donation_cents`, `match_cents` and `total_cents`.
+`anonymous` is a subset of `new_gifts`, not an extra reconciliation class. `rows_reconcile`
+and `cents_reconcile` are computed independently; `reconciles` additionally checks gift
+counts and the anonymous subset. Commit requires reconciliation. Benevity's fixture has
+80 source rows and 91 valid gifts; invalid rows contribute no accepted gifts or cents.

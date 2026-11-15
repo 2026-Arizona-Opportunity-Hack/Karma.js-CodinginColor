@@ -6,7 +6,7 @@
 |---|---|---|---|---|---|
 | 0 | verified | Sat 17:15 | #2–#9 | #1, #55–#61 | deploy needs human (accounts); free tier for now |
 | 1 | verified | Sat 19:00 | #10–#14, #64 | #65–#70 merged | live deploy checked: 63 routes, 501 when logged in, 401 when logged out |
-| 2A ingest/dedupe | todo | Sat 23:00 | #15–#18, #71 | | |
+| 2A ingest/dedupe | running | Sat 23:00 | #15–#18, #71, #84 | #82 | #84 shared CIC decision/summary contract must merge before #16 |
 | 2B donor screens | todo | Sat 23:00 | #19–#23 | | build against mocks until lane C merges #72 |
 | 2C read API + donor API | todo | Sat 23:00 | #24–#28, #72–#74 | | donor API moved here (D-126) |
 | 3A ownership/reminders | todo | Sun 01:30 | | | |
@@ -26,6 +26,16 @@
 - Change-password page in Settings.
 
 ## Reports
+
+### Phase 2 lane A: CIC match-credit decision and summary contract (shared #84)
+**Issues / PRs:** #15 → PR #82 (CI green); #84 shared prerequisite → PR pending approval; #16 preview committed locally and awaiting adaptation to the new contract; #17, #18, #71 remain.
+**What changed:** CIC decision D-127 supersedes employee credit in D-125. Employer matches remain separate flagged gifts with company payer and `:match` transaction suffix, and remain org revenue. Employee totals, lifetime giving, retention and pre-filled message amounts exclude employer matches. Donor linkage remains for traceability. Preview classes count physical source rows and expose separate gift counts, donation cents and match cents; rows and total cents reconcile independently. Fixture generator, manifest and independent resolver test change together; fixture file bytes remain unchanged.
+**Gate:** Shared checks: backend `.venv/Scripts/ruff.exe check --no-cache .` clean; `.venv/Scripts/mypy.exe app` clean (70 files); with both database URLs explicitly set to local Docker `cic_test`, `.venv/Scripts/python.exe -m pytest -p no:cacheprovider` → 558 passed, 2 skipped. Includes deterministic fixture regeneration, independent manifest recomputation and match-credit regression tests. `python -m app.export_openapi ../frontend/src/api/openapi.json` and frontend `npm run gen:api`, `typecheck`, `lint`, `build` pass. Full Phase 2 acceptance tests 1–4 remain pending the importer.
+**How to verify:** On local Docker Postgres, run backend Ruff, mypy and pytest; regenerate OpenAPI and frontend types, then run frontend typecheck, lint and build. The Benevity manifest must retain 80 rows, 91 valid gifts, 597500 donation cents and 101250 match cents; org gross stays 698750 cents.
+**Decisions made:** D-127, explicitly requested by CIC through the lane A engineer.
+**Known gaps:** Message routes are still Phase 3 stubs; lane C must apply D-127 when filling message amounts. Board members review and edit drafts before approving and sending. Lane B must render the new summary fields in its import screen. Full importer/manifest integration and acceptance tests 1–4 await #17/#18.
+**Questions for the human:** Push/PR approval required by ENGINEERING section 7 once the shared commit is ready.
+**Shared-file changes requested:** #84: import-summary schema and generated OpenAPI/TS types; donor/report queries; SRS, data model, decisions, import formats and phase log; fixture generator/manifest and tests. No models or migrations change.
 
 ### Phase 1: Schema, policy, fixtures, contracts  (Sat 2026-11-14, 16:50–17:30 MST)
 **Issues / PRs (merge in this order, with "Create a merge commit"):** #10 donor, gift and program tables `shared` · #64 import and relationship tables `shared` (split from #10) · #11 authorization policy `shared` · #12 assumed import formats · #13 synthetic fixtures and manifest · #14 API contract stubs and TS types `shared`. Branches are stacked `phase-1/<issue>-…`.

@@ -37,7 +37,7 @@ def by_period(
                COALESCE(sum(g.gross_cents), 0)::bigint AS gross_cents,
                COALESCE(sum(g.net_cents), 0)::bigint AS net_cents,
                count(*)::int AS gift_count,
-               count(DISTINCT g.donor_id)::int AS donor_count
+               count(DISTINCT g.donor_id) FILTER (WHERE NOT g.is_matching_gift)::int AS donor_count
         FROM gifts g
         WHERE {_COUNTED} AND g.gift_date BETWEEN :start AND :end
         GROUP BY 1 ORDER BY 1
@@ -56,7 +56,7 @@ def by_program(db: Session, actor: Actor, *, start: date, end: date) -> list[dic
         SELECT p.name AS program,
                COALESCE(sum(g.gross_cents), 0)::bigint AS gross_cents,
                count(*)::int AS gift_count,
-               count(DISTINCT g.donor_id)::int AS donor_count
+               count(DISTINCT g.donor_id) FILTER (WHERE NOT g.is_matching_gift)::int AS donor_count
         FROM gifts g JOIN programs p ON p.id = g.program_id
         WHERE {_COUNTED} AND g.gift_date BETWEEN :start AND :end
         GROUP BY p.name ORDER BY gross_cents DESC, p.name
@@ -77,7 +77,8 @@ def by_board_member(db: Session, actor: Actor, *, start: date, end: date) -> lis
              WHERE d.owner_user_id = u.id AND d.deleted_at IS NULL)::int AS donors_owned,
           COALESCE((SELECT sum(g.gross_cents) FROM gifts g JOIN donors d ON d.id = g.donor_id
              WHERE d.owner_user_id = u.id AND d.deleted_at IS NULL AND g.deleted_at IS NULL
-               AND g.attribution = 'linked' AND g.gift_date BETWEEN :start AND :end), 0
+               AND g.attribution = 'linked' AND NOT g.is_matching_gift
+               AND g.gift_date BETWEEN :start AND :end), 0
           )::bigint AS gross_cents,
           (SELECT count(*) FROM interactions i
              WHERE i.user_id = u.id AND i.kind <> 'system'
@@ -125,10 +126,10 @@ def totals(db: Session, actor: Actor, *, start: date, end: date) -> dict[str, An
         SELECT COALESCE(sum(g.gross_cents), 0)::bigint AS gross_cents,
                COALESCE(sum(g.net_cents), 0)::bigint AS net_cents,
                count(*)::int AS gift_count,
-               count(DISTINCT g.donor_id)::int AS donor_count,
+               count(DISTINCT g.donor_id) FILTER (WHERE NOT g.is_matching_gift)::int AS donor_count,
                (SELECT count(*) FROM (
                   SELECT f.donor_id FROM gifts f JOIN donors d ON d.id = f.donor_id
-                  WHERE f.attribution = 'linked' AND f.deleted_at IS NULL
+                  WHERE f.attribution = 'linked' AND f.deleted_at IS NULL AND NOT f.is_matching_gift
                     AND d.deleted_at IS NULL AND d.merged_into_id IS NULL
                   GROUP BY f.donor_id HAVING min(f.gift_date) BETWEEN :start AND :end
                ) first_gifts)::int AS new_donors
@@ -174,7 +175,7 @@ def retention_donors(
                  WHERE g.gift_date BETWEEN :prev_start AND :prev_end), 0)::bigint AS cents_prev,
                COALESCE(bool_or(g.gift_date < :before), false) AS ever_before
         FROM gifts g JOIN donors d ON d.id = g.donor_id
-        WHERE g.attribution = 'linked' AND g.deleted_at IS NULL
+        WHERE g.attribution = 'linked' AND g.deleted_at IS NULL AND NOT g.is_matching_gift
           AND d.deleted_at IS NULL AND d.merged_into_id IS NULL
         GROUP BY d.id, d.display_name
         ORDER BY lower(d.display_name), d.id
