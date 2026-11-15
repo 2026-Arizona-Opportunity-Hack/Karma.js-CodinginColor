@@ -15,13 +15,11 @@ import { DashboardPage } from "./pages/DashboardPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { InvitePage } from "./pages/InvitePage";
 import { ApiKeysPage } from "./pages/ApiKeysPage";
+import { MessagesPage } from "./pages/MessagesPage";
 
 const queryClient = new QueryClient();
 
-const SCREENS = [
-  { path: "/messages", title: "Messages", phase: "Phase 4" },
-  { path: "/reports", title: "Reports", phase: "Phase 4" },
-];
+const SCREENS = [{ path: "/reports", title: "Reports", phase: "Phase 4" }];
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -36,6 +34,7 @@ createRoot(document.getElementById("root")!).render(
             <Route path="/donors/:donorId" element={<DonorDetailPage />} />
             <Route path="/import" element={<ImportPage />} />
             <Route path="/review" element={<ReviewPage />} />
+            <Route path="/messages" element={<MessagesPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/settings/api-keys" element={<ApiKeysPage />} />
             {SCREENS.map((s) => (
