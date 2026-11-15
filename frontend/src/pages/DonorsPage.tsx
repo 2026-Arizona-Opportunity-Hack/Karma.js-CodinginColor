@@ -3,6 +3,7 @@ import { useEffect, useState, type FormEvent } from "react";
 
 import type { components } from "../api/types";
 import { RelationshipRow } from "../components/RelationshipRow";
+import { DonorEntry } from "../components/DonorEntry";
 import {
   EmptyState,
   ErrorState,
@@ -113,6 +114,7 @@ function Directory({ actor }: { actor: { id: number; display_name: string } }) {
               </>
             )}
           </p>
+          <DonorEntry mode="create" actorId={actor.id} />
         </div>
         <div className="directory-tools">
           <form className="search-form" role="search" onSubmit={submit}>

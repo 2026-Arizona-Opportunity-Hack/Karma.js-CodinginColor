@@ -4,6 +4,8 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "test:entry": "tsc -p tsconfig.tests.json && node --test tests/donor-entry.test.mjs",
+    "test:entry:browser": "node tests/entry.browser.mjs",
     "test:contact": "node tests/contact.browser.mjs",
     "test:detail": "node tests/detail.browser.mjs",
     "test:directory": "node tests/directory.browser.mjs",
@@ -15,7 +17,10 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "format": "prettier --write src",
-    "gen:api": "openapi-typescript src/api/openapi.json -o src/api/types.ts"
+    "gen:api": "openapi-typescript src/api/openapi.json -o src/api/types.ts",
+    "test:import": "tsc -p tsconfig.tests.json && node --test tests/import.test.mjs",
+    "test:import:browser": "node tests/import.browser.mjs",
+    "test:import:live": "node tests/import-live.browser.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "5.105.0",
