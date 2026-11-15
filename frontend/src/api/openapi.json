@@ -5283,6 +5283,7 @@
     },
     "/api/app/donors/{donor_id}/messages": {
       "post": {
+        "description": "Idempotent: asking again returns the open draft with 200 instead of 201 (MSG-2).",
         "operationId": "create_draft_api_app_donors__donor_id__messages_post",
         "parameters": [
           {
@@ -6867,6 +6868,7 @@
     },
     "/api/app/messages/{message_id}": {
       "patch": {
+        "description": "An edit returns an approved message to draft and clears the approval (MSG-3).",
         "operationId": "edit_message_api_app_messages__message_id__patch",
         "parameters": [
           {
@@ -6959,6 +6961,7 @@
     },
     "/api/app/messages/{message_id}/approve": {
       "post": {
+        "description": "Only a draft; records who and when and fixes the hash of the words (MSG-4).",
         "operationId": "approve_message_api_app_messages__message_id__approve_post",
         "parameters": [
           {
@@ -7206,7 +7209,7 @@
     },
     "/api/app/messages/{message_id}/send": {
       "post": {
-        "description": "Only from `approved`, and only if the body hash still matches (MSG-3, MSG-4).",
+        "description": "Email only, from `approved`, and only if the hash still matches (MSG-3, MSG-4).\n\nIn dry_run mode nothing is delivered. A provider failure returns 200 with status `failed`.",
         "operationId": "send_message_api_app_messages__message_id__send_post",
         "parameters": [
           {

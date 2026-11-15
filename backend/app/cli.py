@@ -20,8 +20,9 @@ from app.authz.actor import CLI
 from app.clock import Clock, get_clock
 from app.db.session import get_sessionmaker
 from app.errors import AppError
-from app.repos import audit, users
+from app.repos import apikeys, audit, users
 from app.security import generate_password, hash_password
+from app.services.apikeys import service as apikey_service
 from app.services.governance import superadmin
 from app.settings import get_settings
 
@@ -88,6 +89,44 @@ def cmd_superadmin(db: Session, clock: Clock, args: argparse.Namespace) -> None:
     print(f"superadmin {action}: done")
 
 
+def cmd_apikey(db: Session, clock: Clock, args: argparse.Namespace) -> None:
+    """Create, list or revoke public API keys (API-1). The break-glass route until the app has a
+    settings page; every change is audited like the in-app one."""
+    if args.action == "list":
+        rows = apikeys.list_all(db, CLI)
+        print(f"{'id':>3}  {'name':<24} {'prefix':<14} {'last used':<20} status")
+        for k in rows:
+            used = k.last_used_at.strftime("%Y-%m-%d %H:%M") if k.last_used_at else "never"
+            print(f"{k.id:>3}  {k.name:<24} {k.prefix:<14} {used:<20} "
+                  f"{'revoked' if k.revoked_at else 'active'}")  # fmt: skip
+        if not rows:
+            print("No API keys yet.")
+        return
+    if args.action == "revoke":
+        if args.key_id is None:
+            raise SystemExit("apikey revoke needs the key id (see: apikey list)")
+        row = apikey_service.revoke(db, clock, CLI, args.key_id)
+        db.commit()
+        print(f"Revoked key {row.id} ({row.name}); it stops working immediately.")
+        return
+    if not args.name or not args.email:
+        raise SystemExit("apikey create needs --name and --email (the member it is recorded for)")
+    member = users.find_by_email_for_login(db, args.email.strip().lower())
+    if member is None or not member.is_active:
+        raise SystemExit(f"No active board member with email {args.email}")
+    made = apikey_service.create(
+        db, CLI, name=args.name.strip(), scopes=[apikey_service.SCOPE_AGGREGATES],
+        created_by=member.id,
+    )  # fmt: skip
+    db.commit()
+    print()
+    print(f"API key {made.row.id} ({made.row.name}), scope read:aggregates.")
+    print("Shown once; it cannot be recovered. Store it in a password manager:")
+    print()
+    print(f"  {made.key}")
+    print()
+
+
 def _require_demo() -> None:
     if not get_settings().demo_mode:
         raise SystemExit("Refusing: set DEMO_MODE=true to use demo commands.")
@@ -118,6 +157,7 @@ def cmd_reset_demo(db: Session, clock: Clock, args: argparse.Namespace) -> None:
 COMMANDS: dict[str, Callable[[Session, Clock, argparse.Namespace], None]] = {
     "setup": cmd_setup,
     "superadmin": cmd_superadmin,
+    "apikey": cmd_apikey,
     "seed-demo": cmd_seed_demo,
     "reset-demo": cmd_reset_demo,
 }
@@ -131,6 +171,11 @@ def parser() -> argparse.ArgumentParser:
     sa = sub.add_parser("superadmin", help="manage the single super admin")
     sa.add_argument("action", choices=["create", "activate", "flatten", "transfer", "deactivate"])
     sa.add_argument("--email")
+    ak = sub.add_parser("apikey", help="create, list or revoke public API keys")
+    ak.add_argument("action", choices=["create", "list", "revoke"])
+    ak.add_argument("key_id", nargs="?", type=int, help="for revoke: the key id")
+    ak.add_argument("--name", help="for create: what the key is for, e.g. Dashboard")
+    ak.add_argument("--email", help="for create: the board member the key is recorded for")
     sub.add_parser("seed-demo", help="add demo members (DEMO_MODE only)")
     sub.add_parser("reset-demo", help="wipe all data and seed demo members (DEMO_MODE only)")
     return p

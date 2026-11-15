@@ -243,3 +243,56 @@ def test_other_member_cannot_complete_someone_elses_step(db: Session, w) -> None
     assert post(sam, f"/next-steps/{s['id']}/done").status_code == 403
     assert db.execute(text("SELECT status FROM next_steps")).scalar_one() == "open"
     assert post(sam, "/next-steps/99999/done").status_code == 404
+
+
+# --- audit (issue #88) -----------------------------------------------------------------------
+def audit_rows(db: Session) -> list[tuple[str, str | None, int | None, dict]]:
+    db.expire_all()
+    rows = db.execute(
+        text("SELECT action, entity, entity_id, data FROM audit_log WHERE action LIKE '%.%' "
+             "AND action NOT LIKE 'auth.%' ORDER BY id")
+    ).all()  # fmt: skip
+    return [tuple(r) for r in rows]  # type: ignore[misc]
+
+
+def test_each_action_writes_one_audit_entry_with_ids_only(db: Session, w) -> None:
+    c = login("diana@example.org")
+    secret = "Mrs Quill's phone is 555-0100"
+    contact = post(
+        c, f"/donors/{w['zelda']}/interactions", {"kind": "call", "summary": secret}
+    ).json()
+    step = put(
+        c, f"/donors/{w['zelda']}/next-step", {"title": secret, "due_date": "2026-12-01"}
+    ).json()
+    post(c, f"/next-steps/{step['id']}/done")
+    assert audit_rows(db) == [
+        ("interaction.create", "interaction", contact["id"],
+         {"donor_id": w["zelda"], "kind": "call"}),
+        ("next_step.set", "next_step", step["id"], {"donor_id": w["zelda"]}),
+        ("next_step.done", "next_step", step["id"], {"donor_id": w["zelda"]}),
+    ]  # fmt: skip
+    assert secret not in str(audit_rows(db))
+    who = db.execute(
+        text("SELECT DISTINCT actor_kind, actor_id FROM audit_log WHERE action LIKE '%.%'"
+             " AND action NOT LIKE 'auth.%'")
+    ).all()  # fmt: skip
+    assert [tuple(r) for r in who] == [("user", w["diana"])]
+
+
+def test_refused_or_invalid_actions_write_no_audit_entry(db: Session, w) -> None:
+    sam = login("sam@example.org")
+    post(sam, f"/donors/{w['zelda']}/interactions", {"kind": "call"})  # 403
+    put(sam, f"/donors/{w['zelda']}/next-step", {"title": "x", "due_date": "2026-12-01"})  # 403
+    diana = login("diana@example.org")
+    post(diana, f"/donors/{w['zelda']}/interactions", {"kind": "thank_you"})  # 400
+    post(diana, "/next-steps/99999/done")  # 404
+    assert audit_rows(db) == []
+
+
+def test_replacing_a_step_audits_the_new_one_and_a_double_done_audits_once(db: Session, w) -> None:
+    c = login("diana@example.org")
+    put(c, f"/donors/{w['zelda']}/next-step", {"title": "A", "due_date": "2026-12-01"})
+    b = put(c, f"/donors/{w['zelda']}/next-step", {"title": "B", "due_date": "2026-12-02"}).json()
+    post(c, f"/next-steps/{b['id']}/done")
+    post(c, f"/next-steps/{b['id']}/done")  # 409
+    assert [r[0] for r in audit_rows(db)] == ["next_step.set", "next_step.set", "next_step.done"]

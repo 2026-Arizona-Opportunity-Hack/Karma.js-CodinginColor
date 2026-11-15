@@ -132,7 +132,7 @@ Lane C's order: 1, 2, 6, 7, 3, 8, 4, 5. The donor API moved here from lane A bec
 1. `Add manual and bulk reassignment with owner history` (OWN-3, OWN-4, scope checks).
 2. `Add member invites and deactivation with Needs reassignment` (AUTH-4, AUTH-7, OWN-5).
 3. `Add governance scope and flatten endpoints` (GOV-4, GOV-5, audit).
-4. `Add derived reminders service` (REM-1 to REM-4, DATA_MODEL 3.4, injected clock tests).
+4. `Add derived reminders service` (REM-1 to REM-4, DATA_MODEL 3.4, injected clock tests). Lane C (#38) already writes the send record: an `interactions` row with `kind`, `donor_id`, `message_id` and `gift_id` for every sent or manually-sent message (DATA_MODEL 3.4). The reminders service must read these existing rows to clear thank-you and quarterly reminders. Do not add a new table or column for this. Match gifts (`is_matching_gift`) never create thank-you reminders (D-127).
 
 **Lane B: dashboard and people**
 1. `Add dashboard To-do and Needs reassignment list` (REM-5).
