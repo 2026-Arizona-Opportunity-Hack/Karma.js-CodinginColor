@@ -2065,6 +2065,41 @@
         "title": "GovernanceOut",
         "type": "object"
       },
+      "IgnoredColumn": {
+        "description": "A column that matched nothing. Offer to create a field from it (ING-14).",
+        "properties": {
+          "guessed_type": {
+            "enum": [
+              "text",
+              "long_text",
+              "number",
+              "date",
+              "bool"
+            ],
+            "title": "Guessed Type",
+            "type": "string"
+          },
+          "header": {
+            "title": "Header",
+            "type": "string"
+          },
+          "suggested_entity": {
+            "enum": [
+              "donor",
+              "gift"
+            ],
+            "title": "Suggested Entity",
+            "type": "string"
+          }
+        },
+        "required": [
+          "header",
+          "guessed_type",
+          "suggested_entity"
+        ],
+        "title": "IgnoredColumn",
+        "type": "object"
+      },
       "ImportBatchOut": {
         "properties": {
           "committed_at": {
@@ -2242,6 +2277,14 @@
             "description": "False when totals do not reconcile",
             "title": "Commit Allowed",
             "type": "boolean"
+          },
+          "ignored_columns": {
+            "description": "Columns that matched no field and were not imported",
+            "items": {
+              "$ref": "#/components/schemas/IgnoredColumn"
+            },
+            "title": "Ignored Columns",
+            "type": "array"
           },
           "invalid_rows": {
             "items": {

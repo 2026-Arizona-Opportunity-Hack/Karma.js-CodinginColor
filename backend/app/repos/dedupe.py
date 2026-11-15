@@ -82,6 +82,7 @@ def create_donor(
         email=incoming.email or None,
         phone=incoming.phone or None,
         notes=incoming.notes or None,
+        custom=dict(incoming.custom),
         created_via="import",
         created_at=at,
         updated_at=at,

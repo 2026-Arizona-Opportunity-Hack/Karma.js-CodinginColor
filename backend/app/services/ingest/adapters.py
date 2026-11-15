@@ -2,11 +2,15 @@
 
 import re
 from datetime import date
+from typing import Any
 
 from pydantic import BaseModel, Field
 
+from app.db.models import FieldDefinition
 from app.errors import Invalid
 from app.schemas.common import DonorKind, ImportSource
+from app.schemas.imports import IgnoredColumn
+from app.services.ingest import columns
 from app.services.ingest import normalizers as norm
 from app.services.ingest.uploads import has_value, read_table
 
@@ -22,6 +26,7 @@ class IncomingDonor(BaseModel):
     zeffy_contact: str = ""
     notes: str = ""
     anonymous: bool = False
+    custom: dict[str, Any] = Field(default_factory=dict)
 
 
 class IncomingGift(BaseModel):
@@ -34,6 +39,7 @@ class IncomingGift(BaseModel):
     campaign_name: str = ""
     is_matching_gift: bool = False
     payer_name: str = ""
+    custom: dict[str, Any] = Field(default_factory=dict)
 
 
 class IncomingRow(BaseModel):
@@ -101,7 +107,12 @@ def _donor(source: ImportSource, row: dict[str, object]) -> IncomingDonor:
     return donor
 
 
-def _record(source: ImportSource, n: int, row: dict[str, object]) -> IncomingRow:
+def _record(
+    source: ImportSource,
+    n: int,
+    row: dict[str, object],
+    mapped: dict[str, FieldDefinition] | None = None,
+) -> IncomingRow:
     def get(key: str, default: object = "") -> object:
         value = row.get(header(key))
         return value if value is not None and value != "" else default
@@ -122,6 +133,7 @@ def _record(source: ImportSource, n: int, row: dict[str, object]) -> IncomingRow
             raise ValueError("non_usd")
         if source == "spreadsheet":
             result.donor = _donor(source, row)
+            result.donor.custom, _ = columns.read_custom(row, mapped or {})
             result.provided_fields = [
                 field
                 for field, column in {
@@ -154,6 +166,7 @@ def _record(source: ImportSource, n: int, row: dict[str, object]) -> IncomingRow
         if source == "generic" and platform not in {"azgives", "united_way", "other"}:
             raise ValueError("bad_platform")
         result.donor = _donor(source, row)
+        result.donor.custom, gift_custom = columns.read_custom(row, mapped or {})
         gift = IncomingGift(
             source_txn_id=txn,
             source_platform=platform,
@@ -163,6 +176,7 @@ def _record(source: ImportSource, n: int, row: dict[str, object]) -> IncomingRow
             net_cents=gross - fee,
             campaign_name=str(get("Project Name" if benevity else "Campaign")).strip(),
             payer_name=str(get("Company Name")).strip() if benevity else "",
+            custom=gift_custom,
         )
         gifts = [gift]
         if benevity:
@@ -185,7 +199,16 @@ def _record(source: ImportSource, n: int, row: dict[str, object]) -> IncomingRow
     return result
 
 
-def parse_upload(source: ImportSource, filename: str, data: bytes) -> list[IncomingRow]:
+def parse_upload(
+    source: ImportSource, filename: str, data: bytes, fields: list[FieldDefinition] | None = None
+) -> list[IncomingRow]:
+    return parse_upload_with_columns(source, filename, data, fields)[0]
+
+
+def parse_upload_with_columns(
+    source: ImportSource, filename: str, data: bytes, fields: list[FieldDefinition] | None = None
+) -> tuple[list[IncomingRow], list[IgnoredColumn]]:
+    """Rows plus the columns that matched neither a built-in column nor a custom field."""
     table = read_table(filename, data)
     if not table:
         raise Invalid("File has no header row.")
@@ -197,6 +220,7 @@ def parse_upload(source: ImportSource, filename: str, data: bytes) -> list[Incom
     missing = [h for h in REQUIRED[source] if header(h) not in headers]
     if missing:
         raise Invalid("Missing required columns: " + ", ".join(missing))
+    mapped = columns.mapping(source, headers, fields or [])
     result = []
     for source_number, values in table[1:]:
         n = source_number - header_number
@@ -209,5 +233,6 @@ def parse_upload(source: ImportSource, filename: str, data: bytes) -> list[Incom
             result.append(IncomingRow(row_number=n, reason="extra_cells"))
         else:
             row = {key: value for key, value in zip(headers, values, strict=False) if key}
-            result.append(_record(source, n, row))
-    return result
+            result.append(_record(source, n, row, mapped))
+    ignored = columns.ignored(source, header_cells, [v for _, v in table[1:]], mapped)
+    return result, ignored

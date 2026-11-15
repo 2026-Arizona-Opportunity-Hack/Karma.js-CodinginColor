@@ -2177,6 +2177,24 @@ export interface components {
              */
             reassign_scope: "anyone" | "own_only";
         };
+        /**
+         * IgnoredColumn
+         * @description A column that matched nothing. Offer to create a field from it (ING-14).
+         */
+        IgnoredColumn: {
+            /**
+             * Guessed Type
+             * @enum {string}
+             */
+            guessed_type: "text" | "long_text" | "number" | "date" | "bool";
+            /** Header */
+            header: string;
+            /**
+             * Suggested Entity
+             * @enum {string}
+             */
+            suggested_entity: "donor" | "gift";
+        };
         /** ImportBatchOut */
         ImportBatchOut: {
             /** Committed At */
@@ -2250,6 +2268,11 @@ export interface components {
              * @description False when totals do not reconcile
              */
             commit_allowed: boolean;
+            /**
+             * Ignored Columns
+             * @description Columns that matched no field and were not imported
+             */
+            ignored_columns?: components["schemas"]["IgnoredColumn"][];
             /** Invalid Rows */
             invalid_rows: components["schemas"]["InvalidRow"][];
             summary: components["schemas"]["ImportSummary"];

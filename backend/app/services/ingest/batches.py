@@ -113,6 +113,8 @@ def _persist(
                 learn(donor, plan.incoming.donor)
             if batch.source == "spreadsheet" and token < 0:
                 imports.update_profile(db, actor, donor, plan.incoming.donor, clock.now())
+            if token > 0 and plan.incoming.donor.custom:
+                imports.fill_custom(db, actor, donor, plan.incoming.donor.custom)
         gifts = imports.save_gifts(db, actor, batch, plan, donor.id if donor else None, clock.now())
         inserted += len(gifts)
         saved_row = imports.save_row(db, actor, batch, plan, donor.id if donor else None, gifts)
