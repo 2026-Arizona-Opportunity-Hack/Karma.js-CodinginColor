@@ -48,7 +48,7 @@ EXPECTED = {
     ("GET", "/api/app/messages"), ("PATCH", "/api/app/messages/{}"),
     ("POST", "/api/app/messages/{}/approve"), ("POST", "/api/app/messages/{}/send"),
     ("POST", "/api/app/messages/{}/mark-sent"), ("POST", "/api/app/messages/{}/cancel"),
-    ("POST", "/api/app/digest/send"),
+    ("POST", "/api/app/digest/send"), ("POST", "/api/app/assistant/interpret"),
     ("GET", "/api/app/reports/summary"), ("GET", "/api/app/reports/retention"),
     ("GET", "/api/app/reports/funder/{}"),
     ("GET", "/api/app/settings"), ("PUT", "/api/app/settings"),
@@ -64,6 +64,7 @@ EXPECTED = {
     ("POST", "/api/app/demo/reset"),
 }  # fmt: skip
 IMPLEMENTED = {
+    ("POST", "/api/app/assistant/interpret"),  # assistant, AST-1
     ("GET", "/api/app/reports/lapsed"), ("POST", "/api/app/reports/lapsed/draft"),  # lane A, #41
     ("GET", "/api/app/program-outcomes"), ("POST", "/api/app/program-outcomes"),  # lane A, #40
     ("POST", "/api/app/program-outcomes/upload"),  # lane A, #135

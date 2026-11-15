@@ -232,6 +232,14 @@ Reminders are **derived from data, never stored**, so re-imports cannot duplicat
 | ROLE-5 | Lockout guard: a change that would leave no active member (or super admin) holding `roles.manage` is refused with a clear message. The setup CLI can always reset a member to Board member. | M |
 | ROLE-6 | Every role change and role assignment is audited; the read API and MCP are unaffected. | M |
 
+### 4.13 AST: assistant (Nov 15 update)
+
+| ID | Requirement | Pri |
+|---|---|---|
+| AST-1 | **The assistant proposes, a human confirms.** A member types or speaks one sentence (up to 500 characters); `POST /api/app/assistant/interpret` returns proposed actions and writes nothing. Each action is a card with Confirm, Edit and Cancel; Confirm calls the same endpoint as the matching screen, so every policy check, audit entry and the human approval of messages still apply. A drafted thank-you is only a draft. Off unless the `assistant_enabled` setting is true (404 otherwise); not available to full-access keys (403); 20 requests per member per minute; a gateway failure returns 503 with a friendly message and the forms keep working. | S |
+| AST-2 | **Three actions: log a contact, add a follow-up, draft a thank-you.** The model may only choose from a fixed registry (`services/assistant/tools.py`); each entry holds its argument schema, the donor permission it needs (DON-4) and the existing endpoint it calls. Anything else, or an unknown tool, answers "I can log a contact, add a follow-up, or draft a thank-you. Try one of those." A question from the model is shown as text. Donor names are resolved on the server among donors the member may act on: one match is used, several are offered as a choice, none is an error. | S |
+| AST-3 | **Privacy.** Speech-to-text runs in the browser; no audio is recorded or stored. The donor list is never sent to the model, only the member's sentence and today's date. The sentence and the model's reply are not logged or stored; the audit entry `assistant.interpret` records the proposed tool names only. The gateway key lives in env (`AI_GATEWAY_URL`, `AI_GATEWAY_KEY`). | S |
+
 ## 5. Non-functional requirements
 
 | ID | Requirement |
