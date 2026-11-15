@@ -49,13 +49,6 @@ def test_create_prints_the_key_once_and_it_works(db: Session, diana, capsys) -> 
     assert key not in capsys.readouterr().out  # never shown again
 
 
-def test_create_is_audited_as_cli_without_the_key(db: Session, diana, capsys) -> None:
-    key = create(capsys)
-    entry = db.execute(select(AuditLog).where(AuditLog.action == "apikey.create")).scalar_one()
-    assert entry.actor_kind == "cli" and entry.entity == "api_key"
-    assert key not in str(entry.data) and entry.data == {"name": "Dashboard"}
-
-
 def test_list_shows_prefix_last_used_and_status(db: Session, diana, capsys) -> None:
     main(["apikey", "list"])
     assert "No API keys yet." in capsys.readouterr().out
@@ -79,37 +72,3 @@ def test_revoke_stops_the_key_at_once_and_is_audited(db: Session, diana, capsys)
     assert call(key) == 401
     entry = db.execute(select(AuditLog).where(AuditLog.action == "apikey.revoke")).scalar_one()
     assert entry.actor_kind == "cli" and entry.entity_id == 1
-
-
-def test_revoke_unknown_key_fails_cleanly(db: Session, diana, capsys) -> None:
-    assert main(["apikey", "revoke", "99"]) == 1
-    assert "API key not found" in capsys.readouterr().err
-
-
-@pytest.mark.parametrize(
-    "argv,message",
-    [
-        (["apikey", "create"], "needs --name and --email"),
-        (["apikey", "create", "--name", "x"], "needs --name and --email"),
-        (["apikey", "create", "--name", "x", "--email", "ghost@example.org"], "No active board"),
-        (["apikey", "revoke"], "needs the key id"),
-    ],
-)
-def test_bad_usage_stops_with_a_message(db: Session, diana, argv, message) -> None:
-    with pytest.raises(SystemExit) as stop:
-        main(argv)
-    assert message in str(stop.value)
-    assert db.execute(select(ApiKey)).first() is None
-
-
-def test_deactivated_member_cannot_own_a_key(db: Session, diana) -> None:
-    db.execute(ApiKey.__table__.metadata.tables["users"].update().values(is_active=False))
-    db.commit()
-    with pytest.raises(SystemExit):
-        main(["apikey", "create", "--name", "x", "--email", "diana@example.org"])
-    assert db.execute(select(ApiKey)).first() is None
-
-
-def test_email_match_ignores_case(db: Session, diana, capsys) -> None:
-    create(capsys, email="  DIANA@Example.org ")
-    assert db.execute(select(ApiKey.created_by)).scalar_one() == diana

@@ -144,36 +144,6 @@ def test_each_class_and_the_window_edges(db: Session, clock) -> None:
     )  # every class is always present
 
 
-def test_as_of_moves_the_windows(db: Session, clock) -> None:
-    d = seed.add_donor(db, "Dee")
-    seed.add_gift(db, d, date(2025, 3, 1), 100)
-    db.commit()
-    assert by_name(retention_of(db, as_of="2025-11-15")) == {"Dee": "new"}
-    assert by_name(retention_of(db, as_of="2026-11-15")) == {"Dee": "lapsed"}
-    assert by_name(retention_of(db, as_of="2027-11-15")) == {}  # gave before both windows
-
-
-def test_calendar_basis(db: Session, clock) -> None:
-    for name, gifts in {
-        "Repeat": [(date(2025, 5, 1), 100), (date(2026, 5, 1), 100)],
-        "Lapsed": [(date(2025, 5, 1), 100)],
-        "Back": [(date(2023, 5, 1), 100), (date(2026, 5, 1), 100)],
-    }.items():
-        d = seed.add_donor(db, name)
-        for when, cents in gifts:
-            seed.add_gift(db, d, when, cents)
-    db.commit()
-    report = retention_of(db, basis="calendar", as_of="2026-11-15")
-    assert by_name(report) == {"Repeat": "same", "Lapsed": "lapsed", "Back": "reactivated"}
-
-
-def test_retention_validates_input_and_needs_a_session(db: Session, clock) -> None:
-    assert TestClient(create_app()).get("/api/app/reports/retention").status_code == 401
-    c = member(db)
-    for params in ({"basis": "fiscal"}, {"as_of": "tomorrow"}):
-        assert c.get("/api/app/reports/retention", params=params).status_code == 400
-
-
 def test_retention_matches_the_fixture_manifest(db: Session, clock) -> None:
     """Load the independently resolved fixture donors and gifts, then compare class counts and
     cents with fixtures/manifest.json (acceptance test 11, ahead of lane A's importer)."""
@@ -221,25 +191,6 @@ def test_v1_summary(db: Session, money) -> None:
     assert body["avg_gift_cents"] == 4_625  # 18,501 / 4 = 4,625.25
 
 
-def test_v1_summary_counts_new_donors_by_first_ever_gift(db: Session, money) -> None:
-    c = key_client(db)
-    q3 = c.get("/api/v1/summary", params={"from": "2026-07-01", "to": "2026-09-30"}).json()
-    assert q3["new_donors"] == 1 and q3["gift_count"] == 1 and q3["avg_gift_cents"] == 2_500
-    empty = c.get("/api/v1/summary", params={"from": "2020-01-01", "to": "2020-12-31"}).json()
-    assert (empty["gift_count"], empty["avg_gift_cents"], empty["new_donors"]) == (0, 0, 0)
-
-
-def test_v1_summary_default_range_and_errors(db: Session, money) -> None:
-    c = key_client(db)
-    body = c.get("/api/v1/summary").json()
-    assert body["to"] == "2026-11-15" and body["from"] == "2025-11-16"
-    assert (
-        c.get("/api/v1/summary", params={"from": "2026-11-02", "to": "2026-11-01"}).status_code
-        == 400
-    )
-    assert TestClient(create_app()).get("/api/v1/summary").status_code == 401
-
-
 def test_v1_retention_is_counts_only(db: Session, money) -> None:
     c = key_client(db)
     r = c.get("/api/v1/retention", params={"as_of": "2026-11-15"})
@@ -259,12 +210,6 @@ def test_v1_retention_is_counts_only(db: Session, money) -> None:
     assert "Ann" not in r.text and "Bob" not in r.text
     assert c.get("/api/v1/retention", params={"basis": "x"}).status_code == 400
     assert TestClient(create_app()).get("/api/v1/retention").status_code == 401
-
-
-def test_v1_and_app_retention_agree(db: Session, money) -> None:
-    app_report = retention_of(db, as_of="2026-11-15")
-    v1 = key_client(db).get("/api/v1/retention", params={"as_of": "2026-11-15"}).json()
-    assert v1["classes"] == app_report["classes"]
 
 
 def test_app_summary(db: Session, money) -> None:

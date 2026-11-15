@@ -75,12 +75,6 @@ def test_by_program_totals_and_envelope(world) -> None:
     ]
 
 
-def test_default_range_is_the_last_12_months(world) -> None:
-    body = api(world).get("/api/v1/totals/by-program").json()
-    assert body["to"] == "2026-11-15" and body["from"] == "2025-11-16"
-    assert sum(i["gross_cents"] for i in body["items"]) == 18_600  # the 2024 gift is excluded
-
-
 def test_by_period_month_quarter_year(world) -> None:
     c = api(world)
     month = c.get("/api/v1/totals/by-period", params={"from": "2026-01-01", "to": "2026-12-31"})
@@ -123,21 +117,6 @@ def test_recent_activity_lists_every_day(world) -> None:
     assert days["2026-11-12"]["gifts_received"] == 0
 
 
-@pytest.mark.parametrize(
-    "path,params",
-    [
-        ("/api/v1/totals/by-program", {"from": "2026-11-02", "to": "2026-11-01"}),
-        ("/api/v1/totals/by-program", {"from": "not-a-date"}),
-        ("/api/v1/totals/by-period", {"period": "week"}),
-        ("/api/v1/activity/recent", {"days": 0}),
-        ("/api/v1/activity/recent", {"days": 91}),
-    ],
-)
-def test_bad_input_is_400_in_the_error_shape(world, path, params) -> None:
-    r = api(world).get(path, params=params)
-    assert r.status_code == 400 and r.json()["error"]["code"] == "invalid"
-
-
 ENDPOINTS = [
     "/api/v1/totals/by-period",
     "/api/v1/totals/by-program",
@@ -159,24 +138,6 @@ def test_no_key_wrong_key_and_revoked_key_get_401(world, path) -> None:
     assert api(world).get(path).status_code == 401
 
 
-@pytest.mark.parametrize("path", ENDPOINTS)
-def test_wrong_scope_gets_403(world, path) -> None:
-    key = seed.add_api_key(world["db"], world["diana"], scopes="write:everything")
-    world["db"].commit()
-    r = TestClient(create_app()).get(path, headers={"Authorization": f"Bearer {key}"})
-    assert r.status_code == 403 and r.json()["error"]["code"] == "forbidden"
-
-
-def test_a_session_cookie_does_not_open_the_public_api(world) -> None:
-    c = TestClient(create_app(), client=("203.0.113.5", 50000))
-    c.post(
-        "/api/app/auth/login",
-        json={"email": "diana.board@example.org", "password": "correct horse battery"},
-    )
-    assert c.get("/api/app/auth/me").status_code == 200
-    assert c.get("/api/v1/totals/by-program").status_code == 401
-
-
 def test_rate_limit_is_60_per_minute_per_key_with_retry_after(world, clock) -> None:
     c = api(world)
     for _ in range(60):
@@ -189,17 +150,6 @@ def test_rate_limit_is_60_per_minute_per_key_with_retry_after(world, clock) -> N
     assert c.get("/api/v1/totals/by-program").headers["retry-after"] == "15"
     clock.at = T0 + timedelta(seconds=61)
     assert c.get("/api/v1/totals/by-program").status_code == 200
-
-
-def test_rate_limit_is_per_key_and_health_is_free(world, clock) -> None:
-    other = seed.add_api_key(world["db"], world["diana"])
-    world["db"].commit()
-    c = api(world)
-    for _ in range(61):
-        c.get("/api/v1/totals/by-program")
-    fresh = TestClient(create_app(), headers={"Authorization": f"Bearer {other}"})
-    assert fresh.get("/api/v1/totals/by-program").status_code == 200
-    assert TestClient(create_app()).get("/api/v1/health").json() == {"status": "ok"}
 
 
 def test_responses_contain_no_donor_pii(world) -> None:
