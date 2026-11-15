@@ -7,7 +7,7 @@ import httpx
 from fastapi import Depends, Query, Response
 
 from app.routes.deps import DB, ClockDep, CurrentDep
-from app.routes.stubs import session_router, todo
+from app.routes.stubs import session_router
 from app.schemas.common import ErrorOut, MessageStatus
 from app.schemas.messages import (
     DigestRunOut,
@@ -17,10 +17,10 @@ from app.schemas.messages import (
     MessageOut,
     MessageUpdate,
 )
+from app.services.messaging import bulk, workflow
 from app.services.messaging import digest as digest_service
 from app.services.messaging import send as sender
 from app.services.messaging import service as messaging
-from app.services.messaging import workflow
 from app.services.messaging.mailer import MailConfig
 from app.settings import get_settings
 
@@ -59,9 +59,9 @@ def create_draft(
 
 
 @router.post("/messages/draft-quarterly")
-def draft_quarterly() -> DraftBatchOut:
+def draft_quarterly(cur: CurrentDep, db: DB, clock: ClockDep) -> DraftBatchOut:
     """Idempotent: never two open drafts of one kind for a donor (MSG-2)."""
-    todo("lane C, phase 3")
+    return bulk.draft_quarterly(db, clock, cur.actor)
 
 
 @router.get("/messages")

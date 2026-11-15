@@ -362,3 +362,17 @@ def test_send_history_lists_who_when_channel_mode_and_reference(w) -> None:
         "Diana Owner", "email", "dry_run"
     )  # fmt: skip
     assert item["sent_at"] and item["provider_ref"] == f"dry-run-{m['id']}"
+
+
+def test_sending_a_thank_you_clears_its_reminder(w) -> None:
+    """Acceptance test 9, last step: the reminders service reads the interaction we write."""
+    c = login(DIANA, Net().overrides("dry_run"))
+
+    def due() -> list[int | None]:
+        items = c.get("/api/app/reminders").json()["items"]
+        return [i["gift_id"] for i in items if i["type"] == "thank_you_due"]
+
+    assert w["gift"] in due()
+    m = approved_email(c, w)
+    post(c, f"/messages/{m['id']}/send")
+    assert w["gift"] not in due() and w["gift2"] in due()  # only that gift was thanked
