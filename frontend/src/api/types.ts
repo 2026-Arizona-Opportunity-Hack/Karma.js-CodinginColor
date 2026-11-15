@@ -330,7 +330,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Reassign Donor */
+        /**
+         * Reassign Donor
+         * @description Hand a donor to an active member, per the reassign scope (OWN-3).
+         */
         post: operations["reassign_donor_api_app_donors__donor_id__reassign_post"];
         delete?: never;
         options?: never;
