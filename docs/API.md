@@ -92,6 +92,7 @@ All non-GET calls need header `X-CSRF-Token`. Authorization is decided in `authz
 | Reminders | `GET /reminders?scope=mine` (To-do), `GET /reminders/needs-reassignment` |
 | Messages | `POST /donors/{id}/messages` (create draft from template), `POST /messages/draft-quarterly` (bulk for my due donors), `PATCH /messages/{id}`, `POST /messages/{id}/approve`, `POST /messages/{id}/send`, `POST /messages/{id}/mark-sent`, `POST /messages/{id}/cancel`, `GET /messages?status=` |
 | Digest | `POST /digest/send` |
+| Assistant | `POST /assistant/interpret` (`text` up to 500 characters) returns proposed actions; writes nothing. `404` when the `assistant_enabled` setting is off, `403` for full-access keys, `429` over 20 a minute, `503` if the AI gateway is down (AST-1 to AST-3) |
 | Reports | `GET /reports/summary`, `GET /reports/retention`, `GET /reports/lapsed`, `POST /reports/lapsed/draft`, `GET /reports/funder/{donor_id}?format=html\|csv` |
 | Settings | `GET/PUT /settings`, `GET/PUT /templates`, `GET/POST/PUT /programs`, `GET/POST/PUT /program-map`, `GET/POST /api-keys`, `POST /api-keys/{id}/revoke`, `GET/POST /program-outcomes`, `POST /program-outcomes/upload` (CSV, all or nothing) |
 | Ops | `GET /healthz` (no auth), `POST /demo/reset` (only `DEMO_MODE=true`) |
