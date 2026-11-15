@@ -9,15 +9,12 @@ from tests.unit.test_import_preview import preview, snapshot
 
 
 def profile(**fields):
-    return IncomingDonor(
-        display_name="Ada Jones", first_name="Ada", last_name="Jones", **fields
-    )
+    return IncomingDonor(display_name="Ada Jones", first_name="Ada", last_name="Jones", **fields)
 
 
 def test_proposed_contact_is_not_matching_evidence_for_later_rows():
     state = preview(
-        b"Name,Contact ID,Email\nAda Jones,C1,new@example.org\n"
-        b"Ada Jones,,new@example.org\n",
+        b"Name,Contact ID,Email\nAda Jones,C1,new@example.org\nAda Jones,,new@example.org\n",
         source="spreadsheet",
         snap=snapshot(
             donors={7: profile(email="old@example.org")},
