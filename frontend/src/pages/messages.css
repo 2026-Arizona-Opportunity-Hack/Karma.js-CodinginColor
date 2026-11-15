@@ -180,7 +180,7 @@
   resize: vertical;
   font-family: var(--font-editorial);
 }
-.letter-field :read-only {
+.letter-field :is(input, textarea):read-only {
   background: var(--color-canvas);
   border-color: var(--color-rule);
 }
