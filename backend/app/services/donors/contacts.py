@@ -45,8 +45,9 @@ def log_interaction(
     if occurred_on > day:
         raise Invalid("A contact cannot be dated in the future.")
     row = repo.add_interaction(
-        db, actor, donor_id, kind=body.kind, summary=body.summary, occurred_on=occurred_on
-    )
+        db, actor, donor_id, kind=body.kind, summary=body.summary, occurred_on=occurred_on,
+        at=clock.now(),
+    )  # fmt: skip
     # Ids and kind only: summaries are free text and may hold personal details.
     audit.write(
         db, actor, "interaction.create", entity="interaction", entity_id=row.id,
@@ -55,8 +56,12 @@ def log_interaction(
     return _interaction(db, row)
 
 
-def set_next_step(db: Session, actor: Actor, donor_id: int, body: NextStepIn) -> NextStepOut:
-    step = repo.set_next_step(db, actor, donor_id, title=body.title, due_date=body.due_date)
+def set_next_step(
+    db: Session, clock: Clock, actor: Actor, donor_id: int, body: NextStepIn
+) -> NextStepOut:
+    step = repo.set_next_step(
+        db, actor, donor_id, title=body.title, due_date=body.due_date, at=clock.now()
+    )
     audit.write(
         db, actor, "next_step.set", entity="next_step", entity_id=step.id,
         data={"donor_id": donor_id},
