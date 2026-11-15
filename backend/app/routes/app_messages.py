@@ -17,6 +17,7 @@ from app.schemas.messages import (
     MessageOut,
     MessageUpdate,
 )
+from app.services.messaging import digest as digest_service
 from app.services.messaging import send as sender
 from app.services.messaging import service as messaging
 from app.services.messaging import workflow
@@ -104,6 +105,8 @@ def cancel_message(message_id: int, cur: CurrentDep, db: DB) -> MessageOut:
 
 
 @router.post("/digest/send")
-def send_digest() -> DigestRunOut:
-    """Sent only by a person's click, dry-run by default (REM-6, D-109)."""
-    todo("lane C, phase 3")
+def send_digest(
+    cur: CurrentDep, db: DB, clock: ClockDep, cfg: MailCfg, client: Http
+) -> DigestRunOut:
+    """Board members only, counts only, sent only by a person's click (REM-6, D-109)."""
+    return digest_service.send_digest(db, clock, cur.actor, cfg=cfg, client=client)
