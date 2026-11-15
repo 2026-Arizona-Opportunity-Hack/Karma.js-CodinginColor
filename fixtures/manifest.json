@@ -1,0 +1,282 @@
+{
+  "note": "Synthetic data. Derived from designed row outcomes; see tests/integration/test_fixtures.py.",
+  "seed": 20261114,
+  "demo_now": "2026-11-15",
+  "import_order": [
+    "synthetic_cic_spreadsheet.xlsx",
+    "synthetic_zeffy_like.csv",
+    "synthetic_benevity_like.csv",
+    "synthetic_generic_azgives_like.csv"
+  ],
+  "files": {
+    "synthetic_cic_spreadsheet.xlsx": {
+      "sha256": "6e40af79c0669cedadd5f05d81693aa1c8a693861a555f2f7899e5ec917aec50",
+      "rows": 129,
+      "invalid": [],
+      "created_donors": 126
+    },
+    "synthetic_zeffy_like.csv": {
+      "sha256": "157ca23f78fe7bdb4430a9a8375dc618d0abe631a8c5ccb991f9ebda7d091dd1",
+      "rows": 410,
+      "invalid": [
+        {
+          "row": 183,
+          "code": "refunded"
+        },
+        {
+          "row": 295,
+          "code": "non_usd"
+        },
+        {
+          "row": 311,
+          "code": "not_succeeded"
+        },
+        {
+          "row": 370,
+          "code": "not_succeeded"
+        },
+        {
+          "row": 376,
+          "code": "bad_amount"
+        },
+        {
+          "row": 400,
+          "code": "not_succeeded"
+        },
+        {
+          "row": 410,
+          "code": "bad_date"
+        }
+      ],
+      "created_donors": 60,
+      "valid_gifts": 403,
+      "gross_cents": 3575000,
+      "by_attribution": {
+        "linked": {
+          "gifts": 395,
+          "cents": 3530000
+        },
+        "pending_review": {
+          "gifts": 8,
+          "cents": 45000
+        },
+        "anonymous": {
+          "gifts": 0,
+          "cents": 0
+        }
+      }
+    },
+    "synthetic_benevity_like.csv": {
+      "sha256": "db16c3c996252aa517dd44df6e19c7e0bcfebf6e6d869d553a51fd0dd0bc1f9f",
+      "rows": 80,
+      "invalid": [
+        {
+          "row": 32,
+          "code": "non_usd"
+        },
+        {
+          "row": 47,
+          "code": "bad_date"
+        },
+        {
+          "row": 48,
+          "code": "non_positive_amount"
+        },
+        {
+          "row": 67,
+          "code": "non_positive_amount"
+        }
+      ],
+      "created_donors": 26,
+      "valid_gifts": 91,
+      "gross_cents": 698750,
+      "by_attribution": {
+        "linked": {
+          "gifts": 70,
+          "cents": 565000
+        },
+        "pending_review": {
+          "gifts": 8,
+          "cents": 67500
+        },
+        "anonymous": {
+          "gifts": 13,
+          "cents": 66250
+        }
+      }
+    },
+    "synthetic_generic_azgives_like.csv": {
+      "sha256": "c9366b1113ef25804fb609eab9c659f7cc7994168bd706c65f7fb08a07b36e5c",
+      "rows": 40,
+      "invalid": [
+        {
+          "row": 22,
+          "code": "bad_amount"
+        },
+        {
+          "row": 23,
+          "code": "non_positive_amount"
+        },
+        {
+          "row": 40,
+          "code": "bad_date"
+        }
+      ],
+      "created_donors": 13,
+      "valid_gifts": 37,
+      "gross_cents": 8670000,
+      "by_attribution": {
+        "linked": {
+          "gifts": 37,
+          "cents": 8670000
+        },
+        "pending_review": {
+          "gifts": 0,
+          "cents": 0
+        },
+        "anonymous": {
+          "gifts": 0,
+          "cents": 0
+        }
+      }
+    }
+  },
+  "totals": {
+    "valid_gifts": 531,
+    "gross_cents": 12943750
+  },
+  "donors_created_after_all_imports": 225,
+  "review_items": [
+    {
+      "file": "synthetic_cic_spreadsheet.xlsx",
+      "row": 25,
+      "reason": "household"
+    },
+    {
+      "file": "synthetic_cic_spreadsheet.xlsx",
+      "row": 113,
+      "reason": "household"
+    },
+    {
+      "file": "synthetic_cic_spreadsheet.xlsx",
+      "row": 127,
+      "reason": "household"
+    },
+    {
+      "file": "synthetic_zeffy_like.csv",
+      "row": 269,
+      "reason": "name_conflict"
+    },
+    {
+      "file": "synthetic_zeffy_like.csv",
+      "row": 324,
+      "reason": "phone"
+    },
+    {
+      "file": "synthetic_zeffy_like.csv",
+      "row": 325,
+      "reason": "phone"
+    },
+    {
+      "file": "synthetic_zeffy_like.csv",
+      "row": 349,
+      "reason": "phone"
+    },
+    {
+      "file": "synthetic_zeffy_like.csv",
+      "row": 391,
+      "reason": "phone"
+    },
+    {
+      "file": "synthetic_zeffy_like.csv",
+      "row": 393,
+      "reason": "phone"
+    },
+    {
+      "file": "synthetic_zeffy_like.csv",
+      "row": 398,
+      "reason": "name_conflict"
+    },
+    {
+      "file": "synthetic_zeffy_like.csv",
+      "row": 408,
+      "reason": "phone"
+    },
+    {
+      "file": "synthetic_benevity_like.csv",
+      "row": 1,
+      "reason": "name_employer"
+    },
+    {
+      "file": "synthetic_benevity_like.csv",
+      "row": 16,
+      "reason": "name_employer"
+    },
+    {
+      "file": "synthetic_benevity_like.csv",
+      "row": 41,
+      "reason": "name_employer"
+    },
+    {
+      "file": "synthetic_benevity_like.csv",
+      "row": 49,
+      "reason": "name_employer"
+    },
+    {
+      "file": "synthetic_benevity_like.csv",
+      "row": 50,
+      "reason": "name_employer"
+    },
+    {
+      "file": "synthetic_benevity_like.csv",
+      "row": 51,
+      "reason": "name_employer"
+    },
+    {
+      "file": "synthetic_benevity_like.csv",
+      "row": 68,
+      "reason": "name_employer"
+    },
+    {
+      "file": "synthetic_benevity_like.csv",
+      "row": 69,
+      "reason": "name_employer"
+    }
+  ],
+  "retention": {
+    "as_of": "2026-11-15",
+    "basis": "rolling",
+    "classes": {
+      "new": {
+        "donors": 33,
+        "cents_cur": 687500,
+        "cents_prev": 0
+      },
+      "reactivated": {
+        "donors": 10,
+        "cents_cur": 140000,
+        "cents_prev": 0
+      },
+      "increased": {
+        "donors": 25,
+        "cents_cur": 1812500,
+        "cents_prev": 1212500
+      },
+      "same": {
+        "donors": 18,
+        "cents_cur": 712500,
+        "cents_prev": 712500
+      },
+      "decreased": {
+        "donors": 31,
+        "cents_cur": 1082500,
+        "cents_prev": 2680000
+      },
+      "lapsed": {
+        "donors": 40,
+        "cents_cur": 0,
+        "cents_prev": 3255000
+      }
+    }
+  }
+}

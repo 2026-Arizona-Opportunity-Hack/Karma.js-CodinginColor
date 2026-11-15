@@ -1,2 +1,5 @@
 backend/uv.lock linguist-generated=true
 frontend/package-lock.json linguist-generated=true
+fixtures/*.csv text eol=lf
+fixtures/*.json text eol=lf
+fixtures/*.xlsx binary
