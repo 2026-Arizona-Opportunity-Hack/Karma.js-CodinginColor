@@ -12,6 +12,7 @@ node_modules/
 dist/
 build/
 .test-build/
+frontend/qa/
 .next/
 out/
 __pycache__/
