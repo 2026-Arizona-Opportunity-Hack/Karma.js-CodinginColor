@@ -14,6 +14,7 @@ from app.db.models import (
     DonorIdentity,
     Gift,
     ImportBatch,
+    MatchReview,
     Program,
     SourceProgramMap,
     User,
@@ -92,4 +93,14 @@ def snapshot(db: Session, actor: Actor, source: ImportSource, data: bytes) -> Sn
         for identity in db.scalars(select(DonorIdentity).order_by(DonorIdentity.id))
         if identity.donor_id in out.donors
     ]
+    for review in db.scalars(
+        select(MatchReview)
+        .where(MatchReview.status != "open")
+        .order_by(MatchReview.decided_at, MatchReview.id)
+    ):
+        did = review.incoming.get("_resolved_donor_id")
+        keys = review.incoming.get("_fingerprints", [review.incoming.get("_fingerprint")])
+        for key in keys:
+            if key and (did is None or did in out.donors):
+                out.remembered[key] = did
     return out

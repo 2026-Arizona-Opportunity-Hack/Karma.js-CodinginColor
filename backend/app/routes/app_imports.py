@@ -16,6 +16,7 @@ from app.schemas.imports import (
     ReviewListOut,
     ReviewOut,
 )
+from app.services.dedupe import reviews
 from app.services.ingest import service
 from app.services.ingest.uploads import MAX_BYTES
 
@@ -63,14 +64,18 @@ def reverse_import(batch_id: int) -> ImportBatchOut:
 
 
 @router.get("/reviews")
-def list_reviews(status: Annotated[Literal["open", "decided"], Query()] = "open") -> ReviewListOut:
-    todo("lane A, phase 2")
+def list_reviews(
+    db: DB, cur: CurrentDep, status: Annotated[Literal["open", "decided"], Query()] = "open"
+) -> ReviewListOut:
+    return reviews.list_reviews(db, cur.actor, status)
 
 
 @router.post("/reviews/{review_id}/decide")
-def decide_review(review_id: int, body: ReviewDecisionIn) -> ReviewOut:
+def decide_review(
+    review_id: int, body: ReviewDecisionIn, db: DB, cur: CurrentDep, clock: ClockDep
+) -> ReviewOut:
     """Link, create new or mark anonymous; the identity is remembered (DED-4)."""
-    todo("lane A, phase 2")
+    return reviews.decide(db, cur.actor, clock, review_id, body)
 
 
 @router.post("/gifts/{gift_id}/attribute", responses={409: {"model": ErrorOut}})
