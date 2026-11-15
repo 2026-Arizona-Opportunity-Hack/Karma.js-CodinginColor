@@ -257,6 +257,12 @@ def test_a_provider_failure_sets_failed_with_a_short_error_and_never_retries(
     assert post(c, f"/messages/{m['id']}/send").status_code == 409  # no retry, even by hand
     assert len(net.requests) == 1
     assert (
+        db.execute(
+            text("SELECT count(*) FROM audit_log WHERE action = 'message.send_failed'")
+        ).scalar_one()
+        == 1
+    )
+    assert (
         db.execute(text("SELECT count(*) FROM interactions")).scalar_one() == 0
     )  # nothing was sent
     blob = " ".join(str(x) for x in db.execute(text("SELECT data::text FROM audit_log")).scalars())

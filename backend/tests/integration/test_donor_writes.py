@@ -62,6 +62,12 @@ def test_create_gives_an_owner_normalizes_contact_and_remembers_identities(db: S
     )  # fmt: skip
     assert r.status_code == 201, r.text
     d = r.json()
+    assert (
+        db.execute(
+            text("SELECT count(*) FROM audit_log WHERE action = 'donor.create'")
+        ).scalar_one()
+        == 1
+    )
     assert d["owner"]["id"] in (w["diana"], w["sam"], w["alex"]) and d["total_lifetime_cents"] == 0
     row = db.execute(
         text("SELECT email, phone, created_via FROM donors WHERE id = :i"), {"i": d["id"]}

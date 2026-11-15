@@ -833,6 +833,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/app/program-outcomes/upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload Outcomes
+         * @description CSV columns: program, period_start, period_end, metric_label, value, unit, source_note.
+         *     Any bad row rejects the whole file and names the rows.
+         */
+        post: operations["upload_outcomes_api_app_program_outcomes_upload_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/app/programs": {
         parameters: {
             query?: never;
@@ -912,7 +933,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Funder Export */
+        /**
+         * Funder Export
+         * @description Any member may export gift history; defaults to the last 12 months.
+         */
         get: operations["funder_export_api_app_reports_funder__donor_id__get"];
         put?: never;
         post?: never;
@@ -1343,6 +1367,11 @@ export interface components {
              * @enum {string}
              */
             source: "spreadsheet" | "zeffy" | "benevity" | "generic";
+        };
+        /** Body_upload_outcomes_api_app_program_outcomes_upload_post */
+        Body_upload_outcomes_api_app_program_outcomes_upload_post: {
+            /** File */
+            file: string;
         };
         /** ByBoardMember */
         ByBoardMember: {
@@ -5672,6 +5701,84 @@ export interface operations {
             };
         };
     };
+    upload_outcomes_api_app_program_outcomes_upload_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_outcomes_api_app_program_outcomes_upload_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OutcomeListOut"];
+                };
+            };
+            /** @description Validation failed */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description No session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Policy denied or bad CSRF token */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not found or not visible */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description File over 1 MB */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not a CSV file */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
     list_programs_api_app_programs_get: {
         parameters: {
             query?: never;
@@ -5968,6 +6075,8 @@ export interface operations {
         parameters: {
             query?: {
                 format?: "html" | "csv";
+                from?: string | null;
+                to?: string | null;
             };
             header?: never;
             path: {

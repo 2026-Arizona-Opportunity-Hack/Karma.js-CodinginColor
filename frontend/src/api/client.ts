@@ -3,7 +3,11 @@
 
 export class ApiError extends Error {
   readonly status: number;
-  constructor(status: number, message: string) {
+  constructor(
+    status: number,
+    message: string,
+    readonly body?: unknown,
+  ) {
     super(message);
     this.status = status;
   }
@@ -16,15 +20,16 @@ function readCookie(name: string): string | undefined {
     ?.slice(name.length + 1);
 }
 
-async function errorMessage(res: Response): Promise<string> {
+async function responseError(res: Response): Promise<ApiError> {
   try {
     const body = await res.json();
-    if (body?.error?.message) return body.error.message;
-    if (Array.isArray(body?.detail)) return "Please check the form and try again.";
+    if (body?.error?.message) return new ApiError(res.status, body.error.message, body);
+    if (Array.isArray(body?.detail))
+      return new ApiError(res.status, "Please check the form and try again.", body);
   } catch {
     /* not JSON */
   }
-  return `Something went wrong (${res.status}).`;
+  return new ApiError(res.status, `Something went wrong (${res.status}).`);
 }
 
 export async function api<T>(
@@ -46,7 +51,7 @@ export async function api<T>(
     signal: options.signal,
     body: form ?? (options.body === undefined ? undefined : JSON.stringify(options.body)),
   });
-  if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
+  if (!res.ok) throw await responseError(res);
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
 }
