@@ -166,6 +166,8 @@ export interface paths {
         /**
          * Create Donor
          * @description Runs identity matching first; send `confirm_new: true` to create anyway.
+         *
+         *     The new donor is given an owner by round-robin (OWN-2) in the same transaction.
          */
         post: operations["create_donor_api_app_donors_post"];
         delete?: never;
@@ -190,12 +192,15 @@ export interface paths {
         post?: never;
         /**
          * Delete Donor
-         * @description Soft delete only (DON-11).
+         * @description Soft delete only (DON-11): gifts and history stay; the donor leaves every list.
          */
         delete: operations["delete_donor_api_app_donors__donor_id__delete"];
         options?: never;
         head?: never;
-        /** Update Donor */
+        /**
+         * Update Donor
+         * @description Owner and active super admin only (`donor.edit`). Send null to clear an optional field.
+         */
         patch: operations["update_donor_api_app_donors__donor_id__patch"];
         trace?: never;
     };
