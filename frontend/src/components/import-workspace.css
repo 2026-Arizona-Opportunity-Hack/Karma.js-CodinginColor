@@ -238,11 +238,22 @@
   flex-wrap: wrap;
   margin-top: 24px;
 }
+.import-confirm {
+  padding: 12px 32px 28px;
+  overflow-y: auto;
+}
 .import-confirm p {
   margin: 16px 0;
+  line-height: 1.55;
 }
 .import-confirm .import-actions {
+  margin-top: 28px;
   padding-bottom: 12px;
+}
+@media (max-width: 640px) {
+  .import-confirm {
+    padding: 8px 20px 24px;
+  }
 }
 .invalid-rows {
   padding: 0;
