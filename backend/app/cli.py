@@ -2,7 +2,7 @@
 
     uv run python -m app.cli setup [--file members.local.json]
     uv run python -m app.cli superadmin {create,activate,flatten,transfer,deactivate} [--email X]
-    uv run python -m app.cli seed-demo | reset-demo        (only with DEMO_MODE=true)
+    uv run python -m app.cli seed-demo [--members-only] | reset-demo   (only with DEMO_MODE=true)
 
 `setup` prints each new member's initial password once. Nothing is written to disk.
 """
@@ -22,6 +22,7 @@ from app.db.session import get_sessionmaker
 from app.errors import AppError
 from app.repos import apikeys, audit, users
 from app.security import generate_password, hash_password
+from app.services import demo
 from app.services.apikeys import service as apikey_service
 from app.services.governance import superadmin
 from app.settings import get_settings
@@ -133,11 +134,20 @@ def _require_demo() -> None:
 
 
 def cmd_seed_demo(db: Session, clock: Clock, args: argparse.Namespace) -> None:
+    """Demo members, then the synthetic fixtures through the real importer (NFR-9)."""
     _require_demo()
     created = add_members(db, DEMO_MEMBERS)
     db.commit()
     for email, password in created:
         print(f"  {email}  {password}")
+    if getattr(args, "members_only", False):
+        return
+    first = users.find_by_email_for_login(db, DEMO_MEMBERS[0][0])
+    if first is None:
+        raise SystemExit("Demo members are missing; run reset-demo.")
+    for filename, donors, gifts in demo.load_fixtures(db, clock, first.id):
+        print(f"  imported {filename}: {donors} new donors, {gifts} gifts")
+    db.commit()
 
 
 def cmd_reset_demo(db: Session, clock: Clock, args: argparse.Namespace) -> None:
@@ -149,7 +159,7 @@ def cmd_reset_demo(db: Session, clock: Clock, args: argparse.Namespace) -> None:
     ).scalars()  # fmt: skip
     names = ", ".join(f'"{t}"' for t in tables)
     db.execute(text(f"TRUNCATE {names} RESTART IDENTITY CASCADE"))
-    db.execute(text("INSERT INTO governance (id) VALUES (1)"))
+    demo.restore_reference_data(db)
     audit.write(db, CLI, "demo.reset")
     cmd_seed_demo(db, clock, args)
 
@@ -176,7 +186,8 @@ def parser() -> argparse.ArgumentParser:
     ak.add_argument("key_id", nargs="?", type=int, help="for revoke: the key id")
     ak.add_argument("--name", help="for create: what the key is for, e.g. Dashboard")
     ak.add_argument("--email", help="for create: the board member the key is recorded for")
-    sub.add_parser("seed-demo", help="add demo members (DEMO_MODE only)")
+    sd = sub.add_parser("seed-demo", help="add demo members and synthetic data (DEMO_MODE only)")
+    sd.add_argument("--members-only", action="store_true", help="skip the synthetic data import")
     sub.add_parser("reset-demo", help="wipe all data and seed demo members (DEMO_MODE only)")
     return p
 
