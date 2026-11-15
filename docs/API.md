@@ -5,7 +5,7 @@ Two surfaces, kept separate on purpose:
 | Surface | Path | Auth | Purpose |
 |---|---|---|---|
 | **Public read API** | `/api/v1/*` | API key | CIC's org dashboard, MCP server. Read-only, aggregates only. |
-| **App API** | `/api/app/*` | Session cookie + CSRF | The web app's CRUD and actions. Not a public contract; may change. |
+| **App API** | `/api/app/*` | Session cookie + CSRF, or a full-access key (`cic_full_...`, no CSRF) | The web app's CRUD and actions. Not a versioned public contract; may change. |
 
 FastAPI generates OpenAPI at `/api/openapi.json`; the human docs page is `/api/docs` (Swagger UI, public API tag only in production) plus `docs/API_GUIDE.md` with curl examples.
 
@@ -19,7 +19,8 @@ FastAPI generates OpenAPI at `/api/openapi.json`; the human docs page is `/api/d
 Authorization: Bearer cic_live_<32 random bytes, base64url>
 ```
 - Keys are shown once and stored as SHA-256. Scope for all endpoints below: `read:aggregates`.
-- There is no Settings screen for keys yet (planned, issue #86). Until then a signed-in member creates, lists and revokes keys with `POST/GET /api/app/api-keys` and `POST /api/app/api-keys/{id}/revoke` (steps in `docs/API_GUIDE.md`), or the operator runs `python -m app.cli apikey {create,list,revoke}`.
+- A signed-in member creates, lists and revokes keys in Settings, with `POST/GET /api/app/api-keys` and `POST /api/app/api-keys/{id}/revoke` (steps in `docs/API_GUIDE.md`), or the operator runs `python -m app.cli apikey {create,list,revoke}`.
+- `cic_live_` keys only work on `/api/v1`. A `cic_full_` key (scope `full_access`, API-8) works only on `/api/app`: it acts as its creating member with every permission except governance and key management, expires after 90 days by default, and is limited to 300 requests per minute. See `docs/API_GUIDE.md` section 10.
 - `401` missing, malformed, unknown or revoked key. `403` wrong scope. `429` over 60 requests/minute (with `Retry-After`).
 - Error body: `{"error": {"code": "unauthorized", "message": "..."}}`.
 - Every response includes `as_of` (ISO timestamp) and `currency: "USD"`. Money is integer cents.
