@@ -5,10 +5,10 @@
 | Phase / lane | Status (todo, running, ready-for-review, verified, cut) | Gate target | Issues | PRs | Notes |
 |---|---|---|---|---|---|
 | 0 | verified | Sat 17:15 | #2–#9 | #1, #55–#61 | deploy needs human (accounts); free tier for now |
-| 1 | ready-for-review | Sat 19:00 | #10–#14, #64 | 6 stacked PRs | gate evidence below |
-| 2A ingest/dedupe | todo | Sat 23:00 | | | |
-| 2B donor screens | todo | Sat 23:00 | | | |
-| 2C read API/MCP | todo | Sat 23:00 | | | |
+| 1 | verified | Sat 19:00 | #10–#14, #64 | #65–#70 merged | live deploy checked: 63 routes, 501 when logged in, 401 when logged out |
+| 2A ingest/dedupe | todo | Sat 23:00 | #15–#18, #71 | | |
+| 2B donor screens | todo | Sat 23:00 | #19–#23 | | build against mocks until lane C merges #72 |
+| 2C read API + donor API | todo | Sat 23:00 | #24–#28, #72–#74 | | donor API moved here (D-126) |
 | 3A ownership/reminders | todo | Sun 01:30 | | | |
 | 3B dashboard/people | todo | Sun 01:30 | | | |
 | 3C messaging backend | todo | Sun 01:30 | | | |

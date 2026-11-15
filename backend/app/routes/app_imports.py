@@ -6,6 +6,7 @@ from fastapi import File, Form, Query, UploadFile
 
 from app.routes.stubs import session_router, todo
 from app.schemas.common import ErrorOut, ImportSource
+from app.schemas.donors import GiftAttributeIn, GiftOut
 from app.schemas.imports import (
     ImportBatchOut,
     ImportListOut,
@@ -60,4 +61,10 @@ def list_reviews(status: Annotated[Literal["open", "decided"], Query()] = "open"
 @router.post("/reviews/{review_id}/decide")
 def decide_review(review_id: int, body: ReviewDecisionIn) -> ReviewOut:
     """Link, create new or mark anonymous; the identity is remembered (DED-4)."""
+    todo("lane A, phase 2")
+
+
+@router.post("/gifts/{gift_id}/attribute", responses={409: {"model": ErrorOut}})
+def attribute_gift(gift_id: int, body: GiftAttributeIn) -> GiftOut:
+    """Only anonymous gifts; pending-review gifts use the review flow (DED-8, issue #71)."""
     todo("lane A, phase 2")

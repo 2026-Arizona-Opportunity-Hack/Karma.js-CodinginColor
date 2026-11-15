@@ -45,6 +45,12 @@ class GiftCreate(BaseModel):
     note: LongText | None = None
 
 
+class GiftAttributeIn(BaseModel):
+    """Attach an anonymous gift to a donor once CIC learns who gave (issue #71)."""
+
+    donor_id: int
+
+
 class GiftListOut(BaseModel):
     items: list[GiftOut]
 
