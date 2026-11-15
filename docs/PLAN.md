@@ -58,6 +58,7 @@ Branch per issue: `lane-a/12-row-key-dedupe`. Rebase on `main` before opening a 
 | 3 | Ownership + governance + reminders · Dashboard + reassignment UI · Messaging backend | A, B, C | Sun 01:30 |
 | rest | Sleep | | 01:30 to 06:00 |
 | 4 | Messaging UI · Retention + funder export + lapsed radar · Hardening | A, B, C | Sun 09:00 |
+| 4.5 | CIC Nov 15 requirements: Zeffy contacts, board member column, custom fields, scheduled emails, branding | A, B, C | Sun 10:15 |
 | 5 | Accessibility, acceptance on production, trust report | single agent + human | **Sun 10:30 freeze** |
 | 6 | Docs, draft video (10:45), feedback hour (11:00), record (12:00), submit | human + writer agent | **Submit by 13:30** |
 
@@ -168,6 +169,31 @@ Lane C's order: 1, 2, 6, 7, 3, 8, 4, 5. The donor API moved here from lane A bec
 **Gate:** acceptance tests 9, 11; full suite green on `main`.
 **Cut list:** template editing (read-only templates); program map UI (seeded map only); lapsed radar.
 
+### Phase 4.5: CIC requirements update (Nov 15)
+
+New requirements from CIC on Sunday morning (SRS ING-12 to ING-14, DON-13, REM-9, MSG-9, CUS-1 to CUS-4, NFR-10; D-135 to D-141). Run lanes after their Phase 4 lane is merged. The CUS migration lands first as a `shared` PR.
+
+**Shared (first, lane A opens it):** `Add custom fields, Zeffy totals and job runs schema` (migration: `custom_field_definitions`, `donors.custom`, `donors.zeffy_total_cents`, `donors.zeffy_total_as_of`, `job_runs`, new `app_settings` keys; models; schemas; regenerate `types.ts`).
+
+**Lane A: imports**
+1. `Import Zeffy contacts exports` (ING-12; auto-detect; numbered duplicate headers; dates with times; ignore address columns; synthetic fixture with the exact 20 headers from IMPORT_FORMATS 2c; manifest and tests).
+2. `Read the board member column on every import` (ING-13; owner for new donors; approved owner change for existing; preview lists unmatched).
+3. `Import columns that match custom fields` (ING-14).
+
+**Lane B: screens and brand**
+1. `Apply CIC brand theme` (NFR-10, `docs/BRAND.md`; Tailwind tokens; logo slot; recheck contrast).
+2. `Expand donor rows to show gift history` (DON-13).
+3. `Add custom field settings and donor field editing` (CUS-1 to CUS-3).
+4. `Show Zeffy contacts preview, board member and ignored columns` (ING-12 to ING-14 in the import screen).
+
+**Lane C: custom field API and scheduled jobs**
+1. `Add custom field definition and value endpoints` (CUS-1 to CUS-4, audit, policy).
+2. `Add run-job CLI, job_runs and quarterly board email` (REM-9, D-137; dry-run mail by default; `render.yaml` cron, disabled by default).
+3. `Add auto thank-you setting and job` (MSG-9, D-138; off by default; dashboard banner data).
+
+**Gate:** Zeffy contacts fixture imports and reconciles; a board member column assigns the owner; a custom field can be added, filled, renamed and deactivated without losing values; `run-job quarterly_board_email` records one dry-run email per member with only their donors; full suite green.
+**Cut list (in order):** MSG-9 auto thank-you (keep the setting off, document it); ING-14 custom field import; CUS choice lists and reordering; Zeffy contacts preview polish. **Never cut** ING-12, ING-13, CUS add/rename/deactivate, the brand theme.
+
 ### Phase 5: Accessibility and acceptance (freeze 10:30)
 1. `Fix accessibility to Lighthouse 95+` (Lighthouse CI on main pages; keyboard path; 390 px).
 2. `Add acceptance e2e suite against deployed URL` (tests 1 to 13; Playwright + axe).
@@ -178,5 +204,5 @@ Lane C's order: 1, 2, 6, 7, 3, 8, 4, 5. The donor API moved here from lane A bec
 ### Phase 6: Docs, video, submission (human-led; writer agent edits docs only)
 - README: what we built, team, tech stack, run locally, live link, demo link, screenshots.
 - `docs/ARCHITECTURE.md`, `docs/RUNBOOK.md` (deploy, rotate keys, super admin CLI, restore), `docs/HANDOFF_TO_CIC.md` (accounts to transfer: GitHub, Render, Neon, mail provider), `docs/ROADMAP.md` (improve-later list from SRS 3.2 as GitHub Issues).
-- `docs/DEMO_SCRIPT.md`, 4 minutes max: (1) messy files to one ledger with the import summary and re-upload, (2) board member's To-do on a phone, log a contact, (3) draft, approve, send a thank-you, (4) Needs reassignment and owner history, (5) retention and funder export, (6) API call and MCP in Claude, (7) security: board member blocked from another's contact details, audit log.
+- `docs/DEMO_SCRIPT.md`, 4 minutes max: (1) messy files to one ledger with the import summary and re-upload, (2) board member's To-do on a phone, log a contact, (3) draft, approve, send a thank-you, (4) Needs reassignment and owner history, (5) retention and funder export, a custom field added live, the CIC-branded UI, (6) API call and MCP in Claude, (7) security: board member blocked from another's contact details, audit log.
 - 10:45 draft recording → 11:00 feedback hour → 12:00 record final → upload → Team Dashboard story + video link → **Submit by 13:30**. Close remaining issues or move them to the roadmap label.

@@ -46,6 +46,7 @@ There is no separate staff role this weekend. Donors are stakeholders, not users
 | Donor messages | Templates, drafts, approval, send, send history | MSG |
 | Reporting | Summary, retention view, funder export | RPT |
 | Read API and MCP | Key-authenticated aggregated API, read-only MCP server | API |
+| Custom donor fields (Nov 15 update) | Add, rename, deactivate donor fields in settings; import and show them | CUS |
 | Non-functional | Security, accessibility, cost, docs | NFR |
 
 ### 3.2 Improve-later list (only after every P0 is verified)
@@ -59,8 +60,11 @@ There is no separate staff role this weekend. Donors are stakeholders, not users
 | 5 | Milestone messages ("we passed $X thanks to you"), holiday touch reminders | Ours |
 | 6 | Dashboard charts, likelihood-to-give score | P2 |
 | 7 | Debrief to action (note becomes contact record, next step and draft) | P1 |
+| 8 | Custom roles and permission sets editable in settings (today: flat members plus optional super admin, GOV) | CIC Nov 15 "everything customizable" |
+| 9 | Custom fields on gifts, programs and members (CUS covers donors only) | CIC Nov 15 |
+| 10 | Frontend on Vercel with `/api/*` proxied to Render (stated stack preference, D-139) | CIC Nov 15 |
 
-**Non-goals:** a general CRM; replacing Zeffy or the other platforms; automatic sending to donors; merging people by name similarity; real donor data anywhere in the repo; PDF or plain-text parsing; Problem 1 features.
+**Non-goals:** a general CRM; replacing Zeffy or the other platforms; automatic sending to donors unless a member turns on MSG-9; merging people by name similarity; real donor data anywhere in the repo; PDF or plain-text parsing; Problem 1 features (instructors, students, lessons).
 
 ---
 
@@ -97,7 +101,7 @@ Priority: **M** = must (P0), **S** = should (P0 thin version acceptable), **C** 
 | ID | Requirement | Pri |
 |---|---|---|
 | ING-1 | Any board member can upload a file (CSV or XLSX, max 5 MB, by extension **and** content sniffing). Anything else is rejected with a friendly message. | M |
-| ING-2 | The user picks the source: **CIC donor spreadsheet** (donor list), **Zeffy payments export**, **Benevity disbursement report**, or **Generic gifts template** (used for AZ Gives, United Way and anything else). Each source has an adapter that maps columns to the normalized shape. | M |
+| ING-2 | The user picks the source: **CIC donor spreadsheet** (donor list), **Zeffy payments export**, **Zeffy contacts export** (one row per donor, ING-12), **Benevity disbursement report**, or **Generic gifts template** (used for AZ Gives, United Way and anything else). Each source has an adapter that maps columns to the normalized shape. | M |
 | ING-3 | Column layouts for Zeffy and Benevity are modelled on their publicly documented formats (Zeffy API payment/contact/campaign objects; Benevity's reporting glossary). Each adapter records where its columns came from in `docs/IMPORT_FORMATS.md`, marked `assumed` until a real CIC file is seen. | M |
 | ING-4 | Import is two-step: **preview** (parse, validate, dedupe, classify every row) then **commit** (single DB transaction). Nothing is written before commit. | M |
 | ING-5 | The preview and saved batch show an **import summary**: physical rows read = new + already imported + needs review + invalid + donor update source rows (including donor-only spreadsheet rows). Each class shows a separate gift count, donation cents, employer-match cents and combined gross cents (D-127). Anonymous rows are a subset of new rows. Reconcile both physical rows and total cents exactly or block commit. Show new donors, donors matched and unique donors updated (D-130). | M |
@@ -107,6 +111,9 @@ Priority: **M** = must (P0), **S** = should (P0 thin version acceptable), **C** 
 | ING-9 | On commit, new donors are assigned owners (OWN-2) inside the same transaction. | M |
 | ING-10 | Batch history page: who uploaded what, when, counts. A batch can be reversed (soft-deletes its gifts; donors it created with no other gifts are soft-deleted; audited). | S |
 | ING-11 | Gifts older than the import cutoff (default 60 days before the import date) are marked `assumed_thanked` so a history backfill does not create hundreds of thank-you reminders. | M |
+| ING-12 | **Zeffy contacts export** (CIC sample, Nov 15): one row per donor with `Amount` and first/last payment dates. Creates or updates donors like ING-8 and stores `Amount` as the donor's Zeffy giving total with its as-of date; it creates **no gifts** until CIC confirms what `Amount` means (D-135). Address columns are ignored (NFR-3). Layout in `docs/IMPORT_FORMATS.md` section 2c. | M |
+| ING-13 | Every source accepts an optional **assigned board member** column (`Board member`, `Contact person`, `Assigned to`). It is matched to an active member by email, then exact display name. A match sets the owner of a **new** donor instead of round-robin and is a proposed owner change (approved like ING-8) for an existing donor. Blank or unmatched values fall back to OWN-2 and are listed in the preview (D-136). | M |
+| ING-14 | Columns whose header matches an active custom field (CUS-1) import into that field; other unknown columns are listed in the preview as ignored. | S |
 
 ### 4.4 DED: dedupe
 
@@ -149,6 +156,7 @@ Priority: **M** = must (P0), **S** = should (P0 thin version acceptable), **C** 
 | DON-10 | Next step: one open next step per donor with a title and due date. Completing it logs an interaction. | M |
 | DON-11 | Search donors by name, email, organization; filter by owner, status, program. Soft delete only (admin restore later). | M |
 | DON-12 | Any bulk export of donor-level data writes an audit entry and neutralizes spreadsheet formulas (cells starting `=`, `+`, `-`, `@`). | M |
+| DON-13 | Donor list rows expand inline to show that donor's gift history (date, amount, program, source; matches labelled), newest first, with a link to the full timeline. | M |
 
 ### 4.7 REM: reminders
 
@@ -164,6 +172,7 @@ Reminders are **derived from data, never stored**, so re-imports cannot duplicat
 | REM-6 | **Email digest**: one email per board member summarizing their open reminders with a link to the app. Never sent to donors. Sent only when a person clicks **Send reminder digest** (flat mode: any member; super admin active: super admin). Uses MSG-6 send modes; default dry-run. | M |
 | REM-7 | Thresholds (2, 7, 90 days, cutoff 60) are settings, editable per GOV-4. | S |
 | REM-8 | Open question for organizers: does an internal reminder email count under the brief's "every outbound message or reminder is drafted by the system and sent by a human"? If they say no, a scheduled weekly digest is a later change. | Note |
+| REM-9 | **Quarterly board assignment email**: a scheduled job (Render cron, first day of each quarter, America/Phoenix) sends each active member one email listing the donors they own: name, last gift date and amount (donations only, D-127), open reminders, link to the app. No other member's donors, no donor email or phone. Off until a member enables it in settings; every run is recorded in `job_runs` and audited (D-137). | M |
 
 ### 4.8 MSG: donor messages
 
@@ -177,6 +186,7 @@ Reminders are **derived from data, never stored**, so re-imports cannot duplicat
 | MSG-6 | `MESSAGING_MODE` = `dry_run` (default; records the send, delivers nothing) or `live` (needs provider key in env). The UI shows a visible "Dry run" badge. | M |
 | MSG-7 | Every send writes send history (who, when, channel, mode, provider reference), a timeline interaction, and an audit entry; it clears the matching reminder. | M |
 | MSG-8 | Do-not-contact donors cannot get drafts. | M |
+| MSG-9 | **Automated thank-you emails** (CIC Nov 15): setting `auto_thank_you`, **off by default**. When on, a scheduled job sends the default thank-you for each thank-you reminder that is due, to donors with an email who are not do-not-contact, then records it like a sent message (clears REM-1). Matches never trigger it. Turning it on is audited and shows a banner on the dashboard. Pending the organizers' answer on the brief's "a human sends" rule (D-138). | S |
 
 ### 4.9 RPT: reporting
 
@@ -200,6 +210,15 @@ Reminders are **derived from data, never stored**, so re-imports cannot duplicat
 
 ---
 
+### 4.11 CUS: custom donor fields (Nov 15 update)
+
+| ID | Requirement | Pri |
+|---|---|---|
+| CUS-1 | Settings page lists donor fields: built-in ones (read-only) and custom ones. Any member (flat mode) or the active super admin can **add** a field (label, type: text, number, date, yes/no, choice list), **rename** it, edit its choices, reorder it, and **deactivate** it. | M |
+| CUS-2 | Deactivating hides the field everywhere but keeps stored values; reactivating brings them back. Hard delete is not offered (D-140). | M |
+| CUS-3 | Custom values show and are editable on donor detail and manual entry, validated by type; they never contain contact details unless the field is marked contact (then DON-3 applies). | M |
+| CUS-4 | Field changes and value edits are audited. The read API and MCP never return custom values. | M |
+
 ## 5. Non-functional requirements
 
 | ID | Requirement |
@@ -212,6 +231,7 @@ Reminders are **derived from data, never stored**, so re-imports cannot duplicat
 | NFR-6 Time | Business time zone `America/Phoenix`; gift dates are date-only; money in integer cents, USD only. An injectable clock for tests. |
 | NFR-7 Performance | Donor list and search under 300 ms on 1,000 donors and 5,000 gifts. Import of 2,000 rows previews in under 10 s. |
 | NFR-8 Docs | README (what, run, live link, demo link), `docs/` set, OpenAPI, runbook, handoff checklist. One GitHub Issue per task, closed by its PR. |
+| NFR-10 Branding | UI follows `docs/BRAND.md`: CIC Dark Green `#007A3D` as the working color, CIC Green `#00A850` for primary buttons and accents only, white backgrounds, Light Tint `#E6F4ED` for alternating rows, Arial/system sans, CIC logo in the header at 24 px or larger. Contrast still meets NFR-4. |
 | NFR-9 Operability | `python -m app.cli` commands: `setup`, `seed-demo`, `reset-demo` (only when `DEMO_MODE=true`), `superadmin <action>`. Health check `/healthz`. |
 
 ## 6. Stack (locked)
@@ -252,3 +272,6 @@ Reminders are **derived from data, never stored**, so re-imports cannot duplicat
 | Internal digest email | Sent by a human click | Organizers: does it count as a "reminder"? |
 | Contact details | Owner and active super admin only | Confirm |
 | Mail provider | Dry-run default; live provider chosen in Phase 0, cost recorded | CIC sending domain |
+| Zeffy contacts `Amount` | Lifetime giving total; stored on the donor, no gifts created (D-135) | CIC: total or last payment? Can they also export Zeffy **Payments** for per-gift history? |
+| Automated sending | `auto_thank_you` and the quarterly email stay off by default (D-137, D-138) | Organizers: do automated thank-yous break the "a human sends" rule? |
+| Board member column | Optional; names `Board member`, `Contact person`, `Assigned to` (D-136) | CIC: what will the column be called? |

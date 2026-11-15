@@ -76,6 +76,9 @@ No foreign key `ON DELETE` path can remove the super admin: `users` rows are nev
 | created_via | text (`import`,`manual`,`merge`) | |
 | created_at, updated_at, deleted_at | | |
 | merged_into_id | bigint FK donors null | set on merge loser |
+| zeffy_total_cents | bigint null | Zeffy contacts `Amount` (D-135); not a gift, not in revenue reports |
+| zeffy_total_as_of | date null | last payment date from that export |
+| custom | jsonb not null default `{}` | values keyed by `custom_field_definitions.key` (CUS) |
 
 Indexes: `(owner_user_id) where deleted_at is null`, trigram index on `display_name` for search.
 
@@ -90,6 +93,8 @@ Indexes: `(owner_user_id) where deleted_at is null`, trigram index on `display_n
 | created_at | | |
 
 Unique `(kind, value_norm)` for `email`, `phone`, `zeffy_contact`, `benevity_donor`, `sheet_row`. `name_org` is not unique (used only to find review candidates).
+
+**custom_field_definitions** (CUS-1): id, key text unique (slug, never changes), label text, type CHECK in (`text`,`number`,`date`,`bool`,`choice`), choices text[] null, is_contact bool default false, position int, is_active bool default true, created_by, created_at, updated_at. Renaming changes `label` only; deactivating sets `is_active = false` and keeps values.
 
 **owner_history**: id, donor_id, from_user_id null, to_user_id, changed_by (user id, null for system), method (`round_robin`,`manual`,`bulk`,`merge`), reason text null, changed_at.
 
@@ -172,7 +177,9 @@ Database checks:
 
 **digest_runs**: id, triggered_by, run_at, mode, recipients int, details jsonb (per user: reminder counts only).
 
-**app_settings**: key text PK, value jsonb. Keys: `thank_you_days_first` (2), `thank_you_days_repeat` (7), `quarterly_days` (90), `import_cutoff_days` (60), `retention_basis` (`rolling`).
+**app_settings**: key text PK, value jsonb. Keys: `thank_you_days_first` (2), `thank_you_days_repeat` (7), `quarterly_days` (90), `import_cutoff_days` (60), `retention_basis` (`rolling`), `auto_thank_you` (false, MSG-9), `quarterly_board_email` (false, REM-9).
+
+**job_runs**: id, job text (`auto_thank_you`,`quarterly_board_email`), started_at, finished_at, status (`ok`,`failed`,`skipped`), counts jsonb (no donor data), error text null. Written by `python -m app.cli run-job <job>`, which the Render cron calls.
 
 ## 3. Rules
 
