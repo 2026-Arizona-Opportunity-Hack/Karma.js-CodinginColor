@@ -1,6 +1,6 @@
 # Import formats (assumed)
 
-**The CSV and XLSX column layouts below are assumed.** No real Coding in Color export was available this weekend. Zeffy's **API** is fully documented (see section 2b), but neither Zeffy's dashboard export nor Benevity's report publishes a column list we could read. The layouts are our best reading of what the vendors document; they are the contract between the fixture generator and the import adapters. When CIC sends real header rows, only the adapters and this file change (D-111). Fixtures in `fixtures/` are synthetic and never claim to be a real platform format.
+**File layouts below are only as certain as their labels say.** No real Coding in Color export was available this weekend. Zeffy's **API** (section 2b) and Benevity's **disbursement report columns** (section 3) are documented by the vendors; Zeffy's dashboard export, the exact header text and file type of Benevity's export, and our own spreadsheet layouts are assumed. The layouts are our best reading of what the vendors document; they are the contract between the fixture generator and the import adapters. When CIC sends real header rows, only the adapters and this file change (D-111). Fixtures in `fixtures/` are synthetic and never claim to be a real platform format.
 
 ## How sure are we?
 
@@ -12,8 +12,9 @@
 | Zeffy API payments carry `currency` (`cad`/`usd`), `status` (`succeeded`/`failed`/`pending`), `type` (`online`/`manual`/`imported`), `refund_status` (`none`/`partial`/`full`), a contact and a campaign | **Documented** | [Zeffy API reference](https://www.zeffy.com/api/docs), [Zeffy: API](https://support.zeffy.com/get-started-with-the-zeffy-api-yourg) |
 | Zeffy dashboard CSV/XLSX column headers, amount units and date format in the file export | **Not documented** (only the prose order above) | n/a |
 | Zeffy fees and tips as fields | **Not documented** in the Payment object (tips are mentioned for webhooks only) | n/a |
-| Benevity donation reports have a **Company** column (the corporate client the gift came from) and donation types **User Portfolio Donation**, **Match** and **Anonymous Donation**; Reporting Studio fields include `DR Code`, `DR Created Date`, `DR Payment Status` (for example Paid, Partial), `DR_Amount`, `DR_Amount_(With_Fees)`; Causes Portal disbursement reports give payment information for the transfer to the nonprofit's bank | **Secondary**: read from search-result summaries of Benevity's help articles; the articles themselves returned HTTP 403 to automated fetching, so the exact headers are unverified | [Understanding donor reports](https://causeshelp.benevity.org/hc/articles/360056082831-Understanding-donor-reports), [Reporting glossary](https://b-hive.benevity.com/hc/articles/360025663972-Benevity-Reporting-glossary), [Donation Explore glossary](https://b-hive.benevity.com/hc/en-us/articles/52828853696020-Reporting-Studio-Donation-Explore-glossary), [Causes Portal reporting](https://causeshelp.benevity.org/hc/en-ca/categories/35338784218260-Reporting) |
-| Benevity literal column headers, donor opt-in fields, file type | **Not verified** | n/a |
+| **Benevity Causes Portal reporting glossary** (the nonprofit-side disbursement report): 36 columns in four groups, Disbursement and Organization Details (Nonprofit Name, Nonprofit ID, Disbursement ID, Disbursement Date, Bank Date, Bank Reference ID, Payment Method, Disbursement From (Grantor)), Project and Campaign Information (Company Name, Corporate / Peer Campaign, Project Name, Project ID, Project External ID, Grant Requirements), Donation and Fee Breakdown (Transaction ID, Donation Date, Donation Amount, Match Amount, Donation Currency, Foreign Exchange Rate, Cause Support Fee, Merchant Fee, Disbursement Check Fee, Fee Comment) and Donor Information (Donation Frequency, Donation Method, Donation Type, Donor First Name, Donor Last Name, Donor Email, Donor Address, Donor City, Original Donor State / Province, Donor Zip / Postal Code, Donor Country, Donor Comment). A company **code** such as A1234 in Company Name means the client chose to stay anonymous; donor details are visible only if the donor opted to share, except the postal code, which defaults to visible | **Documented**: Benevity's article, printed to PDF by a teammate on 2026-11-14 | [Reporting glossary](https://causeshelp.benevity.org/hc/en-us/articles/47969079553300-Reporting-glossary) |
+| Benevity Reporting Studio fields (`Donation_Type`, `Donation_Reversal`, `DR_Amount`, and so on) and the Causes glossary of terms | **Documented but not used**: these describe the *corporate client's* reporting tool and Benevity's legal terms, not the file a nonprofit receives | [B-Hive Reporting glossary](https://b-hive.benevity.com/hc/en-us/articles/360025663972-Benevity-Reporting-glossary), [Donation Explore glossary](https://b-hive.benevity.com/hc/en-us/articles/52828853696020-Reporting-Studio-Donation-Explore-glossary) |
+| Benevity exact header text, file type (CSV or XLSX), date format, reversal and negative-amount rows | **Not verified**: the glossary lists terms, not a sample file; the article "Why is there a negative amount on my report?" was not available | n/a |
 | AZ Gives (runs on MightyCause) and United Way export formats | **Not documented** publicly; they use the generic template | [AZ Gives](https://azgives.org), [United Way](https://www.unitedway.org) |
 
 **To close the gaps** (a human task, five minutes): ask CIC for one real header row from each of Zeffy, Benevity and the donor spreadsheet, or open the Benevity help articles above in a browser and copy the report glossary.
@@ -85,25 +86,31 @@ Contacts (`GET /v1/contacts`) add `phone_number` (E.164 in their examples) and `
 
 Operational notes from the reference: 100 requests per minute and 20 per second per organization (a pull job must back off on `429` using `Retry-After`); an API key is created by the organization owner under Settings → Integrations; the same key can also **write** (create and delete payments and contacts), so the pull job must only ever call `GET` endpoints and the key belongs in an environment variable, never in git (D-113, least privilege). The fixtures in `fixtures/` imitate the dashboard-style file in section 2, not this JSON; an API adapter needs its own fixtures.
 
-## 3. Benevity donation report (`source = benevity`), assumed
+## 3. Benevity disbursement report (`source = benevity`)
 
-One row per donation line in a disbursement. Built from the documented Company column, donation types and report fields.
+Column names are **documented** (Causes Portal Reporting glossary, see the table above); the header text in a real file, its file type and the date format are not verified. One row per donation (`Transaction ID`) inside a disbursement (`Disbursement ID`). The fixture uses all 36 names so the adapter's header matching is exercised on a realistic, wide file. Columns not listed below are ignored.
 
 | Column | Required | Maps to |
 |---|---|---|
-| `Transaction ID` | yes | `source_txn_id` |
-| `Disbursement ID` | no | kept in the import row's normalized data and the batch summary (counts per disbursement); not stored on the gift |
-| `Donation Date` | yes | `gift_date` |
-| `Amount` | yes | `gross_cents` |
-| `Fee` | no | `fee_cents` (default 0) |
-| `Currency` | no | must be USD when present |
-| `Company` | no | `payer_name` (the employer) |
-| `Donation Type` | no | `User Portfolio Donation`, `Match` or `Anonymous Donation`; `Match` sets `is_matching_gift` |
-| `Cause` | no | `campaign_name`, mapped to a program |
-| `Donor First Name`, `Donor Last Name`, `Email` | no | donor fields; Benevity can hide them, so empty means anonymous |
-| `Benevity Donor ID` | no | `benevity_donor` identity when provided |
+| `Transaction ID` | yes | `source_txn_id` for the donation gift; the match gift uses `<id>:match` so both keep a stable `row_key` |
+| `Donation Date` | yes | `gift_date` (the date the gift was processed or submitted for a match) |
+| `Donation Amount` | yes | `gross_cents`: the gross amount contributed by the donor |
+| `Match Amount` | no | when above zero, a **second gift** on the same row: `is_matching_gift = true`, same donor attribution as the donation, `payer_name` = company |
+| `Donation Currency` | yes | must be `USD`; anything else is `invalid` ("not USD"). `Foreign Exchange Rate` is ignored |
+| `Cause Support Fee`, `Merchant Fee` | no | summed into `fee_cents` of the donation gift (`net = gross - fees`); `Disbursement Check Fee` is per disbursement and not stored |
+| `Company Name` | no | `payer_name` and the employer used for name-and-employer matching. A code of the form `A1234` means the company is anonymous: kept as the payer text, not used for matching |
+| `Project Name` | no | `campaign_name`, mapped to a program (ING-7); `Corporate / Peer Campaign` is ignored |
+| `Disbursement ID`, `Disbursement Date` | no | kept in the import row's normalized data and the batch summary (counts per disbursement); not stored on the gift |
+| `Donor First Name`, `Donor Last Name`, `Donor Email` | no | donor fields. They are present only if the donor opted to share: **all three empty means an anonymous gift** (DED-8) |
+| `Donation Frequency`, `Donation Method`, `Donation Type` | no | informational (`One-Time` or `Recurring`; payroll, card or match request) |
+| `Donor Zip / Postal Code` and other address fields | no | not stored (NFR-3); the postal code is visible even when everything else is hidden, so it never identifies a donor |
 
-Rows typed `Anonymous Donation`, or with no donor fields, become unattributed gifts (DED-8). Employer match rows with a named employee link to that employee; the company is the payer.
+Rules that follow from the glossary:
+
+- **There is no donor id** in the report, so Benevity donors are recognised by email (DED-3), then by name plus employer (a review item). The `benevity_donor` identity kind in the schema stays unused until a real file shows an id.
+- A **match** is employer money. It is credited to the same donor as the donation but flagged `is_matching_gift`, so reports can separate it. If the donor is hidden, both gifts are unattributed.
+- **Negative amounts** (the glossary links an article about them, which we could not read) are probably reversals. The importer lists them as `invalid` ("non-positive amount") so a person can look; reversal handling is not built.
+- `Donation Currency` can differ from the disbursement currency; only USD rows are imported.
 
 ## 4. Generic gifts template (`source = generic`)
 
