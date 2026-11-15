@@ -64,6 +64,7 @@ class PreviewState(BaseModel):
     output: ImportPreviewOut
     file_sha256: str
     rows: list[PlannedRow]
+    source_rows: list[IncomingRow]
     expires_at: datetime
 
 
@@ -196,6 +197,7 @@ def build_preview(
         ),
         file_sha256=sha256(data).hexdigest(),
         rows=rows,
+        source_rows=[row.model_copy(deep=True) for row in incoming],
         expires_at=clock.now() + timedelta(minutes=20),
     )
 

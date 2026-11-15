@@ -17,7 +17,7 @@ from app.schemas.imports import (
     ReviewOut,
 )
 from app.services.dedupe import reviews
-from app.services.ingest import service
+from app.services.ingest import batches, service
 from app.services.ingest.uploads import MAX_BYTES
 
 router = session_router("imports")
@@ -43,24 +43,24 @@ def preview_import(
 
 
 @router.get("/imports")
-def list_imports() -> ImportListOut:
-    todo("lane A, phase 2")
+def list_imports(db: DB, cur: CurrentDep) -> ImportListOut:
+    return batches.list_batches(db, cur.actor)
 
 
 @router.get("/imports/{batch_id}")
-def get_import(batch_id: int) -> ImportBatchOut:
-    todo("lane A, phase 2")
+def get_import(batch_id: int, db: DB, cur: CurrentDep, clock: ClockDep) -> ImportBatchOut:
+    return batches.get(db, cur.actor, clock, batch_id)
 
 
 @router.post("/imports/{batch_id}/commit", responses={409: {"model": ErrorOut}})
-def commit_import(batch_id: int) -> ImportBatchOut:
+def commit_import(batch_id: int, db: DB, cur: CurrentDep, clock: ClockDep) -> ImportBatchOut:
     """One transaction; blocked when totals do not reconcile (ING-5, ING-9)."""
-    todo("lane A, phase 2")
+    return batches.commit(db, cur.actor, clock, batch_id)
 
 
 @router.post("/imports/{batch_id}/reverse")
-def reverse_import(batch_id: int) -> ImportBatchOut:
-    todo("lane A, phase 2")
+def reverse_import(batch_id: int, db: DB, cur: CurrentDep, clock: ClockDep) -> ImportBatchOut:
+    return batches.reverse(db, cur.actor, clock, batch_id)
 
 
 @router.get("/reviews")

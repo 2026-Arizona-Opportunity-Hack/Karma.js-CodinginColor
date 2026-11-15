@@ -106,6 +106,9 @@ def _record(source: ImportSource, n: int, row: dict[str, object]) -> IncomingRow
         return value if value is not None and value != "" else default
 
     result = IncomingRow(row_number=n)
+    if source == "benevity":
+        result.disbursement_id = str(get("Disbursement ID"))
+        result.disbursement_date = str(get("Disbursement Date"))
     try:
         if source == "zeffy":
             if str(get("Payment status", "succeeded")).lower() != "succeeded":
@@ -164,8 +167,6 @@ def _record(source: ImportSource, n: int, row: dict[str, object]) -> IncomingRow
                         }
                     )
                 )
-            result.disbursement_id = str(get("Disbursement ID"))
-            result.disbursement_date = str(get("Disbursement Date"))
         result.gifts = gifts
     except ValueError as exc:
         result.reason = str(exc)
