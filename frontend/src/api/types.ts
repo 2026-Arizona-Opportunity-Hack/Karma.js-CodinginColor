@@ -570,7 +570,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Invite Member */
+        /**
+         * Invite Member
+         * @description One-time link, valid 72 hours, shown once (AUTH-4).
+         */
         post: operations["invite_member_api_app_members_invite_post"];
         delete?: never;
         options?: never;
