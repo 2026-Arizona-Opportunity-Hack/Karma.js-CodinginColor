@@ -1,0 +1,230 @@
+.dash-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 24px;
+}
+.chart-tile {
+  margin: 0;
+  padding: 16px;
+  border: 1px solid var(--color-rule);
+  border-top: 3px solid var(--color-forest);
+  background: var(--color-surface);
+  min-width: 0;
+}
+.chart-tile figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px 16px;
+  margin-bottom: 12px;
+}
+.chart-tile figcaption strong {
+  display: block;
+  color: var(--color-forest);
+  font-size: 16px;
+}
+.chart-tile figcaption small {
+  color: var(--color-ink-muted);
+  font-size: 12px;
+}
+.chart-toggle {
+  display: inline-flex;
+  border: 1px solid var(--color-control-border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.chart-toggle button {
+  min-height: 32px;
+  padding: 0 10px;
+  border: 0;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.chart-toggle button + button {
+  border-left: 1px solid var(--color-control-border);
+}
+.chart-toggle button[aria-pressed="true"] {
+  background: var(--color-forest);
+  color: #fff;
+}
+.donut {
+  display: grid;
+  grid-template-columns: minmax(140px, 200px) minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+}
+.donut-plot {
+  position: relative;
+}
+.donut-plot svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.donut-plot path {
+  stroke: var(--color-surface);
+  stroke-width: 2;
+  cursor: pointer;
+  transition: opacity 150ms ease;
+}
+.donut-empty {
+  fill: none;
+  stroke: var(--color-rule);
+  stroke-width: 34;
+}
+.dim {
+  opacity: 0.35;
+}
+.donut-center {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  pointer-events: none;
+  padding: 0 28%;
+}
+.donut-center strong {
+  font-size: 17px;
+}
+.donut-center small {
+  color: var(--color-ink-muted);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.chart-legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.chart-legend button {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 32px;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: 3px;
+  background: none;
+  color: var(--color-ink);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.chart-legend button:hover,
+.bar-row:hover {
+  background: var(--color-wash);
+}
+.chart-legend button[aria-pressed="true"],
+.bar-row[aria-pressed="true"] {
+  background: var(--color-wash);
+  box-shadow: inset 3px 0 var(--color-forest);
+}
+.swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+}
+.legend-label {
+  overflow-wrap: anywhere;
+}
+.chart-legend .numeric small {
+  margin-left: 6px;
+  color: var(--color-ink-muted);
+}
+.bars {
+  position: relative;
+}
+.bar-row {
+  display: grid;
+  grid-template-columns: minmax(0, 11em) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 34px;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: 3px;
+  background: none;
+  color: var(--color-ink);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: opacity 150ms ease;
+}
+.bar-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bar-track {
+  height: 14px;
+}
+.bar-track span {
+  display: block;
+  height: 100%;
+  min-width: 2px;
+  border-radius: 0 4px 4px 0;
+  transition: width 200ms ease;
+}
+.bar-value {
+  font-weight: 600;
+}
+.chart-tip {
+  position: absolute;
+  z-index: 5;
+  display: grid;
+  gap: 2px;
+  min-width: 120px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-rule);
+  border-radius: 4px;
+  background: var(--color-surface);
+  box-shadow: 0 4px 14px rgb(0 0 0 / 0.15);
+  font-size: 12px;
+  pointer-events: none;
+  transform: translate(12px, -110%);
+}
+.chart-tip small {
+  color: var(--color-ink-muted);
+}
+.chart-empty {
+  color: var(--color-ink-muted);
+  font-size: 13px;
+}
+.report-table tr.is-selected {
+  background: var(--color-wash);
+}
+@media (max-width: 900px) {
+  .dash-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 600px) {
+  .donut {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+  }
+  .donut-plot {
+    width: 200px;
+  }
+  .chart-legend {
+    width: 100%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .donut-plot path,
+  .bar-row,
+  .bar-track span {
+    transition: none;
+  }
+}
