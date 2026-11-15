@@ -997,6 +997,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/activity/recent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Recent Activity */
+        get: operations["recent_activity_api_v1_activity_recent_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/health": {
         parameters: {
             query?: never;
@@ -1009,6 +1026,57 @@ export interface paths {
          * @description No auth.
          */
         get: operations["health_api_v1_health_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/totals/by-board-member": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Totals By Board Member */
+        get: operations["totals_by_board_member_api_v1_totals_by_board_member_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/totals/by-period": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Totals By Period */
+        get: operations["totals_by_period_api_v1_totals_by_period_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/totals/by-program": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Totals By Program */
+        get: operations["totals_by_program_api_v1_totals_by_program_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1038,6 +1106,22 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** ActivityDay */
+        ActivityDay: {
+            /** Contacts Logged */
+            contacts_logged: number;
+            /**
+             * Day
+             * Format: date
+             */
+            day: string;
+            /** Gifts Received */
+            gifts_received: number;
+            /** Gross Cents */
+            gross_cents: number;
+            /** Messages Sent */
+            messages_sent: number;
+        };
         /** ApiKeyCreate */
         ApiKeyCreate: {
             /** Name */
@@ -1106,6 +1190,24 @@ export interface components {
             /** Scopes */
             scopes: string[];
         };
+        /** BoardMemberItem */
+        BoardMemberItem: {
+            /** Board Member */
+            board_member: string;
+            /** Contacts Logged */
+            contacts_logged: number;
+            /** Donors Owned */
+            donors_owned: number;
+            /** Gross Cents */
+            gross_cents: number;
+            /** Messages Sent */
+            messages_sent: number;
+            /**
+             * Open Reminders
+             * @description 0 until the reminders service lands (Phase 3)
+             */
+            open_reminders: number;
+        };
         /** BoardMemberTotal */
         BoardMemberTotal: {
             /** Donors Owned */
@@ -1125,6 +1227,89 @@ export interface components {
              * @enum {string}
              */
             source: "spreadsheet" | "zeffy" | "benevity" | "generic";
+        };
+        /** ByBoardMember */
+        ByBoardMember: {
+            /**
+             * As Of
+             * Format: date-time
+             */
+            as_of: string;
+            /**
+             * Currency
+             * @default USD
+             * @constant
+             */
+            currency: "USD";
+            /**
+             * From
+             * Format: date
+             */
+            from: string;
+            /** Items */
+            items: components["schemas"]["BoardMemberItem"][];
+            /**
+             * To
+             * Format: date
+             */
+            to: string;
+        };
+        /** ByPeriod */
+        ByPeriod: {
+            /**
+             * As Of
+             * Format: date-time
+             */
+            as_of: string;
+            /**
+             * Currency
+             * @default USD
+             * @constant
+             */
+            currency: "USD";
+            /**
+             * From
+             * Format: date
+             */
+            from: string;
+            /** Items */
+            items: components["schemas"]["PeriodItem"][];
+            /**
+             * Period
+             * @enum {string}
+             */
+            period: "month" | "quarter" | "year";
+            /**
+             * To
+             * Format: date
+             */
+            to: string;
+        };
+        /** ByProgram */
+        ByProgram: {
+            /**
+             * As Of
+             * Format: date-time
+             */
+            as_of: string;
+            /**
+             * Currency
+             * @default USD
+             * @constant
+             */
+            currency: "USD";
+            /**
+             * From
+             * Format: date
+             */
+            from: string;
+            /** Items */
+            items: components["schemas"]["ProgramItem"][];
+            /**
+             * To
+             * Format: date
+             */
+            to: string;
         };
         /** CountCents */
         CountCents: {
@@ -1906,6 +2091,22 @@ export interface components {
             /** Items */
             items: components["schemas"]["OwnerHistoryEntry"][];
         };
+        /** PeriodItem */
+        PeriodItem: {
+            /** Donor Count */
+            donor_count: number;
+            /** Gift Count */
+            gift_count: number;
+            /** Gross Cents */
+            gross_cents: number;
+            /** Net Cents */
+            net_cents: number;
+            /**
+             * Period Start
+             * Format: date
+             */
+            period_start: string;
+        };
         /** PeriodTotals */
         PeriodTotals: {
             /** Donor Count */
@@ -1928,6 +2129,17 @@ export interface components {
         ProgramCreate: {
             /** Name */
             name: string;
+        };
+        /** ProgramItem */
+        ProgramItem: {
+            /** Donor Count */
+            donor_count: number;
+            /** Gift Count */
+            gift_count: number;
+            /** Gross Cents */
+            gross_cents: number;
+            /** Program */
+            program: string;
         };
         /** ProgramListOut */
         ProgramListOut: {
@@ -1999,6 +2211,24 @@ export interface components {
             reason?: string | null;
             /** To User Id */
             to_user_id: number;
+        };
+        /** RecentActivity */
+        RecentActivity: {
+            /**
+             * As Of
+             * Format: date-time
+             */
+            as_of: string;
+            /**
+             * Currency
+             * @default USD
+             * @constant
+             */
+            currency: "USD";
+            /** Days */
+            days: number;
+            /** Items */
+            items: components["schemas"]["ActivityDay"][];
         };
         /** ReminderListOut */
         ReminderListOut: {
@@ -5943,6 +6173,57 @@ export interface operations {
             };
         };
     };
+    recent_activity_api_v1_activity_recent_get: {
+        parameters: {
+            query?: {
+                days?: number;
+            };
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecentActivity"];
+                };
+            };
+            /** @description Missing, invalid or revoked API key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Key lacks the read:aggregates scope */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Over 60 requests per minute; see Retry-After */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
     health_api_v1_health_get: {
         parameters: {
             query?: never;
@@ -5961,6 +6242,169 @@ export interface operations {
                     "application/json": {
                         [key: string]: string;
                     };
+                };
+            };
+        };
+    };
+    totals_by_board_member_api_v1_totals_by_board_member_get: {
+        parameters: {
+            query?: {
+                /** @description First day, default 12 months ago */
+                from?: string | null;
+                /** @description Last day, default today */
+                to?: string | null;
+            };
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ByBoardMember"];
+                };
+            };
+            /** @description Missing, invalid or revoked API key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Key lacks the read:aggregates scope */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Over 60 requests per minute; see Retry-After */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    totals_by_period_api_v1_totals_by_period_get: {
+        parameters: {
+            query?: {
+                period?: "month" | "quarter" | "year";
+                /** @description First day, default 12 months ago */
+                from?: string | null;
+                /** @description Last day, default today */
+                to?: string | null;
+            };
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ByPeriod"];
+                };
+            };
+            /** @description Missing, invalid or revoked API key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Key lacks the read:aggregates scope */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Over 60 requests per minute; see Retry-After */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    totals_by_program_api_v1_totals_by_program_get: {
+        parameters: {
+            query?: {
+                /** @description First day, default 12 months ago */
+                from?: string | null;
+                /** @description Last day, default today */
+                to?: string | null;
+            };
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ByProgram"];
+                };
+            };
+            /** @description Missing, invalid or revoked API key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Key lacks the read:aggregates scope */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Over 60 requests per minute; see Retry-After */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
                 };
             };
         };

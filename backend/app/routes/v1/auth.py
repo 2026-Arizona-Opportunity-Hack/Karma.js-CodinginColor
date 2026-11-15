@@ -6,8 +6,9 @@ from fastapi import Depends, Header
 
 from app.authz.actor import Actor
 from app.db.models import ApiKey
+from app.errors import TooManyRequests
 from app.routes.deps import DB, ClockDep
-from app.services.apikeys import service
+from app.services.apikeys import ratelimit, service
 
 
 def api_key(
@@ -17,6 +18,12 @@ def api_key(
 ) -> ApiKey:
     row = service.authenticate(db, clock, authorization)
     service.require_scope(row, service.SCOPE_AGGREGATES)
+    wait = ratelimit.check(row.key_hash, clock.now())
+    if wait is not None:
+        raise TooManyRequests(
+            f"Rate limit is {ratelimit.LIMIT} requests per minute.",
+            headers={"Retry-After": str(wait)},
+        )
     return row
 
 
