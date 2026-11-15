@@ -112,6 +112,7 @@ class Gift(Base):
         Index("ix_gifts_donor_date", "donor_id", "gift_date"),
         Index("ix_gifts_date", "gift_date"),
         Index("ix_gifts_batch", "import_batch_id"),
+        Index("ix_gifts_custom", "custom", postgresql_using="gin"),
     )
 
     id: Mapped[int] = id_col()
@@ -131,6 +132,10 @@ class Gift(Base):
     is_matching_gift: Mapped[bool] = mapped_column(server_default=text("false"), nullable=False)
     payer_name: Mapped[str | None] = mapped_column(Text)  # e.g. employer for Benevity
     assumed_thanked: Mapped[bool] = mapped_column(server_default=text("false"), nullable=False)
+    # Values of custom fields, keyed by field_definitions.key (CUS-1).
+    custom: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, server_default=text("'{}'::jsonb"), nullable=False
+    )
     import_batch_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("import_batches.id"))
     created_by: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("users.id"))
     created_at: Mapped[datetime] = created_col()

@@ -19,6 +19,12 @@ class Invalid(AppError):
     status, code = 400, "invalid"
 
 
+class Unprocessable(AppError):
+    """A well-formed request whose values are wrong, for example a custom field value (CUS)."""
+
+    status, code = 422, "unprocessable"
+
+
 class Unauthorized(AppError):
     status, code = 401, "unauthorized"
 

@@ -1,6 +1,7 @@
 """Donors, how we recognise them, and ownership history (DATA_MODEL 2.2)."""
 
 from datetime import datetime
+from typing import Any
 
 from sqlalchemy import (
     BigInteger,
@@ -11,7 +12,7 @@ from sqlalchemy import (
     func,
     text,
 )
-from sqlalchemy.dialects.postgresql import CITEXT
+from sqlalchemy.dialects.postgresql import CITEXT, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -31,6 +32,7 @@ class Donor(Base):
             "owner_user_id",
             postgresql_where=text("deleted_at IS NULL"),
         ),
+        Index("ix_donors_custom", "custom", postgresql_using="gin"),
         Index(
             "ix_donors_display_name_trgm",
             "display_name",
@@ -52,6 +54,10 @@ class Donor(Base):
     owner_assigned_at: Mapped[datetime | None] = mapped_column(TS)
     do_not_contact: Mapped[bool] = mapped_column(server_default=text("false"), nullable=False)
     notes: Mapped[str | None] = mapped_column(Text)
+    # Values of custom fields, keyed by field_definitions.key (CUS-1).
+    custom: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, server_default=text("'{}'::jsonb"), nullable=False
+    )
     created_via: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[datetime] = created_col()
     updated_at: Mapped[datetime] = mapped_column(
