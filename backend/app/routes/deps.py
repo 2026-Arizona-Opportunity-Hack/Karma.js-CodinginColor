@@ -55,6 +55,8 @@ def current(request: Request, db: DB, clock: ClockDep) -> Current:
         kind="user",
         id=user.id,
         is_active_super_admin=users.is_active_super_admin(gov, user.id),
+        super_admin_active=gov.super_admin_state == "active",
+        reassign_scope=gov.reassign_scope,  # type: ignore[arg-type]
         ip=client_ip(request),
     )
     return Current(actor=actor, user=user, session=row)
