@@ -14,8 +14,12 @@ from app.schemas.members import (
     MemberOut,
     MoveDonorsIn,
     MoveDonorsOut,
+    NominationIn,
+    NominationOut,
+    RemoveSuperAdminIn,
     ScopeIn,
 )
+from app.services.governance import nominations
 from app.services.governance import service as governance
 from app.services.members import service as members
 from app.services.ownership import reassign
@@ -72,3 +76,39 @@ def set_scope(body: ScopeIn, cur: CurrentDep, db: DB, clock: ClockDep) -> Govern
 def flatten(cur: CurrentDep, db: DB, clock: ClockDep) -> GovernanceDetail:
     """Active super admin becomes dormant; scope returns to `anyone` (GOV-5)."""
     return governance.flatten(db, clock, cur.actor)
+
+
+@router.get("/governance/nominations")
+def get_nomination(cur: CurrentDep, db: DB, clock: ClockDep) -> NominationOut | None:
+    """The pending super admin nomination, or null. Expired ones are not returned (GOV-2)."""
+    return nominations.pending(db, clock, cur.actor)
+
+
+@router.post("/governance/nominations", status_code=201)
+def nominate(body: NominationIn, cur: CurrentDep, db: DB, clock: ClockDep) -> NominationOut:
+    """Any active member, while the org is flat. One pending nomination at a time (GOV-2)."""
+    return nominations.nominate(db, clock, cur.actor, body.nominee_user_id)
+
+
+@router.post("/governance/nominations/{nomination_id}/confirm")
+def confirm_nomination(
+    nomination_id: int, cur: CurrentDep, db: DB, clock: ClockDep
+) -> GovernanceDetail:
+    """A different member than the nominator makes the nominee super admin (GOV-2)."""
+    return nominations.confirm(db, clock, cur.actor, nomination_id)
+
+
+@router.post("/governance/nominations/{nomination_id}/cancel")
+def cancel_nomination(
+    nomination_id: int, cur: CurrentDep, db: DB, clock: ClockDep
+) -> NominationOut:
+    """The nominator or the nominee withdraws a pending nomination."""
+    return nominations.cancel(db, clock, cur.actor, nomination_id)
+
+
+@router.delete("/governance/super-admin")
+def remove_super_admin(
+    body: RemoveSuperAdminIn, cur: CurrentDep, db: DB, clock: ClockDep
+) -> GovernanceDetail:
+    """The super admin removes their own role; the org becomes flat (GOV-3). Body: REMOVE."""
+    return governance.remove_super_admin(db, clock, cur.actor)

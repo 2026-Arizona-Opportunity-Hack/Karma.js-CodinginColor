@@ -2871,6 +2871,64 @@
         "title": "NextStepOut",
         "type": "object"
       },
+      "NominationIn": {
+        "properties": {
+          "nominee_user_id": {
+            "title": "Nominee User Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "nominee_user_id"
+        ],
+        "title": "NominationIn",
+        "type": "object"
+      },
+      "NominationOut": {
+        "description": "A super admin nomination (GOV-2). `expires_at` is 72 hours after `created_at`.",
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "nominated_by": {
+            "$ref": "#/components/schemas/MemberRef"
+          },
+          "nominee": {
+            "$ref": "#/components/schemas/MemberRef"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "confirmed",
+              "cancelled",
+              "expired"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "nominee",
+          "nominated_by",
+          "status",
+          "created_at",
+          "expires_at"
+        ],
+        "title": "NominationOut",
+        "type": "object"
+      },
       "OutcomeIn": {
         "properties": {
           "metric_label": {
@@ -3639,6 +3697,20 @@
           "action"
         ],
         "title": "ReminderOut",
+        "type": "object"
+      },
+      "RemoveSuperAdminIn": {
+        "properties": {
+          "confirm": {
+            "const": "REMOVE",
+            "title": "Confirm",
+            "type": "string"
+          }
+        },
+        "required": [
+          "confirm"
+        ],
+        "title": "RemoveSuperAdminIn",
         "type": "object"
       },
       "ReportSummary": {
@@ -6423,6 +6495,292 @@
         ]
       }
     },
+    "/api/app/governance/nominations": {
+      "get": {
+        "description": "The pending super admin nomination, or null. Expired ones are not returned (GOV-2).",
+        "operationId": "get_nomination_api_app_governance_nominations_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/NominationOut"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Get Nomination Api App Governance Nominations Get"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Validation failed"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "No session"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Policy denied or bad CSRF token"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not found or not visible"
+          }
+        },
+        "summary": "Get Nomination",
+        "tags": [
+          "app:members"
+        ]
+      },
+      "post": {
+        "description": "Any active member, while the org is flat. One pending nomination at a time (GOV-2).",
+        "operationId": "nominate_api_app_governance_nominations_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NominationIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NominationOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Validation failed"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "No session"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Policy denied or bad CSRF token"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not found or not visible"
+          }
+        },
+        "summary": "Nominate",
+        "tags": [
+          "app:members"
+        ]
+      }
+    },
+    "/api/app/governance/nominations/{nomination_id}/cancel": {
+      "post": {
+        "description": "The nominator or the nominee withdraws a pending nomination.",
+        "operationId": "cancel_nomination_api_app_governance_nominations__nomination_id__cancel_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "nomination_id",
+            "required": true,
+            "schema": {
+              "title": "Nomination Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NominationOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Validation failed"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "No session"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Policy denied or bad CSRF token"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not found or not visible"
+          }
+        },
+        "summary": "Cancel Nomination",
+        "tags": [
+          "app:members"
+        ]
+      }
+    },
+    "/api/app/governance/nominations/{nomination_id}/confirm": {
+      "post": {
+        "description": "A different member than the nominator makes the nominee super admin (GOV-2).",
+        "operationId": "confirm_nomination_api_app_governance_nominations__nomination_id__confirm_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "nomination_id",
+            "required": true,
+            "schema": {
+              "title": "Nomination Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GovernanceDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Validation failed"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "No session"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Policy denied or bad CSRF token"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not found or not visible"
+          }
+        },
+        "summary": "Confirm Nomination",
+        "tags": [
+          "app:members"
+        ]
+      }
+    },
     "/api/app/governance/scope": {
       "put": {
         "description": "Active super admin only (GOV-4).",
@@ -6490,6 +6848,78 @@
           }
         },
         "summary": "Set Scope",
+        "tags": [
+          "app:members"
+        ]
+      }
+    },
+    "/api/app/governance/super-admin": {
+      "delete": {
+        "description": "The super admin removes their own role; the org becomes flat (GOV-3). Body: REMOVE.",
+        "operationId": "remove_super_admin_api_app_governance_super_admin_delete",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RemoveSuperAdminIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GovernanceDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Validation failed"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "No session"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Policy denied or bad CSRF token"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not found or not visible"
+          }
+        },
+        "summary": "Remove Super Admin",
         "tags": [
           "app:members"
         ]

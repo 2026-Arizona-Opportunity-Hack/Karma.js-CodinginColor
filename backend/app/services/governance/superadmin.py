@@ -1,7 +1,8 @@
-"""Super admin lifecycle, reachable only from the setup CLI (GOV-2, GOV-3, GOV-6, GOV-7).
+"""Super admin lifecycle (GOV-2, GOV-3, GOV-5, GOV-6, GOV-7).
 
-Only `flatten` is also reachable from the app (GOV-5), for the active super admin through
-`policy.can(gov.flatten)`. No in-app path creates, re-activates or transfers the role.
+The setup CLI can do everything (break-glass). The app reaches three paths, each through
+`policy.can`: `flatten` (the active super admin), `grant` (a confirmed nomination, D-144) and
+`remove` (the role holder removing their own role).
 """
 
 from sqlalchemy.orm import Session
@@ -49,6 +50,43 @@ def activate(db: Session, actor: Actor, clock: Clock) -> None:
         raise Conflict("The super admin account is deactivated. Use `transfer`.")
     gov.super_admin_state, gov.updated_at = "active", clock.now()
     audit.write(db, actor, "gov.super_admin_activate", entity="user", entity_id=holder.id)
+
+
+def grant(db: Session, actor: Actor, clock: Clock, user: User) -> None:
+    """Make `user` the active super admin while the org is flat. Called when a nomination is
+    confirmed; the caller has already checked policy."""
+    gov = users.get_governance(db)
+    if gov.super_admin_state == "active":
+        raise Conflict("The organization already has a super admin.")
+    if not user.is_active:
+        raise Conflict("That member is deactivated.")
+    previous, state = gov.super_admin_user_id, gov.super_admin_state
+    gov.super_admin_user_id, gov.super_admin_state, gov.updated_at = user.id, "active", clock.now()
+    gov.updated_by = actor.id
+    if state == "none":
+        audit.write(db, actor, "gov.super_admin_create", entity="user", entity_id=user.id)
+    elif previous == user.id:
+        audit.write(db, actor, "gov.super_admin_activate", entity="user", entity_id=user.id)
+    else:
+        audit.write(
+            db, actor, "gov.super_admin_transfer", entity="user", entity_id=user.id,
+            data={"from_user_id": previous},
+        )  # fmt: skip
+
+
+def remove(db: Session, actor: Actor, clock: Clock) -> None:
+    """The role holder deletes their own role (GOV-3). The account and donors stay; the org
+    is flat and `reassign_scope` is `anyone`. Works for an active or a dormant super admin."""
+    if not can(actor, Action.GOV_REMOVE_SUPER_ADMIN):
+        raise Forbidden("Only the super admin can remove the super admin role.")
+    gov = users.get_governance(db)
+    removed, was = gov.super_admin_user_id, gov.super_admin_state
+    gov.super_admin_user_id, gov.super_admin_state, gov.reassign_scope = None, "none", "anyone"
+    gov.updated_by, gov.updated_at = actor.id, clock.now()
+    audit.write(
+        db, actor, "gov.super_admin_removed", entity="user", entity_id=removed,
+        data={"was": was},
+    )  # fmt: skip
 
 
 def flatten(db: Session, actor: Actor, clock: Clock) -> None:

@@ -184,6 +184,7 @@ try {
       me.governance.reassign_scope = gov.reassign_scope;
       return reply(requestId, gov);
     }
+    if (path === "/governance/nominations") return reply(requestId, null);
     if (path === "/governance/flatten") {
       gov = { ...gov, mode: "flat", super_admin_state: "dormant", reassign_scope: "anyone" };
       me.is_super_admin = false;
@@ -254,6 +255,22 @@ try {
     1,
     "No self, inactive, or holder deactivation",
   );
+  // Remove-my-role needs the typed word; nothing is written until then (GOV-3).
+  await clickText("Remove my super admin role");
+  await until("document.querySelector('dialog[open] input')");
+  assert.equal(await evaluate(has("you stay a board member")), true, "Explains the outcome");
+  assert.equal(
+    await evaluate("document.querySelector('dialog .button-danger').disabled"),
+    true,
+    "REMOVE not typed yet",
+  );
+  await set("dialog input", "REMOVE");
+  assert.equal(
+    await evaluate("document.querySelector('dialog .button-danger').disabled"),
+    false,
+    "REMOVE typed",
+  );
+  await clickText("Cancel");
   for (const [w, h] of [
     [1440, 900],
     [768, 1024],
@@ -423,6 +440,22 @@ try {
   );
   await until("[...document.querySelectorAll('button')].some(b=>b.textContent==='Invite member')");
   await shot("1440-flat");
+  // Flat again: anyone can nominate, and nothing is sent until a member is chosen (GOV-2).
+  await viewport(390, 844);
+  await clickText("Nominate super admin");
+  await until("document.querySelector('dialog[open] select')");
+  assert.equal(
+    await evaluate("document.querySelector('dialog .quick-note-footer .button').disabled"),
+    true,
+    "Choose a member first",
+  );
+  await set("dialog select", "1");
+  assert.equal(
+    await evaluate("document.querySelector('dialog .quick-note-footer .button').disabled"),
+    false,
+  );
+  await shot("390-nominate");
+  await clickText("Cancel");
   // Dormant holder remains protected, while a regular active peer can be deactivated in flat mode.
   items[1].is_active = true;
   me.id = 2;

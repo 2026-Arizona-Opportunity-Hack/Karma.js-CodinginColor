@@ -4,7 +4,9 @@ import { useEffect, useId, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, ApiError } from "../api/client";
 import type { components } from "../api/types";
+import { MessageTemplates } from "../components/MessageTemplates";
 import { QuickNoteSheet } from "../components/QuickNoteSheet";
+import { NominationBanner, SuperAdminActions } from "../components/SuperAdminNominations";
 import { EmptyState, ErrorState, LoadingLedger, PageMasthead } from "../components/Workspace";
 import { useMe, type Me } from "../hooks/useAuth";
 import {
@@ -52,7 +54,7 @@ export function SettingsPage() {
 }
 
 function Settings({ actor }: { actor: Me }) {
-  const { members, governance, change, refresh } = useMembersGovernance(actor.id);
+  const { members, governance, nomination, change, refresh } = useMembersGovernance(actor.id);
   const id = useId();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
@@ -242,22 +244,45 @@ function Settings({ actor }: { actor: Me }) {
             </div>
             <footer className="charter-footer">
               <p>
-                Super-admin creation, reactivation, transfer, and account deactivation require the
-                deployment operator’s setup command.
+                Nominate a super admin while the board is flat; a different member confirms. The
+                deployment operator’s setup command remains the break-glass path.
               </p>
-              {activeAdmin && !denied && (
-                <button
-                  className="text-button danger-text"
-                  disabled={busy}
-                  onClick={() => open("flatten")}
-                >
-                  Flatten hierarchy
-                </button>
-              )}
+              <div className="nomination-actions">
+                <SuperAdminActions
+                  gov={gov}
+                  members={list}
+                  actorId={actor.id}
+                  hasPending={!!nomination.data}
+                  change={change}
+                  onDone={setNotice}
+                />
+                {activeAdmin && !denied && (
+                  <button
+                    className="text-button danger-text"
+                    disabled={busy}
+                    onClick={() => open("flatten")}
+                  >
+                    Flatten hierarchy
+                  </button>
+                )}
+              </div>
             </footer>
           </>
         )}
       </section>
+      <NominationBanner
+        nomination={nomination.data}
+        actorId={actor.id}
+        busy={busy}
+        onAct={(kind, n) =>
+          commit(
+            { kind, id: n.id },
+            kind === "confirm"
+              ? `${n.nominee.display_name} is now the super admin.`
+              : "Nomination cancelled.",
+          )
+        }
+      />
       {!sheet && <MutationError error={change.error} />}
       {denied && (
         <p className="quiet-note" role="alert">
@@ -400,6 +425,8 @@ function Settings({ actor }: { actor: Me }) {
           reassigns them. <Link to="/">View Needs reassignment</Link>
         </p>
       </section>
+      {/* GOV-4: in flat mode any member edits templates; otherwise only the active super admin. */}
+      {fresh && <MessageTemplates editable={manage} />}
       <QuickNoteSheet
         open={sheet !== null}
         title={

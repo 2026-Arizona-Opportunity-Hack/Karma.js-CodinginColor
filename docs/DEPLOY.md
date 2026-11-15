@@ -35,3 +35,14 @@ Render's free web service sleeps after 15 minutes without traffic and takes abou
 
 - Rotate the Neon password (Roles → reset password) if the connection string was ever shared, then update `DATABASE_URL` in Render.
 - Neon Free keeps 6 hours of history and has no instant restore; take a `pg_dump` before risky changes.
+
+## Break-glass: the setup command
+
+The app can nominate, confirm and remove a super admin (GOV-2, GOV-3), but the setup command stays the recovery path when nobody can use the app (for example the super admin is locked out or has left). Run it against production like the first deploy:
+
+```bash
+cd backend
+DATABASE_URL='postgresql://...neon...' uv run python -m app.cli superadmin transfer --email someone@example.org
+```
+
+Other subcommands: `create`, `activate`, `flatten`, `deactivate`. Each writes an audit entry.
