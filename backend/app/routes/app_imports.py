@@ -4,6 +4,7 @@ from typing import Annotated, Literal
 
 from fastapi import File, Form, Query, UploadFile
 
+from app.routes.deps import DB, ClockDep, CurrentDep
 from app.routes.stubs import session_router, todo
 from app.schemas.common import ErrorOut, ImportSource
 from app.schemas.donors import GiftAttributeIn, GiftOut
@@ -15,6 +16,8 @@ from app.schemas.imports import (
     ReviewListOut,
     ReviewOut,
 )
+from app.services.ingest import service
+from app.services.ingest.uploads import MAX_BYTES
 
 router = session_router("imports")
 FILE_ERRORS: dict[int | str, dict[str, object]] = {
@@ -26,10 +29,16 @@ FILE_ERRORS: dict[int | str, dict[str, object]] = {
 
 @router.post("/imports/preview", responses=FILE_ERRORS)
 def preview_import(
-    source: Annotated[ImportSource, Form()], file: Annotated[UploadFile, File()]
+    source: Annotated[ImportSource, Form()],
+    file: Annotated[UploadFile, File()],
+    db: DB,
+    cur: CurrentDep,
+    clock: ClockDep,
 ) -> ImportPreviewOut:
     """Parse, validate, dedupe and classify every row. Writes nothing (ING-4)."""
-    todo("lane A, phase 2")
+    return service.preview(
+        db, cur.actor, clock, source, file.filename or "upload", file.file.read(MAX_BYTES + 1)
+    )
 
 
 @router.get("/imports")
