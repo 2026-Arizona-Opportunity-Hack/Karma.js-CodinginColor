@@ -379,6 +379,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/app/fields": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Fields
+         * @description Every field of one entity in display order, including deactivated ones.
+         */
+        get: operations["list_fields_api_app_fields_get"];
+        put?: never;
+        /**
+         * Create Field
+         * @description Add a custom field. Needs `settings.manage`.
+         */
+        post: operations["create_field_api_app_fields_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/app/fields/{field_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Field
+         * @description Only a custom field that never held a value; otherwise 409 and deactivate it.
+         */
+        delete: operations["delete_field_api_app_fields__field_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update Field
+         * @description Relabel, reorder, show in list, edit choices, require, deactivate or restore.
+         */
+        patch: operations["update_field_api_app_fields__field_id__patch"];
+        trace?: never;
+    };
     "/api/app/gifts/unattributed": {
         parameters: {
             query?: never;
@@ -1631,6 +1679,13 @@ export interface components {
          * @description A list item (DON-5).
          */
         DonorCard: {
+            /**
+             * Custom
+             * @description Custom field values by key
+             */
+            custom?: {
+                [key: string]: unknown;
+            };
             /** Display Name */
             display_name: string;
             /** Id */
@@ -1679,6 +1734,10 @@ export interface components {
              * @default false
              */
             confirm_new: boolean;
+            /** Custom */
+            custom?: {
+                [key: string]: unknown;
+            } | null;
             /** Display Name */
             display_name: string;
             /**
@@ -1722,14 +1781,28 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            /**
+             * Custom
+             * @description Custom field values by key
+             */
+            custom?: {
+                [key: string]: unknown;
+            };
             /** Display Name */
             display_name: string;
             /** Do Not Contact */
             do_not_contact: boolean;
             /** Email */
             email?: string | null;
+            /**
+             * Fields
+             * @description Active donor fields in order, to render `custom`
+             */
+            fields?: components["schemas"]["FieldMeta"][];
             /** First Name */
             first_name?: string | null;
+            /** Gift Fields */
+            gift_fields?: components["schemas"]["FieldMeta"][];
             /** Id */
             id: number;
             /**
@@ -1780,6 +1853,8 @@ export interface components {
         };
         /** DonorPage */
         DonorPage: {
+            /** Fields */
+            fields?: components["schemas"]["FieldMeta"][];
             /** Items */
             items: components["schemas"]["DonorCard"][];
             /** Page */
@@ -1791,6 +1866,13 @@ export interface components {
         };
         /** DonorUpdate */
         DonorUpdate: {
+            /**
+             * Custom
+             * @description Merged into the stored values; null clears one
+             */
+            custom?: {
+                [key: string]: unknown;
+            } | null;
             /** Display Name */
             display_name?: string | null;
             /** Do Not Contact */
@@ -1850,6 +1932,144 @@ export interface components {
         ErrorOut: {
             error: components["schemas"]["ErrorDetail"];
         };
+        /** FieldCreate */
+        FieldCreate: {
+            /** Choices */
+            choices?: string[] | null;
+            /**
+             * Entity
+             * @enum {string}
+             */
+            entity: "donor" | "gift";
+            /**
+             * Is Contact
+             * @description Values follow DON-3. Fixed after creation
+             * @default false
+             */
+            is_contact: boolean;
+            /**
+             * Is Required
+             * @default false
+             */
+            is_required: boolean;
+            /** Label */
+            label: string;
+            /**
+             * Show In List
+             * @default false
+             */
+            show_in_list: boolean;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "text" | "long_text" | "number" | "money" | "date" | "bool" | "choice" | "multi_choice";
+        };
+        /** FieldListOut */
+        FieldListOut: {
+            /** Items */
+            items: components["schemas"]["FieldOut"][];
+        };
+        /**
+         * FieldMeta
+         * @description Enough to render a custom value: sent beside `custom` on donor and gift reads.
+         */
+        FieldMeta: {
+            /** Choices */
+            choices?: string[] | null;
+            /**
+             * Is Builtin
+             * @default false
+             */
+            is_builtin: boolean;
+            /**
+             * Is Contact
+             * @default false
+             */
+            is_contact: boolean;
+            /**
+             * Is Required
+             * @default false
+             */
+            is_required: boolean;
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** Position */
+            position: number;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "text" | "long_text" | "number" | "money" | "date" | "bool" | "choice" | "multi_choice";
+        };
+        /** FieldOut */
+        FieldOut: {
+            /** Choices */
+            choices?: string[] | null;
+            /**
+             * Entity
+             * @enum {string}
+             */
+            entity: "donor" | "gift";
+            /**
+             * Has Values
+             * @description True when any record holds a value (blocks delete)
+             */
+            has_values: boolean;
+            /** Id */
+            id: number;
+            /** Is Active */
+            is_active: boolean;
+            /**
+             * Is Builtin
+             * @default false
+             */
+            is_builtin: boolean;
+            /**
+             * Is Contact
+             * @default false
+             */
+            is_contact: boolean;
+            /**
+             * Is Required
+             * @default false
+             */
+            is_required: boolean;
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** Position */
+            position: number;
+            /** Show In List */
+            show_in_list: boolean;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "text" | "long_text" | "number" | "money" | "date" | "bool" | "choice" | "multi_choice";
+        };
+        /**
+         * FieldPatch
+         * @description Key, type, entity and the contact flag never change. Built-ins accept only label,
+         *     position, show_in_list and is_active.
+         */
+        FieldPatch: {
+            /** Choices */
+            choices?: string[] | null;
+            /** Is Active */
+            is_active?: boolean | null;
+            /** Is Required */
+            is_required?: boolean | null;
+            /** Label */
+            label?: string | null;
+            /** Position */
+            position?: number | null;
+            /** Show In List */
+            show_in_list?: boolean | null;
+        };
         /**
          * GiftAttributeIn
          * @description Attach an anonymous gift to a donor once CIC learns who gave (issue #71).
@@ -1863,6 +2083,13 @@ export interface components {
          * @description A manual gift, for example a check (DON-8).
          */
         GiftCreate: {
+            /**
+             * Custom
+             * @description Custom gift field values by key
+             */
+            custom?: {
+                [key: string]: unknown;
+            } | null;
             /**
              * Gift Date
              * Format: date
@@ -1900,6 +2127,13 @@ export interface components {
             attribution: "linked" | "anonymous" | "pending_review";
             /** Campaign Name */
             campaign_name?: string | null;
+            /**
+             * Custom
+             * @description Custom field values by key
+             */
+            custom?: {
+                [key: string]: unknown;
+            };
             /** Donor Id */
             donor_id: number | null;
             /**
@@ -4343,6 +4577,269 @@ export interface operations {
             };
             /** @description Not found or not visible */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    list_fields_api_app_fields_get: {
+        parameters: {
+            query: {
+                entity: "donor" | "gift";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FieldListOut"];
+                };
+            };
+            /** @description Validation failed */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description No session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Policy denied or bad CSRF token */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not found or not visible */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    create_field_api_app_fields_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FieldCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FieldOut"];
+                };
+            };
+            /** @description Validation failed */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description No session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Policy denied or bad CSRF token */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not found or not visible */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    delete_field_api_app_fields__field_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                field_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation failed */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description No session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Policy denied or bad CSRF token */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not found or not visible */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    update_field_api_app_fields__field_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                field_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FieldPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FieldOut"];
+                };
+            };
+            /** @description Validation failed */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description No session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Policy denied or bad CSRF token */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not found or not visible */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

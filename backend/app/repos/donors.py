@@ -31,7 +31,7 @@ def _require_member(actor: Actor) -> None:
 # One row per donor with the numbers a donor card needs. `cur` and `prev` follow DATA_MODEL 3.5.
 _CARD_SQL = """
 SELECT d.id, d.kind, d.display_name, d.first_name, d.last_name, d.organization, d.email, d.phone,
-       d.notes, d.owner_user_id, d.do_not_contact, d.created_at,
+       d.notes, d.owner_user_id, d.do_not_contact, d.created_at, d.custom,
        u.display_name AS owner_name, COALESCE(u.is_active, true) AS owner_active,
        COALESCE(g.t12, 0)::bigint AS total_12m_cents,
        COALESCE(g.tall, 0)::bigint AS total_lifetime_cents,
@@ -144,7 +144,8 @@ def get_card(db: Session, actor: Actor, donor_id: int, *, today: date) -> dict[s
 _GIFT_COLUMNS = """
 g.id, g.donor_id, d.display_name AS donor_name, g.attribution, g.source, g.gift_date,
 g.gross_cents, g.fee_cents, g.net_cents, p.name AS program, g.campaign_name,
-g.is_matching_gift, g.payer_name, g.assumed_thanked
+g.is_matching_gift, g.payer_name, g.assumed_thanked, g.custom,
+d.owner_user_id AS donor_owner_id
 """
 
 
