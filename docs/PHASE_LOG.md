@@ -6,7 +6,7 @@
 |---|---|---|---|---|---|
 | 0 | verified | Sat 17:15 | #2–#9 | #1, #55–#61 | deploy needs human (accounts); free tier for now |
 | 1 | verified | Sat 19:00 | #10–#14, #64 | #65–#70 merged | live deploy checked: 63 routes, 501 when logged in, 401 when logged out |
-| 2A ingest/dedupe | running | Sat 23:00 | #15–#18, #71, #84 | #82 | #84 shared CIC decision/summary contract must merge before #16 |
+| 2A ingest/dedupe | ready-for-review | Sat 23:00 | #15–#18, #71, #84, #102 | #82, #89, #98, #99, #101, #103 | local acceptance 1–4 pass; documentation publication and human merge/verification pending |
 | 2B donor screens | todo | Sat 23:00 | #19–#23 | | build against mocks until lane C merges #72 |
 | 2C read API + donor API | todo | Sat 23:00 | #24–#28, #72–#74 | | donor API moved here (D-126) |
 | 3A ownership/reminders | todo | Sun 01:30 | | | |
@@ -27,8 +27,42 @@
 
 ## Reports
 
+### Phase 2 lane A: ingest, dedupe, review and ownership (Sat 2026-11-14, report prepared 23:19 MST)
+**Issues / PRs (merge commits, in this order):** #15 → PR #82 (merged; blank-row/header fixes included), #84 `shared` → PR #89 (merged), #16 → PR #98, #17 → PR #99, #18 → PR #101, #71 → PR #103, #102 → this `shared` documentation PR. Every PR targets `main`; humans merge.
+
+**What changed:** The four CSV/XLSX adapters feed a read-only preview, then one commit transaction under advisory lock 4201. Commit revalidates identities, file hash, gift keys, programs and cutoff against current data. It saves one import row per nonblank physical source row, separate donation/match gifts, review items, donor identities, balanced ownership/history and audit. Batch history is durable; reversal soft-deletes its gifts and its created donors with no other live gifts, closes its open reviews and is audited. Review-created donors are included in reversal lineage. Anonymous attribution uses `review.decide`, preserves owners, applies the old-gift cutoff and adds the gift to the existing timeline without recording contact.
+
+**Gate (local Docker Postgres only):**
+
+- [x] Acceptance 1: `test_finished_importer_matches_manifest_and_acceptance_1_to_4` runs the actual upload/commit routes on spreadsheet → Zeffy → Benevity → generic. Exact manifest results: 225 donors, 19 review items/reasons, 531 valid gifts, 14 invalid rows/reasons, 13 anonymous Benevity gifts, and matching D-127 retention classes/cents. Benevity: 80 source rows, 91 gifts, 597500 donation cents + 101250 match cents = 698750 gross cents. Rows and cents reconcile independently.
+- [x] Acceptance 2: the same integration test checks identical-file 409s plus shuffled and overlapping exports for all three gift sources: zero new gifts, no new donors/reviews and unchanged totals. Concurrent same-file commits produce one 200 and one 409. Stale previews revalidate gift keys and donor identity inside the lock.
+- [x] Acceptance 3: fixture cross-source identities link; phone matches enter review; resolving a real imported review remembers its email for the next file. Separate review tests cover household conflicts, all gifts on one source row, audit and atomic rollback.
+- [x] Acceptance 4: all 225 imported donors have owners, 75 per active member; inactive members get none. Existing-donor gifts preserve owners; a new donor fills the lightest member. Assignment order is first gift date then name, with oldest last-assignment/id tie-breaks under the lock.
+- [x] Authorization: allow/deny, session and CSRF tests cover every implemented lane route. Review decisions and attribution check `review.decide`; import operations check `import.run`.
+- [x] #18 full backend verification: `.venv/Scripts/ruff.exe check --no-cache .` → `All checks passed!`; `.venv/Scripts/mypy.exe app` → `Success: no issues found in 86 source files`; `.venv/Scripts/python.exe -m pytest -p no:cacheprovider --tb=short` → `618 passed, 2 skipped`.
+- [x] #71 affected suites: `.venv/Scripts/python.exe -m pytest -p no:cacheprovider tests/integration/test_gift_attribution.py tests/integration/test_import_commit.py tests/integration/test_identity_reviews.py tests/integration/test_api_contract.py --tb=short` → `151 passed, 2 skipped`; Ruff clean; mypy clean (87 files).
+- [x] Final full backend run including #71: with both database URLs explicitly set to local Docker `cic_test`, `./.venv/Scripts/python.exe -m pytest -p no:cacheprovider --tb=short` → `623 passed, 2 skipped, 1 warning in 351.04s`. `./.venv/Scripts/ruff.exe check --no-cache .` → `All checks passed!`; `./.venv/Scripts/mypy.exe app` → `Success: no issues found in 87 source files`.
+
+The two skips are the existing session and CSRF checks for the public invite-accept stub; no import, review, ownership or attribution test is skipped. The existing FastAPI/httpx deprecation warning remains. Core acceptance 1–4 passed before the Sat 23:00 MST target; the final attribution and full-lane verification finished after the target. No cut-list item has been applied. The shared #84 contract/types passed frontend generation, typecheck, lint and build; lane A's subsequent route-body changes leave the generated OpenAPI contract unchanged (tested).
+
+**How to verify (exact steps):**
+
+1. Merge the lane PRs in the order above. From the repo, start local Docker Postgres with `docker compose up -d db`. Use only local `cic_test` for both `TEST_DATABASE_URL` and `DATABASE_URL`; never use a shared/Neon database for tests.
+2. In `backend`, run `uv run ruff check .`, `uv run mypy app`, and `uv run pytest`. For just acceptance 1–4: `uv run pytest tests/integration/test_import_commit.py -k finished_importer -v`. The full suite creates/migrates and truncates the local test database.
+3. For human app verification after the code merges, log in and upload the four synthetic fixtures in manifest order. Check row/gift/split-cents summaries; commit each; re-upload; resolve one phone match; verify owner balance and unchanged owners for existing donors. Reverse a small test batch and check its durable history.
+4. Attribute an anonymous gift to an existing donor. It leaves the unattributed list, appears in that donor's gift timeline, preserves the owner and creates one `gift.attribute` audit entry. Old gifts remain assumed thanked; employer matches still do not increase employee giving.
+
+**Decisions made:** D-127 records CIC's explicit change to D-125: keep the match relationship for traceability and count it as org revenue, but exclude it from employee totals, lifetime giving, retention and pre-filled message amounts. Preview class counts are physical source rows, with separate gift counts and donation/match cents. No model or migration changes were needed in this lane.
+
+**Lane C handoff:** After #17 and #18 merge, notify `#team-karma-js` that #73 can use `app.services.dedupe.reviews.candidates(db, actor, incoming)` and `app.services.ownership.assignment.assign_new(db, actor, donor, clock)`. Manual create should take `app.repos.ownership.lock(db, actor)` before candidate matching and hold it through creation, identity learning and assignment in one transaction. Manual donors must retain `created_via = manual` in lane C's repository. The team notification is pending those merges; it has not been sent.
+
+**Known gaps:** Preview state is bounded process memory (20-minute TTL, 16 entries, 32 MiB); worker restart/eviction requires re-upload. Source layouts remain assumed where documented. Generic files without transaction IDs retain the documented split-file identical-gift limitation. #93 computed XLSX values/missing formula caches, #94 per-row control characters, #95 gift-date bounds, #96 scientific-notation amounts and #97 CSV Excel serial support are follow-ups explicitly requested in the #82 review, not implemented here. Message templates/reminders are later-phase work and must honor D-127; lane B owns the import/review/attribute UI. Deployed human acceptance remains pending; this agent did not change Render/Neon or run development/tests against a shared database.
+
+**Questions for the human:** Approve the documentation push/PR actions when shown; review and merge the PRs, then perform human app verification. #71 was published after the approved full-suite condition passed. No next-phase work is authorized by this report.
+**Shared-file changes requested:** #84 → PR #89 handled the summary contract, generated API files, donor/report credit queries, fixture expectations and D-127 documentation. #102 changes only this phase log and README, in a separate `shared` PR after lane code.
+
 ### Phase 2 lane A: CIC match-credit decision and summary contract (shared #84)
-**Issues / PRs:** #15 → PR #82 (CI green); #84 shared prerequisite → PR pending approval; #16 preview committed locally and awaiting adaptation to the new contract; #17, #18, #71 remain.
+**Issues / PRs:** #15 → PR #82 and #84 → PR #89 are merged. The complete lane report above supersedes this shared-preparation checkpoint.
 **What changed:** CIC decision D-127 supersedes employee credit in D-125. Employer matches remain separate flagged gifts with company payer and `:match` transaction suffix, and remain org revenue. Employee totals, lifetime giving, retention and pre-filled message amounts exclude employer matches. Donor linkage remains for traceability. Preview classes count physical source rows and expose separate gift counts, donation cents and match cents; rows and total cents reconcile independently. Fixture generator, manifest and independent resolver test change together; fixture file bytes remain unchanged.
 **Gate:** Shared checks: backend `.venv/Scripts/ruff.exe check --no-cache .` clean; `.venv/Scripts/mypy.exe app` clean (70 files); with both database URLs explicitly set to local Docker `cic_test`, `.venv/Scripts/python.exe -m pytest -p no:cacheprovider` → 558 passed, 2 skipped. Includes deterministic fixture regeneration, independent manifest recomputation and match-credit regression tests. `python -m app.export_openapi ../frontend/src/api/openapi.json` and frontend `npm run gen:api`, `typecheck`, `lint`, `build` pass. Full Phase 2 acceptance tests 1–4 remain pending the importer.
 **How to verify:** On local Docker Postgres, run backend Ruff, mypy and pytest; regenerate OpenAPI and frontend types, then run frontend typecheck, lint and build. The Benevity manifest must retain 80 rows, 91 valid gifts, 597500 donation cents and 101250 match cents; org gross stays 698750 cents.
