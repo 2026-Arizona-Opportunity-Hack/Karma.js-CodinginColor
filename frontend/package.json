@@ -9,7 +9,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "preview": "vite preview",
-    "format": "prettier --write src"
+    "format": "prettier --write src",
+    "gen:api": "openapi-typescript src/api/openapi.json -o src/api/types.ts"
   },
   "dependencies": {
     "@tanstack/react-query": "5.105.0",

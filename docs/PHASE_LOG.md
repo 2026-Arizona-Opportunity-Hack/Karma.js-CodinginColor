@@ -4,8 +4,8 @@
 
 | Phase / lane | Status (todo, running, ready-for-review, verified, cut) | Gate target | Issues | PRs | Notes |
 |---|---|---|---|---|---|
-| 0 | ready-for-review | Sat 17:15 | #2–#9 | #1, #55–#61 | deploy needs human (accounts); free tier for now |
-| 1 | todo | Sat 19:00 | | | |
+| 0 | verified | Sat 17:15 | #2–#9 | #1, #55–#61 | deploy needs human (accounts); free tier for now |
+| 1 | ready-for-review | Sat 19:00 | #10–#14, #64 | 6 stacked PRs | gate evidence below |
 | 2A ingest/dedupe | todo | Sat 23:00 | | | |
 | 2B donor screens | todo | Sat 23:00 | | | |
 | 2C read API/MCP | todo | Sat 23:00 | | | |
@@ -26,6 +26,32 @@
 - Change-password page in Settings.
 
 ## Reports
+
+### Phase 1: Schema, policy, fixtures, contracts  (Sat 2026-11-14, 16:50–17:30 MST)
+**Issues / PRs (merge in this order, with "Create a merge commit"):** #10 donor, gift and program tables `shared` · #64 import and relationship tables `shared` (split from #10) · #11 authorization policy `shared` · #12 assumed import formats · #13 synthetic fixtures and manifest · #14 API contract stubs and TS types `shared`. Branches are stacked `phase-1/<issue>-…`.
+**What changed:** migrations 0002 and 0003 add every remaining table with the rules enforced by the database (gift has a donor exactly when linked, net = gross - fee, USD only, one live gift per `row_key`, one committed file per source, strong identities unique, message approval checks, one open draft per donor and kind, one open next step per donor). `authz/policy.py` answers every action. `docs/IMPORT_FORMATS.md` records each layout with its source and confidence. `fixtures/` holds four deterministic synthetic files plus `manifest.json`. All 63 app routes from `docs/API.md` section 3 exist with typed request and response schemas, require a session and CSRF, and answer 501 until their lane builds them; `frontend/src/api/types.ts` is generated from the OpenAPI document.
+**Gate:**
+- [x] Migrations apply from empty and downgrade: `test_migrations_downgrade_and_reapply` (to base and back) and `test_downgrade_to_previous_revision_and_back` pass; `alembic upgrade head` ran on a fresh database.
+- [x] Policy matrix passes: `uv run pytest tests/authz` → 227 passed (180 matrix rows: 5 donor actions x 3 roles x 4 governance states plus 10 org actions x 3 x 4, then edge cases).
+- [x] Generator hashes stable across two runs: `test_generator_is_deterministic_and_committed_files_are_current` regenerates twice into temp folders and compares bytes to each other and to the committed files; `test_files_match_manifest_hashes`.
+- [x] Manifest test passes: `tests/integration/test_fixtures.py` → 8 passed; it recomputes counts, 19 review items and retention classes from the files with its own parsers and resolver.
+- [x] Types generate without errors: `npm run gen:api` → `openapi-typescript 7.13.0 ... src/api/types.ts`; `npm run typecheck`, `lint`, `build` clean; CI step "Generated API types are current" guards drift.
+- [x] Whole suite: `uv run ruff check . && uv run mypy app && uv run pytest` → clean, 466 passed, 2 skipped (public invite-accept stub has no session to test).
+**How to verify (exact steps):**
+1. Merge #10, #64, #11, #12, #13, #14 in that order (merge commits). Render redeploys and runs migrations 0002 and 0003 on Neon automatically.
+2. After the deploy: `https://cic-compass.onrender.com/api/docs` lists the routes; a logged-in call such as `GET /api/app/donors` returns 501 `not_implemented`; a logged-out call returns 401.
+3. Open `fixtures/synthetic_zeffy_like.csv`, `synthetic_benevity_like.csv` and `synthetic_cic_spreadsheet.xlsx`. Look for: the same person across files with different emails (Benevity rows with a work email), shared household emails in the spreadsheet, rows with `failed`/`pending` status, a bad date (`31/31/2025`), a `CAD` row, `Anonymous Donation` rows. `fixtures/manifest.json` lists the expected summaries.
+4. Read `docs/IMPORT_FORMATS.md`, especially the "How sure are we?" table.
+**Decisions made:** D-123 (policy defaults), D-124 (TypeScript 5.9 for openapi-typescript). Policy: the setup CLI is trusted; api-key and system actors never pass app policy; unknown actions are denied.
+**Known gaps:**
+- Stubs return 501 only, no fake data (the cut-list option); lane B builds against the generated types.
+- PR sizes over ~400 lines: #10 (686, ~200 generated migration), #64 (690, ~190 generated migration), #13 (1,852, mostly the four fixture files, the generator and its test), #14 (generated `types.ts` is 5,846 lines; handwritten about 1,100). Generated and data files are marked in `.gitattributes`.
+- Benevity and Zeffy column layouts remain assumed. The Benevity help pages refused automated reads (HTTP 403) and Zeffy's API reference renders with JavaScript; ask CIC for one real header row from each.
+- `/api/v1` (public read API) is not stubbed; lane C builds it from `docs/API.md` section 1.
+- Lane ownership of stub files: A has `app_donors.py`, `app_imports.py`, `app_members.py`, funder export and settings/programs; C has `app_messages.py`, templates, API keys, reports queries. Donor CRUD was not assigned in `PLAN.md`; the stubs assign it to lane A.
+- `GET /api/app/donors/{id}` and friends need `Owned` resources; the policy is in place, repositories that call it arrive with lane A.
+**Questions for the human:** none blocking. Optional: ask CIC for one real header row each from Zeffy, Benevity and their donor spreadsheet.
+**Shared-file changes requested:** `backend/app/db/models/*`, `backend/alembic/` (#10, #64), `backend/app/authz/policy.py` and `actor.py` (#11), `backend/app/main.py`, `backend/app/schemas/*`, `frontend/src/api/types.ts` (#14).
 
 ### Phase 0: Foundation  (Sat 2026-11-14, 15:11–15:45 MST)
 **Issues / PRs (merge in this order):** #2 → PR #1 (merged) · #3 skeleton · #4 tables (`shared`) · #5 auth · #6 CLI · #7 app shell · #8 CI + Docker · #9 deploy + costs. Branches are stacked (`phase-0/<issue>-…`), each on the previous one.
