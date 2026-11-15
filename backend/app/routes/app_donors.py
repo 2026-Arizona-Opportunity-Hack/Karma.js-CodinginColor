@@ -7,6 +7,7 @@ from typing import Annotated, Literal
 
 from fastapi import Query, Response
 
+from app.routes.deps import DB, ClockDep, CurrentDep
 from app.routes.stubs import session_router, todo
 from app.schemas.common import DonorStatus, ErrorOut
 from app.schemas.donors import (
@@ -25,12 +26,16 @@ from app.schemas.donors import (
     PossibleDuplicateOut,
     TimelineOut,
 )
+from app.services.donors import service as donors_service
 
 router = session_router("donors")
 
 
 @router.get("/donors")
 def list_donors(
+    cur: CurrentDep,
+    db: DB,
+    clock: ClockDep,
     scope: Annotated[Literal["mine", "all"], Query()] = "mine",
     q: Annotated[str | None, Query(max_length=100)] = None,
     owner: Annotated[int | None, Query()] = None,
@@ -39,7 +44,10 @@ def list_donors(
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int, Query(ge=1, le=100)] = 25,
 ) -> DonorPage:
-    todo("lane C, phase 2")
+    return donors_service.list_donors(
+        db, clock, cur.actor, scope=scope, q=q, owner=owner, status=status, program=program,
+        page=page, page_size=page_size,
+    )  # fmt: skip
 
 
 @router.post(
@@ -53,9 +61,9 @@ def create_donor(body: DonorCreate) -> DonorDetail:
 
 
 @router.get("/donors/{donor_id}")
-def get_donor(donor_id: int) -> DonorDetail:
+def get_donor(donor_id: int, cur: CurrentDep, db: DB, clock: ClockDep) -> DonorDetail:
     """Contact fields are null unless the actor is the owner or an active super admin."""
-    todo("lane C, phase 2")
+    return donors_service.get_donor(db, clock, cur.actor, donor_id)
 
 
 @router.patch("/donors/{donor_id}")
@@ -76,8 +84,8 @@ def merge_donor(donor_id: int, body: MergeIn) -> DonorDetail:
 
 
 @router.get("/donors/{donor_id}/timeline")
-def get_timeline(donor_id: int) -> TimelineOut:
-    todo("lane C, phase 2")
+def get_timeline(donor_id: int, cur: CurrentDep, db: DB, clock: ClockDep) -> TimelineOut:
+    return donors_service.get_timeline(db, clock, cur.actor, donor_id)
 
 
 @router.post("/donors/{donor_id}/gifts", status_code=201)
@@ -86,9 +94,9 @@ def add_gift(donor_id: int, body: GiftCreate) -> GiftOut:
 
 
 @router.get("/gifts/unattributed")
-def list_unattributed_gifts() -> GiftListOut:
+def list_unattributed_gifts(cur: CurrentDep, db: DB) -> GiftListOut:
     """Anonymous and pending-review gifts (DED-8)."""
-    todo("lane C, phase 2")
+    return donors_service.unattributed(db, cur.actor)
 
 
 @router.post("/donors/{donor_id}/interactions", status_code=201)

@@ -105,3 +105,26 @@ def add_api_key(db: Session, created_by: int, *, scopes: str = "read:aggregates"
         {"p": key[:13], "h": sha256_hex(key), "s": scopes, "u": created_by},
     )
     return key
+
+
+def add_next_step(
+    db: Session, donor: int, by: int, title: str, due: date, *, status: str = "open"
+) -> int:
+    return _one(
+        db,
+        "INSERT INTO next_steps (donor_id, title, due_date, status, created_by, done_at) "
+        "VALUES (:d, :t, :due, :s, :u, CASE WHEN :s = 'done' THEN now() ELSE NULL END) "
+        "RETURNING id",
+        d=donor, t=title, due=due, s=status, u=by,
+    )  # fmt: skip
+
+
+def add_owner_history(
+    db: Session, donor: int, to_user: int, *, from_user: int | None = None, at: datetime
+) -> int:
+    return _one(
+        db,
+        "INSERT INTO owner_history (donor_id, from_user_id, to_user_id, changed_by, method, "
+        "changed_at) VALUES (:d, :f, :t, :t, 'manual', :at) RETURNING id",
+        d=donor, f=from_user, t=to_user, at=at,
+    )  # fmt: skip
