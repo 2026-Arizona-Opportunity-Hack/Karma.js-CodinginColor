@@ -36,6 +36,28 @@ not learned as donor identities. No model or migration changes.
 
 **Requirements:** ING-4, ING-5, ING-8, DED-3, DON-3; decision D-130.
 
+**Backend verification:** before syncing main, `pytest -p no:cacheprovider`
+reported `636 passed, 2 skipped`; after the final matching fix, the focused
+importer command below reported `47 passed` (including acceptance tests 1-4):
+
+```text
+pytest -p no:cacheprovider tests/unit/test_spreadsheet_updates.py tests/unit/test_import_preview.py tests/integration/test_spreadsheet_updates.py tests/integration/test_import_preview.py tests/integration/test_import_commit.py
+```
+
+After syncing `origin/main` at `ec6ef93`, `ruff check app tests` passes and
+`mypy app` reports `Success: no issues found in 96 source files`.
+The final merged-branch full run includes all importer tests and reports:
+
+```text
+pytest -p no:cacheprovider
+1 failed, 695 passed, 2 skipped, 1 warning in 600.80s (0:10:00)
+FAILED tests/integration/test_contact_and_next_step.py::test_completing_a_step_logs_an_interaction_and_clears_the_card
+```
+
+The two skips remain the intentional public invite-accept session/CSRF cases;
+no importer or donor-update test is skipped. The warning is the existing
+Starlette/httpx TestClient deprecation. See the clock/timeline gap below.
+
 **Verification:** frontend `npm run typecheck`, `npm run lint`,
 `npm run test:updates` (3 passed), and `npm run build` pass. With
 `npm run dev -- --host 127.0.0.1 --port 5173` running, execute
@@ -49,8 +71,19 @@ approvals and an email-only commit payload. Screenshot:
 minutes. Import history/reversal and identity review UI remain separate lane B
 work. Existing batch reversal semantics remove gifts/new donors; reversal does
 not restore approved edits to existing donor fields. Parent importer PRs must
-merge before this feature PR. Full backend verification is recorded below when
-complete; tests use only local PostgreSQL, never Neon.
+merge before this feature PR. Tests use only local PostgreSQL, never Neon.
+
+The merged-branch full suite exposes an unrelated existing failure:
+`test_completing_a_step_logs_an_interaction_and_clears_the_card` in
+`tests/integration/test_contact_and_next_step.py:207`. Its fixed clock dates the
+completion note at Phoenix midnight, while the next-step creation timestamp
+uses the database's real clock. Once the real date reaches November 15, the
+next-step item sorts ahead of the completion note. A single-test run on a
+separate local test database reproduces `1 failed` (`next_step` versus expected
+`note`). The test, relationship repository, donor repository and contacts
+service are unchanged from `origin/main` at `ec6ef93`. This clock/timeline fix
+is outside the requested spreadsheet feature; do not treat the full gate as
+green until it is addressed separately.
 
 ## Open questions for the human / CIC
 - Should initial passwords from `cli setup` force a change at first login? Not in the data model today (see Phase 0 known gaps).
