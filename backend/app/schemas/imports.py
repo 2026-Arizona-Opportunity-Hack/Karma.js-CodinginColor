@@ -146,12 +146,23 @@ class ImportBatchOut(BaseModel):
     summary: ImportSummary | None = None
 
 
+class IgnoredColumn(BaseModel):
+    """A column that matched nothing. Offer to create a field from it (ING-14)."""
+
+    header: str
+    guessed_type: Literal["text", "long_text", "number", "date", "bool"]
+    suggested_entity: Literal["donor", "gift"]
+
+
 class ImportPreviewOut(BaseModel):
     batch: ImportBatchOut
     summary: ImportSummary
     invalid_rows: list[InvalidRow]
     commit_allowed: bool = Field(description="False when totals do not reconcile")
     updates: list[SpreadsheetDonorUpdate] = Field(default_factory=list)
+    ignored_columns: list[IgnoredColumn] = Field(
+        default_factory=list, description="Columns that matched no field and were not imported"
+    )
 
 
 class ImportListOut(BaseModel):

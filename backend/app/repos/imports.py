@@ -218,6 +218,7 @@ def save_gifts(
             campaign_name=gift.campaign_name or None,
             is_matching_gift=gift.is_matching_gift,
             payer_name=gift.payer_name or None,
+            custom=dict(gift.custom),
             assumed_thanked=planned.assumed_thanked,
             import_batch_id=batch.id,
             created_at=at,
@@ -397,3 +398,11 @@ def reverse(db: Session, actor: Actor, batch: ImportBatch, at: datetime) -> None
         at=at,
     )
     db.flush()
+
+
+def fill_custom(db: Session, actor: Actor, donor: Donor, incoming: dict[str, Any]) -> None:
+    """Fill custom values an existing donor lacks. An import never overwrites one."""
+    require(actor)
+    missing = {k: v for k, v in incoming.items() if k not in (donor.custom or {})}
+    if missing:
+        donor.custom = {**(donor.custom or {}), **missing}
