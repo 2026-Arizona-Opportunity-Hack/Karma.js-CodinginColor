@@ -9,6 +9,7 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Identity,
+    Index,
     Text,
     func,
     text,
@@ -75,6 +76,31 @@ class Governance(Base):
     )
     updated_by: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("users.id"))
     updated_at: Mapped[datetime] = mapped_column(TS, server_default=func.now(), nullable=False)
+
+
+class SuperAdminNomination(Base):
+    """A pending, confirmed, cancelled or expired super admin nomination (GOV-2, D-144).
+    A partial unique index allows only one pending row at a time."""
+
+    __tablename__ = "super_admin_nominations"
+    __table_args__ = (
+        CheckConstraint("status IN ('pending','confirmed','cancelled','expired')", name="status"),
+        Index(
+            "uq_super_admin_nominations_one_pending",
+            "status",
+            unique=True,
+            postgresql_where=text("status = 'pending'"),
+        ),
+    )
+
+    id: Mapped[int] = _id()
+    nominee_user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False)
+    nominated_by: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False)
+    confirmed_by: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("users.id"))
+    status: Mapped[str] = mapped_column(Text, server_default=text("'pending'"), nullable=False)
+    created_at: Mapped[datetime] = _created()
+    expires_at: Mapped[datetime] = mapped_column(TS, nullable=False)
+    decided_at: Mapped[datetime | None] = mapped_column(TS)
 
 
 class SessionRow(Base):

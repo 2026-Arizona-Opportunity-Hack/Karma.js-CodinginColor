@@ -1,10 +1,11 @@
 import { ArrowUpRight, CalendarDays, RefreshCw, UserRoundX } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import type { components } from "../api/types";
 import { EmptyState, ErrorState, LoadingLedger, PageMasthead } from "../components/Workspace";
 import { useMe } from "../hooks/useAuth";
+import { useCreateDraft } from "../hooks/useMessages";
 import { useReminders } from "../hooks/useReminders";
 import { calendarDate } from "../lib/format";
 import "./dashboard.css";
@@ -70,10 +71,39 @@ function ReminderRow({ reminder: r }: { reminder: Reminder }) {
           {action}
           <ArrowUpRight size={16} aria-hidden="true" />
         </Link>
-        {r.action === "draft_thank_you" && <small>Thank-you drafting is not available yet.</small>}
-        {r.action === "draft_update" && <small>Update drafting is not available yet.</small>}
+        {(r.action === "draft_thank_you" || r.action === "draft_update") && <DraftButton r={r} />}
       </div>
     </li>
+  );
+}
+
+// Creates (or reopens, MSG-2) an email draft for a person to read and approve; it never sends.
+function DraftButton({ r }: { r: Reminder }) {
+  const draft = useCreateDraft();
+  const navigate = useNavigate();
+  const thanks = r.action === "draft_thank_you";
+  return (
+    <>
+      <button
+        className="button"
+        disabled={draft.isPending}
+        aria-label={`Draft ${thanks ? "a thank-you" : "an update"} for ${r.donor_name}`}
+        onClick={() =>
+          draft.mutate(
+            {
+              donorId: r.donor_id,
+              kind: thanks ? "thank_you" : "quarterly_update",
+              channel: "email",
+              gift_id: thanks ? r.gift_id : null,
+            },
+            { onSuccess: (m) => void navigate(`/messages?message=${m.id}`) },
+          )
+        }
+      >
+        {draft.isPending ? "Drafting…" : thanks ? "Draft thank-you" : "Draft update"}
+      </button>
+      {draft.isError && <small role="alert">{draft.error.message}</small>}
+    </>
   );
 }
 

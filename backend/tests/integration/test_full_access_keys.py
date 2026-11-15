@@ -11,7 +11,7 @@ from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from app.authz.actor import CLI, Actor
-from app.authz.policy import SUPER_ADMIN_ONLY, Action, can
+from app.authz.policy import NOT_FOR_KEYS, Action, can
 from app.cli import main
 from app.clock import FixedClock, SystemClock, set_clock
 from app.db.models import ApiKey, AuditLog
@@ -213,6 +213,6 @@ def test_the_cli_creates_a_full_access_key(db: Session, w, capsys) -> None:
 
 def test_policy_gives_a_full_access_actor_everything_but_governance_and_keys() -> None:
     key = Actor(kind="user", id=1, full_access=True, api_key_id=7)
-    denied = SUPER_ADMIN_ONLY | {Action.APIKEY_MANAGE}
+    denied = NOT_FOR_KEYS | {Action.APIKEY_MANAGE}
     assert all(can(key, a) is (a not in denied) for a in Action)
     assert not any(can(key, a) for a in denied)

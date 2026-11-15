@@ -52,5 +52,11 @@ def flatten(db: Session, clock: Clock, actor: Actor) -> GovernanceDetail:
     return get(db, actor)
 
 
+def remove_super_admin(db: Session, clock: Clock, actor: Actor) -> GovernanceDetail:
+    superadmin.remove(db, actor, clock)
+    db.flush()
+    return get(db, actor)
+
+
 class _Anyone:
     owner_user_id: int | None = None
