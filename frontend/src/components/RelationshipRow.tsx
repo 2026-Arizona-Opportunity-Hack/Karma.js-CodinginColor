@@ -3,15 +3,22 @@ import { Link } from "react-router-dom";
 
 import type { components } from "../api/types";
 import { calendarDate, dollars, initials } from "../lib/format";
+import { formatValue } from "./CustomFields";
 import { StatusPill } from "./Workspace";
 
 export function RelationshipRow({
   donor,
   mine,
+  fields = [],
 }: {
   donor: components["schemas"]["DonorCard"];
   mine: boolean;
+  fields?: components["schemas"]["FieldMeta"][];
 }) {
+  // Fields marked "show in list" appear as an extra line under the name.
+  const extras = fields
+    .filter((f) => f.show_in_list && !f.is_builtin && formatValue(f, donor.custom?.[f.key]))
+    .map((f) => `${f.label}: ${formatValue(f, donor.custom?.[f.key])}`);
   return (
     <article className="relationship-row">
       <details>
@@ -32,6 +39,7 @@ export function RelationshipRow({
                     : "Organization"}
                 {donor.organization && ` · ${donor.organization}`}
               </span>
+              {extras.length > 0 && <span className="secondary-text">{extras.join(" · ")}</span>}
               {donor.statuses.length > 0 && (
                 <span className="status-list">
                   {donor.statuses.map((status) => (

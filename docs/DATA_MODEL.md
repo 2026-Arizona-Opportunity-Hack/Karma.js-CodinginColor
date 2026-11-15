@@ -92,7 +92,7 @@ Indexes: `(owner_user_id) where deleted_at is null`, trigram index on `display_n
 
 Unique `(kind, value_norm)` for `email`, `phone`, `zeffy_contact`, `benevity_donor`, `sheet_row`. `name_org` is not unique (used only to find review candidates).
 
-**field_definitions** (CUS-1): id, entity CHECK in (`donor`,`gift`), key text (slug, immutable, unique per entity), label, type CHECK in (`text`,`long_text`,`number`,`money`,`date`,`bool`,`choice`,`multi_choice`), choices text[] null, is_builtin, is_required, is_contact (DON-3 applies), show_in_list, position, is_active default true, created_by, created_at, updated_at. Seeded with one row per built-in donor and gift field. Values live in `donors.custom` and `gifts.custom` (jsonb, GIN index).
+**field_definitions** (CUS-1): id, entity CHECK in (`donor`,`gift`), key text (slug, immutable, unique per entity), label, type CHECK in (`text`,`long_text`,`number`,`money`,`date`,`bool`,`choice`,`multi_choice`), choices text[] null, is_builtin, is_required, is_contact (DON-3 applies), show_in_list, position, is_active default true, created_by, created_at, updated_at. Seeded with one row per built-in donor and gift field. Values live in `donors.custom` and `gifts.custom` (jsonb, GIN index). Stored forms: text as a string, number as a number, money as integer cents, date as ISO text, bool as true/false, choice as a string, multi-choice as a list. Built-in fields map to real columns and never appear in `custom`. Donor name or first and last name, email, gift date and amount cannot be deactivated.
 
 **super_admin_nominations** (GOV-2): id, nominee_user_id, nominated_by, confirmed_by null, status (`pending`,`confirmed`,`cancelled`,`expired`), created_at, expires_at (72 h), decided_at.
 

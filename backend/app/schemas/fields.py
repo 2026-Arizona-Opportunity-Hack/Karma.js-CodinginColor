@@ -24,12 +24,12 @@ class FieldMeta(BaseModel):
     is_required: bool = False
     is_builtin: bool = False
     is_contact: bool = False
+    show_in_list: bool = False
 
 
 class FieldOut(FieldMeta):
     id: int
     entity: Entity
-    show_in_list: bool
     is_active: bool
     has_values: bool = Field(description="True when any record holds a value (blocks delete)")
 

@@ -10,6 +10,7 @@ Built for CIC's [Donor & Funder Relationship Platform](https://www.ohack.dev/pro
 
 **Available now**
 - Individual board-member accounts with secure login, sessions and CSRF protection.
+- Custom fields: add, rename, reorder, hide and deactivate fields on donors and gifts from Settings > Fields, with type validation, contact-aware visibility, import column mapping and no data loss (deactivate, not delete).
 - A flat hierarchy by default, with an optional single super admin created and removed in the app (see Governance).
 - An audit log of logins and governance changes.
 - CSV/XLSX import preview and commit, with a field-by-field confirmation dialog for spreadsheet donor updates; backend batch history, soft reversal, file/gift deduplication and balanced donor ownership.

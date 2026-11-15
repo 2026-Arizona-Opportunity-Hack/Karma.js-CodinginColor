@@ -364,6 +364,24 @@ Every route, with its fields and errors, is listed at `$CIC_API_BASE/api/docs` (
 - `/api/app` is **not a versioned public contract**. Routes and fields can change; pin to what you
   tested and re-check after updates. Each change a key makes is audited with the key's id.
 
+## 11. Custom fields
+
+CIC can add its own fields to donors and gifts in **Settings > Fields**. Over `/api/app` (session or a full-access key) they appear like this:
+
+- `GET /fields?entity=donor|gift` lists every field in display order: `key`, `label`, `type`, `choices`, `position`, `is_builtin`, `is_required`, `is_contact`, `show_in_list`, `is_active`, `has_values`.
+- `POST /fields` adds a custom field (`entity`, `label`, `type`, `choices`, `is_required`, `is_contact`, `show_in_list`). `PATCH /fields/{id}` changes the label, choices, position, `show_in_list`, `is_required` or `is_active`. `DELETE /fields/{id}` works only for a custom field that never held a value; otherwise it answers 409, so deactivate it instead (values are kept and come back when you restore it). Changing fields needs the same permission as other settings.
+- Donor and gift reads return a `custom` object keyed by field `key`, plus a `fields` list (donor detail also has `gift_fields`) that tells you each field's label, type and order. Send `custom` on `POST /donors`, `PATCH /donors/{id}` and `POST /donors/{id}/gifts`. An update merges into what is stored; `null` clears a value.
+- Types: `text`, `long_text`, `number`, `money` (integer cents, or text like `$25.50`), `date` (`2026-11-15`), `bool`, `choice`, `multi_choice` (list of choices). A bad value answers **422** with a message that starts with the field's label.
+- A field marked `is_contact` follows the contact rule: only the donor's owner, the active super admin or a full-access key sees its value.
+- `/api/v1` and the MCP server never return custom values.
+
+```bash
+curl -s -H "Authorization: Bearer $KEY" "$BASE/api/app/fields?entity=donor"
+curl -s -X PATCH -H "Authorization: Bearer $KEY" -H "Content-Type: application/json"   -d '{"custom": {"giving_tier": "Gold"}}' "$BASE/api/app/donors/42"
+```
+
+When you import a file, a column whose header matches an active field's label or key fills that field; other unrecognised columns are listed in the preview as ignored, with a button to create a field from each.
+
 ## Stability
 
 `/api/v1` is the stable public surface: fields may be added over time, but existing fields keep their
