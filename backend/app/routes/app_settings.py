@@ -32,6 +32,7 @@ from app.schemas.settings import (
     TemplateOut,
 )
 from app.services.apikeys import service as apikey_service
+from app.services.messaging import service as messaging
 
 router = session_router("settings")
 
@@ -47,14 +48,14 @@ def put_settings(body: SettingsIn) -> SettingsOut:
 
 
 @router.get("/templates")
-def list_templates() -> TemplateListOut:
-    todo("lane C, phase 3")
+def list_templates(cur: CurrentDep, db: DB) -> TemplateListOut:
+    return messaging.list_templates(db, cur.actor)
 
 
 @router.put("/templates")
-def put_template(body: TemplateIn) -> TemplateOut:
+def put_template(body: TemplateIn, cur: CurrentDep, db: DB) -> TemplateOut:
     """Create or replace the template for a kind and channel (MSG-1)."""
-    todo("lane C, phase 3")
+    return messaging.put_template(db, cur.actor, body)
 
 
 @router.get("/programs")

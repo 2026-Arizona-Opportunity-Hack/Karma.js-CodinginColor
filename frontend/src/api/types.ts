@@ -262,7 +262,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Create Draft */
+        /**
+         * Create Draft
+         * @description Idempotent: asking again returns the open draft with 200 instead of 201 (MSG-2).
+         */
         post: operations["create_draft_api_app_donors__donor_id__messages_post"];
         delete?: never;
         options?: never;
@@ -654,7 +657,10 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Edit Message */
+        /**
+         * Edit Message
+         * @description An edit returns an approved message to draft and clears the approval (MSG-3).
+         */
         patch: operations["edit_message_api_app_messages__message_id__patch"];
         trace?: never;
     };
@@ -667,7 +673,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Approve Message */
+        /**
+         * Approve Message
+         * @description Only a draft; records who and when and fixes the hash of the words (MSG-4).
+         */
         post: operations["approve_message_api_app_messages__message_id__approve_post"];
         delete?: never;
         options?: never;
@@ -723,7 +732,9 @@ export interface paths {
         put?: never;
         /**
          * Send Message
-         * @description Only from `approved`, and only if the body hash still matches (MSG-3, MSG-4).
+         * @description Email only, from `approved`, and only if the hash still matches (MSG-3, MSG-4).
+         *
+         *     In dry_run mode nothing is delivered. A provider failure returns 200 with status `failed`.
          */
         post: operations["send_message_api_app_messages__message_id__send_post"];
         delete?: never;

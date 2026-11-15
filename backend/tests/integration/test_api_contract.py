@@ -72,6 +72,11 @@ IMPLEMENTED = {
     ("POST", "/api/app/donors/{}/interactions"), ("PUT", "/api/app/donors/{}/next-step"),  # #74
     ("POST", "/api/app/next-steps/{}/done"),
     ("GET", "/api/app/reports/summary"), ("GET", "/api/app/reports/retention"),  # #26
+    ("POST", "/api/app/donors/{}/messages"), ("GET", "/api/app/messages"),  # lane C, issue #36
+    ("GET", "/api/app/templates"), ("PUT", "/api/app/templates"),
+    ("PATCH", "/api/app/messages/{}"), ("POST", "/api/app/messages/{}/approve"),  # #37
+    ("POST", "/api/app/messages/{}/cancel"),
+    ("POST", "/api/app/messages/{}/send"), ("POST", "/api/app/messages/{}/mark-sent"),  # #38
 }  # fmt: skip
 PUBLIC_STUBS = {("POST", "/api/app/auth/invite/{}/accept")}
 

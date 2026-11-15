@@ -8,7 +8,7 @@
 | 1 | verified | Sat 19:00 | #10–#14, #64 | #65–#70 merged | live deploy checked: 63 routes, 501 when logged in, 401 when logged out |
 | 2A ingest/dedupe | running | Sat 23:00 | #15–#18, #71, #84 | #82 | #84 shared CIC decision/summary contract must merge before #16 |
 | 2B donor screens | todo | Sat 23:00 | #19–#23 | | build against mocks until lane C merges #72 |
-| 2C read API + donor API | todo | Sat 23:00 | #24–#28, #72–#74 | | donor API moved here (D-126) |
+| 2C read API + donor API | ready-for-review, #73 blocked | Sat 23:00 | #24–#28, #72–#74, #87, #88 | #77–#81 merged, #83, #85, #90, #91 open | #73 waits for lane A #17 and #18; donor API moved here (D-126) |
 | 3A ownership/reminders | todo | Sun 01:30 | | | |
 | 3B dashboard/people | todo | Sun 01:30 | | | |
 | 3C messaging backend | todo | Sun 01:30 | | | |
@@ -36,6 +36,40 @@
 **Known gaps:** Message routes are still Phase 3 stubs; lane C must apply D-127 when filling message amounts. Board members review and edit drafts before approving and sending. Lane B must render the new summary fields in its import screen. Full importer/manifest integration and acceptance tests 1–4 await #17/#18.
 **Questions for the human:** Push/PR approval required by ENGINEERING section 7 once the shared commit is ready.
 **Shared-file changes requested:** #84: import-summary schema and generated OpenAPI/TS types; donor/report queries; SRS, data model, decisions, import formats and phase log; fixture generator/manifest and tests. No models or migrations change.
+
+### Phase 2 lane C: read API, MCP, donor API  (Sat 2026-11-14, about 18:30–21:30 MST)
+**Issues / PRs (merge in this order, with "Create a merge commit"):** #24 API keys → PR #77 `shared` (merged) · #25 `/api/v1` endpoints → #78 (merged) · #72 donor list, detail, timeline, unattributed → #79 (merged) · #74 contact log and next step → #80 (merged) · #26 report queries → #81 (merged) · #27 MCP server → #83 · #28 API guide → #85 · #87 `apikey` CLI → PR #90 · #88 audit contact and next-step actions → PR #91. **#73 donor and gift create, edit, delete: not started, blocked on lane A #17 (identity resolution) and #18 (round-robin).**
+**What changed:** API keys (`cic_live_` + 32 random bytes, SHA-256 only, shown once, scope, last used, revoke) with the key-auth dependency and a 60 per minute per key limit. Six `/api/v1` read endpoints (`summary`, `retention`, `totals/by-period`, `totals/by-program`, `totals/by-board-member`, `activity/recent`) plus `health`, all aggregates in USD cents with `as_of`. The app's Reports page and `/api/v1` share one set of queries. Donor list (My/All, search, filters, pagination), detail, timeline, unattributed gifts; contact log and next step. A read-only stdio MCP server with six tools in `mcp_server/`, its own lockfile and CI job. `docs/API_GUIDE.md`. `python -m app.cli apikey {create,list,revoke}`.
+**Gate** (Phase 2 gate for lane C: acceptance tests 7, 12, and 11 for retention; 1 to 4 belong to lane A):
+- [x] **Test 7**, another member sees history but not email, phone or notes: `tests/integration/test_donor_read_api.py::test_other_member_sees_history_but_not_contact_details` (also checks the timeline and email search); acting on that donor returns 403: `test_contact_and_next_step.py::test_other_member_cannot_act_on_a_donor_they_do_not_own` (nothing is written).
+- [x] **Test 12**, valid key returns aggregates, no key, wrong key and revoked key return 401, wrong scope 403, 61st request 429 with `Retry-After`: `test_v1_aggregates.py` (`test_no_key_wrong_key_and_revoked_key_get_401`, `test_wrong_scope_gets_403`, `test_rate_limit_is_60_per_minute_per_key_with_retry_after`). No donor PII in the schema: `test_openapi_for_v1_has_no_donor_pii_fields` walks the `/api/v1` OpenAPI document and fails on any donor name, email, phone, note or id field; `test_responses_contain_no_donor_pii` checks real responses.
+- [x] **Test 11**, retention classes match the manifest, checked ahead of lane A's importer: `test_reports.py::test_retention_matches_the_fixture_manifest` loads the donors and gifts that `test_fixtures.py` resolves independently and gets 33 new, 10 reactivated, 25 increased, 18 same, 31 decreased, 40 lapsed as of 2026-11-15, with matching cents. To be repeated through the real importer once lane A lands.
+- [x] Lint, types, tests: `uv run ruff check . && uv run ruff format --check . && uv run mypy app` clean (70 files); `uv run pytest` 551 passed, 2 skipped on the audit branch (559 on the CLI branch) at the last run; `cd mcp_server && uv run pytest` 20 passed, ruff and mypy clean; `npm run gen:api && npm run typecheck` clean after each route change.
+- [x] MCP works end to end (run by hand, local Docker database): the server over stdio listed the six tools and returned data for all six against a local backend; a wrong key gave "The API key was rejected".
+- [x] Guide examples run: every `curl` in `docs/API_GUIDE.md` was run against a local backend; example responses are the real output, including the 429 `retry-after` header and the login, create, list and revoke key flow.
+- [x] Speed (NFR-7), local Docker database, 1,000 donors and 5,000 gifts, in-process test client: donor list median 146 ms (slowest run 387 ms, cold), search 69 ms, status filter 144 ms, donor detail 51 ms, timeline 46 ms, retention 164 ms, report summary 303 ms. Not measured against Neon over the network.
+- [ ] #73 manual donor and gift create, edit, delete: blocked (above).
+**How to verify (exact steps):**
+1. Merge the open PRs with merge commits, in this order: #83 (MCP), #85 (guide), #90 (CLI), #91 (audit), then this report.
+2. `docker compose up -d db`, `cd backend && uv run alembic upgrade head && uv run python -m app.cli setup`, `uv run uvicorn app.main:app`.
+3. Create a key: `uv run python -m app.cli apikey create --name Dashboard --email <member email>`. Then `curl -H "Authorization: Bearer <key>" localhost:8000/api/v1/totals/by-program` returns 200; without the header 401. `apikey revoke <id>` then the same call returns 401.
+4. Log in as two different members (private window). The second opens `GET /api/app/donors?scope=all` and a donor owned by the first: gift history and timeline appear, email, phone and notes are null with `contact_via` set; `POST /api/app/donors/{id}/interactions` returns 403.
+5. Follow `docs/API_GUIDE.md` steps 1 and 2 on the deployed URL; for Claude Desktop follow `mcp_server/README.md`.
+6. After lane A's importer lands: import all fixtures, then `GET /api/v1/retention?as_of=2026-11-15` and compare with `fixtures/manifest.json`.
+**Decisions made:** D-128 (rate limit in memory), D-129 (notes are a contact detail). Also: the v1 retention response carries `retention_date` beside `as_of` because API.md used one name for two things; the stored key prefix is 13 characters (`cic_live_` + 4), not 8; `new` means first linked gift in the last 30 days; the CLI `apikey create` records the member it is for (`--email`).
+**Known gaps:**
+- **#73 not built** (blocked on lane A #17 and #18). Until it lands there is no way to create or edit a donor or gift by hand; `POST /donors`, `PATCH /donors/{id}`, `DELETE /donors/{id}` and `POST /donors/{id}/gifts` still answer 501.
+- `thank_you_due` and `update_due` donor statuses and every `open_reminders` count are missing or 0 until the reminders service (lane A, Phase 3).
+- The rate limit is per process and in memory: exact on Render's single worker, reset by a restart, not shared across workers (D-128).
+- No Settings screen for API keys: issue #86 (lane B, Phase 4). Keys are made through the app API (guide step 1) or the CLI.
+- API.md says Swagger shows the public tag only in production; `/api/docs` currently lists every route (Phase 4 hardening).
+- Timeline and unattributed lists return at most 500 entries and are not paged.
+- Speed was measured locally only (see gate), not on Neon.
+- The contract test `test_api_contract.py` keeps an `IMPLEMENTED` set that every lane edits; expect small merge conflicts.
+- PR sizes over about 400 lines: #78 (about 830 handwritten, 370 tests), #79 (about 640, 280 tests), #81 (about 1,100 with generated files), #83 (about 410 excluding the lockfile); the pieces in each depend on one another.
+- Audit entries for the contact log and next steps were missing from #80 and are added in #88 (found while writing this report).
+**Questions for the human:** Should keys expire (they never do now)? Does CIC want per-key scopes beyond `read:aggregates` (none planned)?
+**Shared-file changes requested:** none open. Merged with #77: `backend/app/main.py` (router), `backend/app/errors.py` (headers), generated `frontend/src/api/openapi.json` and `types.ts`. Touched outside lane C paths with your approval: `backend/app/cli.py` (the `apikey` command) and `docs/API.md` 1.1.
 
 ### Phase 1: Schema, policy, fixtures, contracts  (Sat 2026-11-14, 16:50–17:30 MST)
 **Issues / PRs (merge in this order, with "Create a merge commit"):** #10 donor, gift and program tables `shared` · #64 import and relationship tables `shared` (split from #10) · #11 authorization policy `shared` · #12 assumed import formats · #13 synthetic fixtures and manifest · #14 API contract stubs and TS types `shared`. Branches are stacked `phase-1/<issue>-…`.
