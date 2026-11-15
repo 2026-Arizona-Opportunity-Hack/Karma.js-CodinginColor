@@ -9,6 +9,7 @@ import { LoginPage } from "./pages/LoginPage";
 import { ImportPage } from "./pages/ImportPage";
 import { PlaceholderPage } from "./pages/PlaceholderPage";
 import { DonorsPage } from "./pages/DonorsPage";
+import { DonorDetailPage } from "./pages/DonorDetailPage";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +29,7 @@ createRoot(document.getElementById("root")!).render(
           <Route path="/login" element={<LoginPage />} />
           <Route element={<Layout />}>
             <Route path="/donors" element={<DonorsPage />} />
+            <Route path="/donors/:donorId" element={<DonorDetailPage />} />
             <Route path="/import" element={<ImportPage />} />
             {SCREENS.map((s) => (
               <Route

@@ -85,10 +85,10 @@ export function StatusPill({ status }: { status: keyof typeof STATUS_LABELS }) {
   return <span className={`status-pill status-${status}`}>{STATUS_LABELS[status]}</span>;
 }
 
-export function LoadingLedger() {
+export function LoadingLedger({ label = "Loading relationships" }: { label?: string }) {
   return (
-    <div role="status" aria-label="Loading relationships" className="loading-ledger">
-      <span className="sr-only">Loading relationships…</span>
+    <div role="status" aria-label={label} className="loading-ledger">
+      <span className="sr-only">{label}…</span>
       {Array.from({ length: 5 }, (_, i) => (
         <div key={i} className="skeleton-row" aria-hidden="true">
           <span className="skeleton skeleton-name" />

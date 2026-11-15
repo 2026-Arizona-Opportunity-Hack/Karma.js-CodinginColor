@@ -1,4 +1,5 @@
 import { ChevronDown } from "lucide-react";
+import { Link } from "react-router-dom";
 
 import type { components } from "../api/types";
 import { calendarDate, dollars, initials } from "../lib/format";
@@ -20,7 +21,9 @@ export function RelationshipRow({
               {initials(donor.display_name)}
             </span>
             <span className="identity-copy">
-              <span className="donor-name">{donor.display_name}</span>
+              <Link className="donor-name donor-detail-link" to={`/donors/${donor.id}`}>
+                {donor.display_name}
+              </Link>
               <span className="secondary-text">
                 {donor.kind === "person"
                   ? "Individual"
