@@ -92,6 +92,13 @@ Backend tests use a separate `cic_test` database on the local Postgres.
 
 The app ships as one Docker image (`Dockerfile`) with a Render blueprint (`render.yaml`) and a Neon Postgres database. Migrations run when the container starts. Steps, environment variables and costs: [docs/DEPLOY.md](docs/DEPLOY.md) and [docs/COSTS.md](docs/COSTS.md).
 
+## Security
+
+- Passwords are Argon2id hashed; sessions use `HttpOnly` cookies with CSRF protection on every write.
+- **API keys.** `cic_live_` keys on `/api/v1` are read-only and aggregate-only: totals and counts, never donor names, emails or phones.
+- **Full-access keys exist.** A `cic_full_` key grants full read and write access to every `/api/app` route as the member who created it, including donor contact details. Governance and key management stay off limits. Keys are shown once, stored only as a hash, expire after 90 days, are rate limited, and every change they make is audited with the key's id. Treat one like a password: share it only with apps you trust and revoke it when done. See [API guide](docs/API_GUIDE.md#10-full-access-keys).
+- No secrets in git: real values live in `.env`, and a pre-commit guard and CI secret scan enforce it.
+
 ## Documentation
 
 | Document | Contents |

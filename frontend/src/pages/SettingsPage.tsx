@@ -147,6 +147,9 @@ function Settings({ actor }: { actor: Me }) {
         A shared mission. Clear responsibilities. Keep the people behind each relationship
         connected.
       </PageMasthead>
+      <p>
+        <Link to="/settings/api-keys">API keys for other apps</Link>
+      </p>
       <p role="status" className="settings-notice">
         {notice}
       </p>

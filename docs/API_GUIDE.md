@@ -19,8 +19,8 @@ Contents: [get a key](#1-get-a-key) · [first call](#2-make-your-first-call) ·
 
 ## 1. Get a key
 
-Keys are created by a signed-in board member. There is **no Settings screen for keys yet**, so for now
-you create, list and revoke them with three short `curl` commands (Swagger at `/api/docs` works too).
+Keys are created by a signed-in board member. The easiest way is **Settings → API keys** in the app.
+The `curl` commands below do the same thing (Swagger at `/api/docs` works too).
 
 ```bash
 export CIC_API_BASE="https://cic-compass.onrender.com"
@@ -319,6 +319,50 @@ program raised the most this year?" using this same API and key. Setup takes a f
   may change without notice. They are not part of this API.
 - **Spec file:** `$CIC_API_BASE/api/openapi.json` is the OpenAPI document, which tools such as
   Postman, Power BI, or code generators can import.
+
+## 10. Full-access keys
+
+A **full-access key** (`cic_full_...`) lets another app read and change everything the web app can,
+as the board member who created the key, with no login. It is separate from the read-only keys above:
+those stay on `/api/v1` and cannot touch donors.
+
+> **Warning:** anyone with this key can read and change all donor data, including contact details.
+> Share only with apps you trust; revoke when done.
+
+**Create one** in the app under **Settings → API keys → Full access**, or with the operator CLI:
+`python -m app.cli apikey create --scope full_access --name "My app" --as you@example.org`.
+The key is shown once. It expires after 90 days (the CLI takes `--expires-days N`, `0` = never).
+While a super admin is active, only they can create keys.
+
+**Use it** by sending the key on every request. There are no cookies and no CSRF token:
+
+```bash
+export CIC_API_BASE="https://cic-compass.onrender.com"
+export CIC_FULL_KEY="paste the cic_full_ key here"
+
+# List donors
+curl -s -H "Authorization: Bearer $CIC_FULL_KEY" "$CIC_API_BASE/api/app/donors"
+
+# Create a donor
+curl -s -H "Authorization: Bearer $CIC_FULL_KEY" -H "Content-Type: application/json"   -d '{"kind":"person","display_name":"Ada Lovelace","email":"ada@example.org"}'   "$CIC_API_BASE/api/app/donors"
+
+# Log a contact (use an id from the list above)
+curl -s -H "Authorization: Bearer $CIC_FULL_KEY" -H "Content-Type: application/json"   -d '{"kind":"call","summary":"Thanked her for the gift."}'   "$CIC_API_BASE/api/app/donors/42/interactions"
+```
+
+Every route, with its fields and errors, is listed at `$CIC_API_BASE/api/docs` (read it there, then call the routes with
+`curl` or your app). Rules to know:
+
+- You can do whatever the creating member can, on every donor, and nothing more. Governance (flatten,
+  reassignment scope, super admin) and API-key management are refused with `403`, so a key cannot
+  create or revoke keys. Revoke from Settings or the CLI.
+- `401` for a missing, wrong, revoked or expired key, or if the member who made it was deactivated.
+  `429` after 300 requests in a minute, with `Retry-After`.
+- Browsers on any website may call `/api/app` with the key in the `Authorization` header. Cookies are
+  never sent across sites. Do not put a full-access key in a web page or app that other people can
+  open: anyone who sees it holds it.
+- `/api/app` is **not a versioned public contract**. Routes and fields can change; pin to what you
+  tested and re-check after updates. Each change a key makes is audited with the key's id.
 
 ## Stability
 
