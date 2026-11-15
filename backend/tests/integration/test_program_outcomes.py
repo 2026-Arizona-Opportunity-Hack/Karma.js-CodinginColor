@@ -84,3 +84,71 @@ def test_bad_input_is_refused(db: Session) -> None:
     backwards = {**BODY, "program_id": pid, "period_end": "2025-12-31"}
     assert post(c, backwards).status_code == 400
     assert post(c, {**BODY, "program_id": pid, "value": "lots"}).status_code in (400, 422)
+
+
+# --- CSV upload (issue #135) -------------------------------------------------------------------
+HEADER = "program,period_start,period_end,metric_label,value,unit,source_note\n"
+GOOD = "Robotics,2026-01-01,2026-06-30,Students served,120,students,Spring\n"
+
+
+def upload(c: TestClient, content: str | bytes, name: str = "outcomes.csv"):
+    data = content.encode() if isinstance(content, str) else content
+    return c.post(
+        "/api/app/program-outcomes/upload",
+        files={"file": (name, data, "text/csv")},
+        headers={"X-CSRF-Token": c.cookies["cic_csrf"]},
+    )
+
+
+def count(db: Session) -> int:
+    return db.execute(text("SELECT count(*) FROM program_outcomes")).scalar_one()
+
+
+def test_upload_saves_every_row_and_audits_it(db: Session) -> None:
+    seed.add_user(db, "Diana")
+    program(db)
+    db.commit()
+    rows = GOOD + "robotics,2026-07-01,2026-12-31,Workshops,8,workshops,\n"
+    r = upload(login("diana"), HEADER + rows)
+    assert r.status_code == 201 and len(r.json()["items"]) == 2
+    assert count(db) == 2
+    audit = text("SELECT count(*) FROM audit_log WHERE action = 'outcome.upload'")
+    assert db.execute(audit).scalar_one() == 1
+
+
+def test_one_bad_row_rejects_the_whole_file_and_names_the_row(db: Session) -> None:
+    seed.add_user(db, "Diana")
+    program(db)
+    db.commit()
+    bad = GOOD + "Robotics,2026-07-01,2026-12-31,Workshops,lots,workshops,\n"
+    bad += "Gardening,2026-07-01,2026-12-31,Beds,3,beds,\n"
+    r = upload(login("diana"), HEADER + bad)
+    assert r.status_code == 400
+    assert "row 3" in r.json()["error"]["message"] and "row 4" in r.json()["error"]["message"]
+    assert count(db) == 0
+
+
+def test_upload_refuses_wrong_types_missing_columns_and_big_files(db: Session) -> None:
+    seed.add_user(db, "Diana")
+    program(db)
+    db.commit()
+    c = login("diana")
+    assert upload(c, HEADER + GOOD, name="outcomes.xlsx").status_code == 415
+    assert upload(c, b"%PDF-1.4 not a csv").status_code == 415
+    assert upload(c, "program,unit\nRobotics,kids\n").status_code == 400
+    assert upload(c, HEADER + GOOD + "x" * (1024 * 1024)).status_code == 413
+    assert count(db) == 0
+
+
+def test_upload_is_refused_for_a_member_while_a_super_admin_is_active(db: Session) -> None:
+    diana, sam = seed.add_user(db, "Diana"), seed.add_user(db, "Sam")
+    program(db)
+    db.execute(
+        text("UPDATE governance SET super_admin_user_id = :u, super_admin_state = 'active' "
+             "WHERE id = 1"),
+        {"u": diana},
+    )  # fmt: skip
+    db.commit()
+    assert sam
+    assert upload(login("sam"), HEADER + GOOD).status_code == 403
+    assert count(db) == 0
