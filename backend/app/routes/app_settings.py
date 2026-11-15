@@ -117,33 +117,45 @@ def create_outcome(body: OutcomeIn, cur: CurrentDep, db: DB) -> OutcomeOut:
     return outcome_service.create_outcome(db, cur.actor, body)
 
 
-def _key_out(row: ApiKey) -> ApiKeyOut:
+def _key_out(row: ApiKey, names: dict[int, str]) -> ApiKeyOut:
     return ApiKeyOut(
         id=row.id,
         name=row.name,
+        type="full_access" if apikey_service.SCOPE_FULL in row.scopes else "read_only",
         prefix=row.prefix,
         scopes=list(row.scopes),
+        created_by=row.created_by,
+        created_by_name=names.get(row.created_by),
         created_at=row.created_at,
         last_used_at=row.last_used_at,
+        expires_at=row.expires_at,
         revoked_at=row.revoked_at,
     )
 
 
 @router.get("/api-keys")
 def list_api_keys(cur: CurrentDep, db: DB) -> ApiKeyListOut:
-    return ApiKeyListOut(items=[_key_out(r) for r in apikeys.list_all(db, cur.actor)])
+    rows = apikeys.list_all(db, cur.actor)
+    names = apikeys.creator_names(db, cur.actor, rows)
+    return ApiKeyListOut(items=[_key_out(r, names) for r in rows])
 
 
 @router.post("/api-keys", status_code=201)
-def create_api_key(body: ApiKeyCreate, cur: CurrentDep, db: DB) -> ApiKeyCreated:
+def create_api_key(body: ApiKeyCreate, cur: CurrentDep, db: DB, clock: ClockDep) -> ApiKeyCreated:
     """The full key is in this response only; afterwards just its prefix (API-1)."""
-    made = apikey_service.create(db, cur.actor, name=body.name, scopes=list(body.scopes))
-    return ApiKeyCreated(**_key_out(made.row).model_dump(), key=made.key)
+    scopes: list[str] = list(body.scopes)
+    expires = apikey_service.resolve_expiry(
+        clock, scopes, given="expires_at" in body.model_fields_set, value=body.expires_at
+    )
+    made = apikey_service.create(db, cur.actor, name=body.name, scopes=scopes, expires_at=expires)
+    names = apikeys.creator_names(db, cur.actor, [made.row])
+    return ApiKeyCreated(**_key_out(made.row, names).model_dump(), key=made.key)
 
 
 @router.post("/api-keys/{key_id}/revoke")
 def revoke_api_key(key_id: int, cur: CurrentDep, db: DB, clock: ClockDep) -> ApiKeyOut:
-    return _key_out(apikey_service.revoke(db, clock, cur.actor, key_id))
+    row = apikey_service.revoke(db, clock, cur.actor, key_id)
+    return _key_out(row, apikeys.creator_names(db, cur.actor, [row]))
 
 
 @router.post("/demo/reset", status_code=204)

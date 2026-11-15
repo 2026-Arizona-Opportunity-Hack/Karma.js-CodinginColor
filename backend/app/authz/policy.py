@@ -72,6 +72,10 @@ def can(actor: Actor, action: Action | str, resource: Owned | None = None) -> bo
         return True
     if actor.kind != "user":
         return False
+    # A full-access key acts as its member with every permission except governance, and a key
+    # can never create, list or revoke keys.
+    if actor.full_access:
+        return action not in SUPER_ADMIN_ONLY and action is not Action.APIKEY_MANAGE
 
     if action in ANY_MEMBER:
         return True

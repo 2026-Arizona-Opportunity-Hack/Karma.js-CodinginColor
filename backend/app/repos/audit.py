@@ -20,13 +20,16 @@ def write(
     data: dict[str, Any] | None = None,
     at: datetime | None = None,
 ) -> None:
+    payload = dict(data or {})
+    if actor.api_key_id is not None:
+        payload["api_key_id"] = actor.api_key_id  # which key acted, for every entry it writes
     row = AuditLog(
         actor_kind=actor.kind,
         actor_id=actor.id,
         action=action,
         entity=entity,
         entity_id=entity_id,
-        data=data or {},
+        data=payload,
         ip=actor.ip,
     )
     if at is not None:

@@ -87,7 +87,7 @@ def list_for(db: Session, actor: Actor, status: str | None, limit: int = 200) ->
     if actor.kind not in ("user", "cli"):
         raise Forbidden("Not allowed.")
     stmt = select(Message).join(Donor, Donor.id == Message.donor_id)
-    if actor.kind != "cli" and not actor.is_active_super_admin:
+    if actor.kind != "cli" and not (actor.is_active_super_admin or actor.full_access):
         stmt = stmt.where(Donor.owner_user_id == actor.user_id)
     if status:
         stmt = stmt.where(Message.status == status)
