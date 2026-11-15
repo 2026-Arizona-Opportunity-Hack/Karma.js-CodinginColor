@@ -4,6 +4,7 @@ import { useEffect, useId, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, ApiError } from "../api/client";
 import type { components } from "../api/types";
+import { MessageTemplates } from "../components/MessageTemplates";
 import { QuickNoteSheet } from "../components/QuickNoteSheet";
 import { EmptyState, ErrorState, LoadingLedger, PageMasthead } from "../components/Workspace";
 import { useMe, type Me } from "../hooks/useAuth";
@@ -400,6 +401,8 @@ function Settings({ actor }: { actor: Me }) {
           reassigns them. <Link to="/">View Needs reassignment</Link>
         </p>
       </section>
+      {/* GOV-4: in flat mode any member edits templates; otherwise only the active super admin. */}
+      {fresh && <MessageTemplates editable={manage} />}
       <QuickNoteSheet
         open={sheet !== null}
         title={

@@ -1,0 +1,107 @@
+.template-ledger {
+  margin-top: 44px;
+}
+.template-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr));
+  gap: 20px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.template-entry {
+  padding: 20px 24px 24px;
+  border: 1px solid var(--color-rule);
+  background: var(--color-surface);
+}
+.template-entry header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-rule);
+}
+.template-entry h3 {
+  margin: 0;
+  font: 400 21px/1.2 var(--font-editorial);
+}
+.template-entry h3 span,
+.template-entry header small {
+  color: var(--color-ink-muted);
+  font-family: var(--font-sans);
+  font-size: 12px;
+}
+.template-field {
+  display: block;
+  margin-bottom: 12px;
+}
+.template-field > span {
+  display: block;
+  padding: 0;
+  background: none;
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.template-field input,
+.template-field textarea {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--color-control-border);
+  border-radius: 3px;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.template-field textarea {
+  resize: vertical;
+  font-family: var(--font-editorial);
+  font-size: 15px;
+}
+.template-field :read-only {
+  border-color: var(--color-rule);
+  background: var(--color-canvas);
+}
+.merge-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.merge-fields button {
+  min-height: 32px;
+  padding: 4px 10px;
+  border: 1px dashed var(--color-copper);
+  border-radius: 2px;
+  background: var(--color-surface);
+  color: var(--color-copper);
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 12px;
+}
+.merge-fields button:hover {
+  background: var(--color-warning-wash);
+}
+.template-error {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-left: 3px solid var(--color-danger);
+  background: var(--color-danger-wash);
+  color: var(--color-danger);
+  font-size: 13px;
+}
+.template-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.template-saved {
+  color: var(--color-success);
+  font-size: 13px;
+  font-weight: 600;
+}
