@@ -95,3 +95,15 @@ docs/
 - `ruff`, `mypy` (backend), `tsc`, `eslint` clean; tests added and passing; policy tests for new routes.
 - `.env.example`, docs and `PHASE_LOG.md` updated if behaviour or setup changed.
 - PR body: what, why, how to test (exact steps), screenshots for UI.
+
+## 7. Agent conduct (applies to every teammate's agent)
+
+**Git**
+- No `Co-Authored-By` lines and no "Generated with Claude Code" or similar footers in commit messages or PR descriptions, whatever the tool's default says.
+- Ask the human before `git push` and before `gh pr create`. Show the branches and commits first.
+- Open PRs against `main`. Humans merge them with **"Create a merge commit"** (not rebase, not squash) so stacked branches stay mergeable.
+
+**Hosting and data**
+- Ask before changing anything on Render or Neon (services, environment variables, deploys, database writes, migrations, roles). Read-only checks are fine. Never create paid resources; the budget is $0 until the human says otherwise.
+- **Never point `DATABASE_URL` or `TEST_DATABASE_URL` at Neon or any shared database for tests or development.** The test suite truncates every table. Use the local Docker database.
+- Do not paste connection strings, API keys or passwords into chat, commits or docs.

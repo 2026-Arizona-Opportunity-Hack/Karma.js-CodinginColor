@@ -242,7 +242,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Merge Donor */
+        /**
+         * Merge Donor
+         * @description SRS priority S: not scheduled for a phase yet (DED-7).
+         */
         post: operations["merge_donor_api_app_donors__donor_id__merge_post"];
         delete?: never;
         options?: never;
@@ -352,6 +355,26 @@ export interface paths {
         get: operations["list_unattributed_gifts_api_app_gifts_unattributed_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/app/gifts/{gift_id}/attribute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Attribute Gift
+         * @description Only anonymous gifts; pending-review gifts use the review flow (DED-8, issue #71).
+         */
+        post: operations["attribute_gift_api_app_gifts__gift_id__attribute_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1324,6 +1347,14 @@ export interface components {
          */
         ErrorOut: {
             error: components["schemas"]["ErrorDetail"];
+        };
+        /**
+         * GiftAttributeIn
+         * @description Attach an anonymous gift to a donor once CIC learns who gave (issue #71).
+         */
+        GiftAttributeIn: {
+            /** Donor Id */
+            donor_id: number;
         };
         /**
          * GiftCreate
@@ -3453,6 +3484,77 @@ export interface operations {
             };
             /** @description Not found or not visible */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    attribute_gift_api_app_gifts__gift_id__attribute_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                gift_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GiftAttributeIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GiftOut"];
+                };
+            };
+            /** @description Validation failed */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description No session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Policy denied or bad CSRF token */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not found or not visible */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

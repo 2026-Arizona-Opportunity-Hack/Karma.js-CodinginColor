@@ -32,9 +32,9 @@ After Phase 1 freezes the schema and contracts, three agents work at once in sep
 
 | Lane | Owns (only these paths) | Hat |
 |---|---|---|
-| **A: Core backend** | `backend/app/services/{ingest,dedupe,ownership,reminders}/`, their `repos/` and `routes/app_*.py`, their tests | backend engineer |
+| **A: Core backend** | `backend/app/services/{ingest,dedupe,ownership,reminders}/`, their `repos/`, `routes/app_imports.py` and `routes/app_ownership.py`, their tests | backend engineer |
 | **B: Web app** | `frontend/` | frontend engineer |
-| **C: API, messaging, ops** | `backend/app/routes/v1/`, `backend/app/services/{apikeys,messaging,reports}/`, their repos and routes, `mcp_server/`, `docs/API_GUIDE.md`, CI and deploy files, their tests | backend + devops |
+| **C: API, messaging, ops** | `backend/app/routes/v1/`, `backend/app/services/{apikeys,messaging,reports,donors}/`, their repos and routes (including `routes/app_donors.py`, moved here in Phase 2, D-126), `mcp_server/`, `docs/API_GUIDE.md`, CI and deploy files, their tests | backend + devops |
 
 Phase 4 moves `services/reports/` to lane A (funder export, lapsed radar) because lane C is hardening; lane C's hardening changes to `main.py` and middleware go through `shared` PRs.
 
@@ -101,6 +101,7 @@ If a gate is more than 45 minutes late, apply that phase's cut list. **Never cut
 2. `Add import preview with row keys and summary` (row_key 3.1, classification, invalid reasons, program mapping, cutoff).
 3. `Add donor identity resolution and review queue` (DED-3 to DED-6, DED-8).
 4. `Add import commit with round-robin assignment` (single transaction, advisory lock, owner_history, file hash block, batch history, reverse).
+5. `Add attribute action for anonymous gifts` (#71; after 3, small).
 
 **Lane B: donor screens** (build against stubs, switch to live endpoints as A merges)
 1. `Add donor list with My/All toggle and cards` (DON-1, DON-5, search, filters).
@@ -115,10 +116,15 @@ If a gate is more than 45 minutes late, apply that phase's cut list. **Never cut
 3. `Add report queries for summary and retention` (shared by `/api/v1` and the app's Reports page).
 4. `Add read-only MCP server` (`mcp_server/`, README for Claude Desktop config).
 5. `Add API guide with curl examples` (`docs/API_GUIDE.md`).
+6. `Add donor list, detail, timeline and unattributed endpoints` (#72; acceptance test 7; **do this right after item 1, lane B waits on it**).
+7. `Add contact log and next step endpoints` (#74).
+8. `Add donor and gift create, edit and delete endpoints` (#73; **after lane A items 3 and 4 merge**, it needs candidate matching and round-robin).
+
+Lane C's order: 1, 2, 6, 7, 3, 8, 4, 5. The donor API moved here from lane A because lane A carries the import pipeline (D-126).
 
 **Gate:** acceptance tests 1, 2, 3, 4 (owner on import), 7, 12 as integration or e2e tests.
 **Human verification:** import all fixtures on the deployed app; compare summaries to `manifest.json`; re-upload; resolve one review item; call the API with a new key, then revoke it.
-**Cut list:** batch reverse UI (keep endpoint); filters beyond owner and status; MCP to Phase 4.
+**Cut list:** batch reverse UI (keep endpoint); filters beyond owner and status; MCP to Phase 4; attribute action (#71); manual donor create and edit (#73, keep the read endpoints).
 
 ### Phase 3: Parallel build 2
 

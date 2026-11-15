@@ -1025,6 +1025,20 @@
         "title": "ErrorOut",
         "type": "object"
       },
+      "GiftAttributeIn": {
+        "description": "Attach an anonymous gift to a donor once CIC learns who gave (issue #71).",
+        "properties": {
+          "donor_id": {
+            "title": "Donor Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "donor_id"
+        ],
+        "title": "GiftAttributeIn",
+        "type": "object"
+      },
       "GiftCreate": {
         "description": "A manual gift, for example a check (DON-8).",
         "properties": {
@@ -4551,6 +4565,7 @@
     },
     "/api/app/donors/{donor_id}/merge": {
       "post": {
+        "description": "SRS priority S: not scheduled for a phase yet (DED-7).",
         "operationId": "merge_donor_api_app_donors__donor_id__merge_post",
         "parameters": [
           {
@@ -4874,7 +4889,7 @@
         },
         "summary": "Get Owner History",
         "tags": [
-          "app:donors"
+          "app:ownership"
         ]
       }
     },
@@ -4956,7 +4971,7 @@
         },
         "summary": "Reassign Donor",
         "tags": [
-          "app:donors"
+          "app:ownership"
         ]
       }
     },
@@ -5091,6 +5106,99 @@
         "summary": "List Unattributed Gifts",
         "tags": [
           "app:donors"
+        ]
+      }
+    },
+    "/api/app/gifts/{gift_id}/attribute": {
+      "post": {
+        "description": "Only anonymous gifts; pending-review gifts use the review flow (DED-8, issue #71).",
+        "operationId": "attribute_gift_api_app_gifts__gift_id__attribute_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "gift_id",
+            "required": true,
+            "schema": {
+              "title": "Gift Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GiftAttributeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GiftOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Validation failed"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "No session"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Policy denied or bad CSRF token"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not found or not visible"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "summary": "Attribute Gift",
+        "tags": [
+          "app:imports"
         ]
       }
     },
@@ -7234,7 +7342,7 @@
         },
         "summary": "List Reminders",
         "tags": [
-          "app:donors"
+          "app:ownership"
         ]
       }
     },
@@ -7295,7 +7403,7 @@
         },
         "summary": "List Needs Reassignment",
         "tags": [
-          "app:donors"
+          "app:ownership"
         ]
       }
     },

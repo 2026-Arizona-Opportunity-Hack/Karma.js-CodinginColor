@@ -13,6 +13,7 @@ from app.routes import (
     app_imports,
     app_members,
     app_messages,
+    app_ownership,
     app_reports,
     app_settings,
 )
@@ -42,6 +43,7 @@ def create_app() -> FastAPI:
         app_imports,
         app_donors,
         app_messages,
+        app_ownership,
         app_reports,
         app_settings,
     ):
