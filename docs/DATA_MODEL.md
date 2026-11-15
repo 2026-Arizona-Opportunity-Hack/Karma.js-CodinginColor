@@ -96,6 +96,8 @@ Unique `(kind, value_norm)` for `email`, `phone`, `zeffy_contact`, `benevity_don
 
 **custom_field_definitions** (CUS-1): id, key text unique (slug, never changes), label text, type CHECK in (`text`,`number`,`date`,`bool`,`choice`), choices text[] null, is_contact bool default false, position int, is_active bool default true, created_by, created_at, updated_at. Renaming changes `label` only; deactivating sets `is_active = false` and keeps values.
 
+**roles** (ROLE-1, Phase 5.5): id, name text unique, description text, permissions text[] (values from `authz.policy.Action`, grantable subset only), is_builtin bool, created_by, created_at, updated_at. Seeded: `Board member` (today's flat-mode set) and `Viewer`. **users.role_id** bigint FK roles not null, default Board member.
+
 **owner_history**: id, donor_id, from_user_id null, to_user_id, changed_by (user id, null for system), method (`round_robin`,`manual`,`bulk`,`merge`), reason text null, changed_at.
 
 ### 2.3 Gifts and programs

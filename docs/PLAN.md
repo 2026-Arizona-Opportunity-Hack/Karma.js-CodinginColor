@@ -60,6 +60,7 @@ Branch per issue: `lane-a/12-row-key-dedupe`. Rebase on `main` before opening a 
 | 4 | Messaging UI · Retention + funder export + lapsed radar · Hardening | A, B, C | Sun 09:00 |
 | 4.5 | CIC Nov 15 requirements: Zeffy contacts, board member column, custom fields, scheduled emails, branding | A, B, C | Sun 10:15 |
 | 5 | Accessibility, acceptance on production, trust report | single agent + human | **Sun 10:30 freeze** |
+| 5.5 | Custom roles and permissions (ROLE) | A, B, C | Sun 11:45, hard stop |
 | 6 | Docs, draft video (10:45), feedback hour (11:00), record (12:00), submit | human + writer agent | **Submit by 13:30** |
 
 If a gate is more than 45 minutes late, apply that phase's cut list. **Never cut:** idempotent import with summary, round-robin, Needs reassignment, approval-gated messaging, reminders To-do, read API (minimal), authorization tests, deployment, README, the video, the 30-minute submission buffer.
@@ -200,6 +201,19 @@ New requirements from CIC on Sunday morning (SRS ING-12 to ING-14, DON-13, REM-9
 3. `Add trust report` (`docs/TRUST_REPORT.md` generated from the real run with timestamp: tests passed, Lighthouse scores, policy matrix size, audit coverage).
 
 **Gate:** all 13 acceptance tests pass on production (output pasted); Lighthouse scores listed.
+
+### Phase 5.5: Custom roles and permissions (after the Phase 5 gate)
+
+SRS ROLE-1 to ROLE-6, D-142. Changes authorization after acceptance, so it ships only if the full policy matrix and acceptance tests 5, 6, 7 and 12 pass again on production. **Hard stop 11:45**: anything not merged by then moves to the roadmap; nothing merges after 12:00 recording starts.
+
+**Shared (first, lane C opens it):** `Add roles table and role-based checks to policy` (migration with seeded Board member and Viewer, `users.role_id`, `Action.ROLES_MANAGE`; `can()` checks the actor's role for org-wide actions and the two donor-wide grants; the policy matrix proves Board member equals today's behaviour).
+
+**Lane C:** `Add role endpoints with lockout guard and audit` (ROLE-3, ROLE-5, ROLE-6).
+**Lane B:** `Add roles settings screen and member role picker` (ROLE-1, ROLE-3; plain permission labels; brand theme).
+**Lane A:** `Extend policy matrix and acceptance tests for roles` (Viewer cannot import or act; a custom role with "Act on any donor" can; governance actions never grantable; lockout refused).
+
+**Gate:** policy matrix green including the new role cases; acceptance 5, 6, 7, 12 pass on production after deploy; a member's role changed in the UI takes effect on their next request.
+**Cut list (in order):** role delete; Viewer role; lane B screen (roles then managed by CLI only, documented). If the shared PR is not green by 11:15, stop the phase and keep it as roadmap.
 
 ### Phase 6: Docs, video, submission (human-led; writer agent edits docs only)
 - README: what we built, team, tech stack, run locally, live link, demo link, screenshots.

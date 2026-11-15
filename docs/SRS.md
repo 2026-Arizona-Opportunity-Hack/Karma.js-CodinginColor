@@ -47,6 +47,7 @@ There is no separate staff role this weekend. Donors are stakeholders, not users
 | Reporting | Summary, retention view, funder export | RPT |
 | Read API and MCP | Key-authenticated aggregated API, read-only MCP server | API |
 | Custom donor fields (Nov 15 update) | Add, rename, deactivate donor fields in settings; import and show them | CUS |
+| Custom roles (Nov 15 update, Phase 5.5) | Named roles with editable permission sets, assigned to members | ROLE |
 | Non-functional | Security, accessibility, cost, docs | NFR |
 
 ### 3.2 Improve-later list (only after every P0 is verified)
@@ -60,9 +61,8 @@ There is no separate staff role this weekend. Donors are stakeholders, not users
 | 5 | Milestone messages ("we passed $X thanks to you"), holiday touch reminders | Ours |
 | 6 | Dashboard charts, likelihood-to-give score | P2 |
 | 7 | Debrief to action (note becomes contact record, next step and draft) | P1 |
-| 8 | Custom roles and permission sets editable in settings (today: flat members plus optional super admin, GOV) | CIC Nov 15 "everything customizable" |
-| 9 | Custom fields on gifts, programs and members (CUS covers donors only) | CIC Nov 15 |
-| 10 | Frontend on Vercel with `/api/*` proxied to Render (stated stack preference, D-139) | CIC Nov 15 |
+| 8 | Custom fields on gifts, programs and members (CUS covers donors only) | CIC Nov 15 |
+| 9 | Frontend on Vercel with `/api/*` proxied to Render (stated stack preference, D-139) | CIC Nov 15 |
 
 **Non-goals:** a general CRM; replacing Zeffy or the other platforms; automatic sending to donors unless a member turns on MSG-9; merging people by name similarity; real donor data anywhere in the repo; PDF or plain-text parsing; Problem 1 features (instructors, students, lessons).
 
@@ -218,6 +218,17 @@ Reminders are **derived from data, never stored**, so re-imports cannot duplicat
 | CUS-2 | Deactivating hides the field everywhere but keeps stored values; reactivating brings them back. Hard delete is not offered (D-140). | M |
 | CUS-3 | Custom values show and are editable on donor detail and manual entry, validated by type; they never contain contact details unless the field is marked contact (then DON-3 applies). | M |
 | CUS-4 | Field changes and value edits are audited. The read API and MCP never return custom values. | M |
+
+### 4.12 ROLE: custom roles and permissions (Nov 15 update, Phase 5.5)
+
+| ID | Requirement | Pri |
+|---|---|---|
+| ROLE-1 | A **role** is a name, description and a set of permissions chosen from a fixed list with plain labels (Import files, Decide reviews, Manage settings, Manage templates, Manage programs, Invite members, Manage API keys, Send digest, Manage roles, See every donor's contact details, Act on any donor). Every member has exactly one role. | M |
+| ROLE-2 | Built-in role **Board member** grants exactly what a member can do today in flat mode, so existing behaviour and the policy matrix do not change. It can be edited but not deleted. A second built-in, **Viewer**, can see donors and reports but import, act or manage nothing. | M |
+| ROLE-3 | Settings > Roles: create, rename, edit permissions, delete (only when no member holds the role), and assign a role on the Members page. Requires the new permission `roles.manage`; while a super admin is active, only the super admin has it (GOV-4). | M |
+| ROLE-4 | Roles only **narrow or widen org-wide actions**. Ownership rules stay in code: without "See every donor's contact details" a member sees contact details only for donors they own (DON-3); without "Act on any donor" they act only on their own (DON-4). Governance actions (flatten, scope) stay super-admin-only and are not grantable. | M |
+| ROLE-5 | Lockout guard: a change that would leave no active member (or super admin) holding `roles.manage` is refused with a clear message. The setup CLI can always reset a member to Board member. | M |
+| ROLE-6 | Every role change and role assignment is audited; the read API and MCP are unaffected. | M |
 
 ## 5. Non-functional requirements
 
