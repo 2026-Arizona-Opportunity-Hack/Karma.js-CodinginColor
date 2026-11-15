@@ -144,7 +144,7 @@ export interface paths {
         put?: never;
         /**
          * Send Digest
-         * @description Sent only by a person's click, dry-run by default (REM-6, D-109).
+         * @description Board members only, counts only, sent only by a person's click (REM-6, D-109).
          */
         post: operations["send_digest_api_app_digest_send_post"];
         delete?: never;
