@@ -13,6 +13,8 @@ import { DonorsPage } from "./pages/DonorsPage";
 import { DonorDetailPage } from "./pages/DonorDetailPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { SettingsPage } from "./pages/SettingsPage";
+import { InvitePage } from "./pages/InvitePage";
+import { ApiKeysPage } from "./pages/ApiKeysPage";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +29,7 @@ createRoot(document.getElementById("root")!).render(
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/invite/:token" element={<InvitePage />} />
           <Route element={<Layout />}>
             <Route index element={<DashboardPage />} />
             <Route path="/donors" element={<DonorsPage />} />
@@ -34,6 +37,7 @@ createRoot(document.getElementById("root")!).render(
             <Route path="/import" element={<ImportPage />} />
             <Route path="/review" element={<ReviewPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/settings/api-keys" element={<ApiKeysPage />} />
             {SCREENS.map((s) => (
               <Route
                 key={s.path}
