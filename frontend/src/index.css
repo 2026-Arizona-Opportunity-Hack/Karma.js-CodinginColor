@@ -1,23 +1,29 @@
 @import "tailwindcss";
 
 @theme {
-  --color-canvas: #f6f3ec;
-  --color-surface: #fffefb;
-  --color-ink: #202a25;
-  --color-ink-muted: #58665e;
-  --color-rule: #dcddd3;
-  --color-forest: #254d3d;
-  --color-forest-hover: #1b3b2f;
-  --color-copper: #945133;
+  /* CIC brand (docs/BRAND.md, NFR-10). Dark green is the working color; CIC green is for
+     non-text marks only (3.13:1 on white); red and amber stay for errors and warnings. */
+  --color-canvas: #ffffff;
+  --color-surface: #ffffff;
+  --color-ink: #000000;
+  --color-ink-muted: #595959;
+  --color-rule: #c8c8c8;
+  --color-forest: #007a3d;
+  --color-forest-hover: #00632f;
+  --color-accent: #00a850;
+  --color-on-forest-muted: #e6f4ed;
+  /* Kept name for older rules: eyebrows and editorial accents now use brand dark green. */
+  --color-copper: #007a3d;
   --color-warning: #854a1e;
   --color-danger: #a43f3d;
-  --color-success: #28714c;
-  --color-control-border: #89958b;
-  --color-wash: #edf1e9;
+  --color-success: #007a3d;
+  --color-control-border: #595959;
+  --color-wash: #e6f4ed;
   --color-warning-wash: #f9eddb;
   --color-danger-wash: #faeae6;
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-editorial: Georgia, "Times New Roman", serif;
+  --font-sans: Arial, "Helvetica Neue", system-ui, sans-serif;
+  /* One family only (BRAND.md); headings get weight and color, not a second face. */
+  --font-editorial: var(--font-sans);
 }
 
 :root {
@@ -29,8 +35,14 @@
 }
 body {
   margin: 0;
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1.5;
+}
+h1,
+h2,
+h3,
+legend {
+  color: var(--color-forest);
 }
 button,
 input,
@@ -85,22 +97,34 @@ svg {
   width: 216px;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid var(--color-rule);
+  border-right: 1px solid var(--color-forest);
   padding: 32px 20px 24px;
-  background: var(--color-surface);
+  background: var(--color-forest);
+  color: var(--color-surface);
   z-index: 20;
 }
 .brand {
   display: flex;
   align-items: center;
   gap: 10px;
-  color: var(--color-forest);
+  color: var(--color-surface);
   text-decoration: none;
 }
-.brand > span {
+.brand-logo {
+  display: inline-flex;
+  padding: 4px;
+  border-radius: 3px;
+  background: var(--color-surface);
+}
+.brand-logo img {
+  display: block;
+  height: 32px;
+  width: auto;
+}
+.brand > span:not(.brand-logo) {
   font-family: var(--font-editorial);
   font-size: 20px;
-  letter-spacing: -0.7px;
+  font-weight: 700;
 }
 .brand small {
   display: block;
@@ -108,7 +132,7 @@ svg {
   font-size: 9px;
   letter-spacing: 1.8px;
   margin-top: 2px;
-  color: var(--color-ink-muted);
+  color: var(--color-on-forest-muted);
 }
 .rail-navigation {
   margin-top: 52px;
@@ -117,7 +141,7 @@ svg {
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 1.3px;
-  color: var(--color-ink-muted);
+  color: var(--color-on-forest-muted);
   margin: 0 8px 16px;
 }
 .rail-navigation ul {
@@ -134,18 +158,21 @@ svg {
   min-height: 44px;
   padding: 10px 12px;
   border-radius: 4px;
-  color: var(--color-ink-muted);
+  color: var(--color-surface);
   text-decoration: none;
 }
 .rail-navigation a:hover {
-  background: var(--color-canvas);
-  color: var(--color-forest);
+  background: var(--color-forest-hover);
 }
 .rail-navigation a[aria-current="page"] {
   background: var(--color-wash);
   color: var(--color-forest);
-  font-weight: 650;
-  box-shadow: inset 2px 0 var(--color-forest);
+  font-weight: 700;
+  box-shadow: inset 4px 0 var(--color-accent);
+}
+/* The page focus ring is dark green, which would vanish on the rail. */
+.app-rail :focus-visible {
+  outline-color: var(--color-surface);
 }
 .rail-bottom {
   margin-top: auto;
@@ -154,8 +181,8 @@ svg {
 .rail-note {
   font-family: var(--font-editorial);
   font-style: italic;
-  color: var(--color-ink-muted);
-  border-top: 1px solid var(--color-rule);
+  color: var(--color-on-forest-muted);
+  border-top: 1px solid var(--color-on-forest-muted);
   padding-top: 20px;
   margin-bottom: 24px;
 }
@@ -174,7 +201,7 @@ svg {
 }
 .account small {
   display: block;
-  color: var(--color-ink-muted);
+  color: var(--color-on-forest-muted);
   font-size: 11px;
 }
 .account-mark {
@@ -188,17 +215,28 @@ svg {
   color: var(--color-forest);
   font-size: 11px;
 }
+.app-rail .account-mark {
+  border-color: var(--color-on-forest-muted);
+  color: var(--color-surface);
+}
 .logout-button {
   display: flex;
   align-items: center;
   gap: 8px;
   min-height: 44px;
   margin: 12px 0 0 2px;
-  color: var(--color-ink-muted);
+  color: var(--color-on-forest-muted);
   font-size: 12px;
 }
 .logout-button:hover {
-  color: var(--color-forest);
+  color: var(--color-surface);
+}
+.app-rail .icon-button {
+  border-color: var(--color-on-forest-muted);
+  color: var(--color-surface);
+}
+.app-rail .icon-button:hover:not(:disabled) {
+  background: var(--color-forest-hover);
 }
 .app-workspace {
   margin-left: 216px;
@@ -222,9 +260,8 @@ svg {
 .page-masthead h1 {
   font-family: var(--font-editorial);
   font-size: clamp(36px, 3.3vw, 50px);
-  font-weight: 400;
+  font-weight: 700;
   line-height: 1.12;
-  letter-spacing: -1.7px;
   margin: 0 0 14px;
 }
 .page-intro {
@@ -475,7 +512,6 @@ svg {
   line-height: 1.35;
   display: block;
   overflow-wrap: anywhere;
-  letter-spacing: -0.25px;
 }
 .status-list {
   display: flex;
@@ -546,7 +582,7 @@ details[open] > summary .row-chevron {
 .section-heading h2 {
   font-family: var(--font-editorial);
   font-size: 20px;
-  font-weight: 400;
+  font-weight: 700;
   margin: 0;
 }
 .gift-credit-note {
@@ -636,9 +672,8 @@ details[open] > summary .row-chevron {
 }
 .workspace-state h2 {
   font-family: var(--font-editorial);
-  font-weight: 400;
+  font-weight: 700;
   font-size: 28px;
-  letter-spacing: -0.5px;
   margin: 12px 0;
 }
 .workspace-state > p:not(.eyebrow) {
@@ -800,7 +835,7 @@ details[open] > summary .row-chevron {
 
 @media (max-width: 640px) {
   body {
-    font-size: 14px;
+    font-size: 16px;
   }
   .app-rail {
     position: sticky;
@@ -808,7 +843,7 @@ details[open] > summary .row-chevron {
     width: 100%;
     padding: 12px 20px;
     border-right: 0;
-    border-bottom: 1px solid var(--color-rule);
+    border-bottom: 1px solid var(--color-forest-hover);
   }
   .rail-brand {
     display: flex;

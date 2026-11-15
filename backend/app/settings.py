@@ -21,6 +21,10 @@ class Settings(BaseSettings):
     resend_api_key: SecretStr = SecretStr("")
     mail_from: str = ""
     demo_mode: bool = False
+    # OHack AI gateway for the assistant (AST-1). Secret; never logged or stored. Empty = off.
+    ai_gateway_url: str = ""
+    ai_gateway_key: SecretStr = SecretStr("")
+    ai_gateway_model: str = ""
     # Directory with the built SPA (frontend/dist). Served by FastAPI when present.
     static_dir: str = "../frontend/dist"
     timezone: str = "America/Phoenix"

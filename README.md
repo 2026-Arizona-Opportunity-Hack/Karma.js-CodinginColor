@@ -15,6 +15,7 @@ Built for CIC's [Donor & Funder Relationship Platform](https://www.ohack.dev/pro
 - An audit log of logins and governance changes.
 - CSV/XLSX import preview and commit, with a field-by-field confirmation dialog for spreadsheet donor updates; backend batch history, soft reversal, file/gift deduplication and balanced donor ownership.
 - Backend donor identity reviews and anonymous-gift attribution, with authorization and audit records.
+- A text assistant API (`POST /api/app/assistant/interpret`): one sentence becomes proposed "log a contact", "add a follow-up" or "draft a thank-you" actions that a person confirms; it writes nothing itself and is off unless the `assistant_enabled` setting is true (AST-1 to AST-3, D-145).
 - A web app shell with navigation for Dashboard, Donors, Import, Review, Messages, Reports and Settings.
 
 Imports use assumed source layouts documented in [IMPORT_FORMATS.md](docs/IMPORT_FORMATS.md).

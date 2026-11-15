@@ -1,10 +1,12 @@
 import { useState } from "react";
+import { useLocation } from "react-router-dom";
 import { Check, Mail, MessageCircle, NotebookPen, Phone, Users } from "lucide-react";
 
 import { ApiError } from "../api/client";
 import type { components } from "../api/types";
 import { useStewardshipMutation } from "../hooks/useStewardshipMutation";
 import { calendarDate } from "../lib/format";
+import { assistantEdit } from "./Assistant";
 import { phoenixToday, QuickNoteSheet, SaveError } from "./QuickNoteSheet";
 
 type Donor = components["schemas"]["DonorDetail"];
@@ -18,10 +20,13 @@ const kinds = [
 ] as const;
 
 export function LogContact({ donor, actorId }: { donor: Donor; actorId: number }) {
-  const [open, setOpen] = useState(false);
-  const [kind, setKind] = useState<components["schemas"]["InteractionCreate"]["kind"]>();
-  const [date, setDate] = useState(phoenixToday);
-  const [summary, setSummary] = useState("");
+  const proposed = assistantEdit(useLocation().state, "log_contact");
+  const [open, setOpen] = useState(proposed !== undefined);
+  const [kind, setKind] = useState<components["schemas"]["InteractionCreate"]["kind"] | undefined>(
+    proposed?.kind as components["schemas"]["InteractionCreate"]["kind"] | undefined,
+  );
+  const [date, setDate] = useState((proposed?.occurred_on as string | undefined) ?? phoenixToday());
+  const [summary, setSummary] = useState((proposed?.summary as string | undefined) ?? "");
   const [notice, setNotice] = useState("");
   const save = useStewardshipMutation(actorId, donor.id);
   const allowed =
@@ -161,9 +166,10 @@ export function NextStep({
   timeline?: Timeline;
   timelineReady: boolean;
 }) {
-  const [open, setOpen] = useState(false);
-  const [title, setTitle] = useState("");
-  const [due, setDue] = useState(phoenixToday);
+  const proposed = assistantEdit(useLocation().state, "create_next_step");
+  const [open, setOpen] = useState(proposed !== undefined);
+  const [title, setTitle] = useState((proposed?.title as string | undefined) ?? "");
+  const [due, setDue] = useState((proposed?.due_date as string | undefined) ?? phoenixToday());
   const [notice, setNotice] = useState("");
   const save = useStewardshipMutation(actorId, donor.id);
   const allowed =
