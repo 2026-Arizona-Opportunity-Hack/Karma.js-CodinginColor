@@ -110,7 +110,7 @@ Everything in this repository is **synthetic**. [`fixtures/`](fixtures/) holds f
 
 The core loop works end to end on the live app: import → review → assign → remind → draft, approve, send → report. About 400 backend test functions (authorization matrix, importer-versus-manifest and acceptance tests) run on every push, alongside type checks, lint and a container build.
 
-Not finished yet: screens for the funder export, lapsed-donor radar and reminder digest (their APIs exist); program and program-map management (seeded programs are used); donor merge; live email needs CIC's sending domain. The prioritized plan and the handoff to CIC are in [docs/ROADMAP.md](docs/ROADMAP.md).
+Not finished yet: screens for the lapsed-donor radar, reminder digest and import reversal (their APIs exist); program and program-map management (seeded programs are used); the board-member import column; donor merge; and live email, which needs CIC's sending domain. The prioritized plan and the handoff to CIC are in [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Assumptions
 
