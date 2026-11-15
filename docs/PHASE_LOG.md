@@ -18,6 +18,40 @@
 | 5 a11y/acceptance | todo | Sun 10:30 | | | |
 | 6 docs/video/submit | todo | Sun 13:30 | | | |
 
+## Phase 3 targeted work: confirmed spreadsheet updates (#105)
+
+**Scope:** one shared PR for the requested lane A backend, typed API contract and
+lane B import dialog. This does not start the remaining Phase 3 lanes. Separate
+deploy-note issue #106 is published as PR #107, branch
+`phase-3/106-single-process-note`, commit `badb16c`.
+
+**What changed:** existing DED-3 spreadsheet matches propose name, organization,
+email, phone and notes changes. The uploader selects fields in a modal with all
+checkboxes unchecked. Only approved fields change, with one audit per donor in
+the import transaction. DON-3 controls old-value visibility; ownership never
+changes. Missing columns preserve data; approved empty cells clear fields.
+Update rows participate in physical-row reconciliation, with unique-donor
+`updated_count`. Stale selected fields fail atomically; rejected contacts are
+not learned as donor identities. No model or migration changes.
+
+**Requirements:** ING-4, ING-5, ING-8, DED-3, DON-3; decision D-130.
+
+**Verification:** frontend `npm run typecheck`, `npm run lint`,
+`npm run test:updates` (3 passed), and `npm run build` pass. With
+`npm run dev -- --host 127.0.0.1 --port 5173` running, execute
+`node tests/import-updates.browser.mjs` (Node 22+, local Chromium; optionally set
+`CHROME_PATH`). The browser test mocks all API calls with synthetic data and
+checks unchecked defaults, modal focus, Space selection, 390px width, empty
+approvals and an email-only commit payload. Screenshot:
+[donor update review](screenshots/105-donor-updates.png).
+
+**Known limits:** preview storage remains process-local and expires after 20
+minutes. Import history/reversal and identity review UI remain separate lane B
+work. Existing batch reversal semantics remove gifts/new donors; reversal does
+not restore approved edits to existing donor fields. Parent importer PRs must
+merge before this feature PR. Full backend verification is recorded below when
+complete; tests use only local PostgreSQL, never Neon.
+
 ## Open questions for the human / CIC
 - Should initial passwords from `cli setup` force a change at first login? Not in the data model today (see Phase 0 known gaps).
 

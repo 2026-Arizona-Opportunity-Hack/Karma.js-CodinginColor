@@ -207,6 +207,37 @@
         "title": "ApiKeyOut",
         "type": "object"
       },
+      "ApprovedDonorUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "donor_id": {
+            "exclusiveMinimum": 0.0,
+            "title": "Donor Id",
+            "type": "integer"
+          },
+          "fields": {
+            "items": {
+              "enum": [
+                "name",
+                "organization",
+                "email",
+                "phone",
+                "notes"
+              ],
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Fields",
+            "type": "array"
+          }
+        },
+        "required": [
+          "donor_id",
+          "fields"
+        ],
+        "title": "ApprovedDonorUpdate",
+        "type": "object"
+      },
       "BoardMemberItem": {
         "properties": {
           "board_member": {
@@ -973,6 +1004,35 @@
         "title": "DonorDetail",
         "type": "object"
       },
+      "DonorFieldChange": {
+        "properties": {
+          "new_value": {
+            "title": "New Value",
+            "type": "string"
+          },
+          "old_hidden": {
+            "default": false,
+            "title": "Old Hidden",
+            "type": "boolean"
+          },
+          "old_value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Old Value"
+          }
+        },
+        "required": [
+          "new_value"
+        ],
+        "title": "DonorFieldChange",
+        "type": "object"
+      },
       "DonorPage": {
         "properties": {
           "items": {
@@ -1621,6 +1681,20 @@
         "title": "ImportClassSummary",
         "type": "object"
       },
+      "ImportCommitIn": {
+        "additionalProperties": false,
+        "properties": {
+          "approved_updates": {
+            "items": {
+              "$ref": "#/components/schemas/ApprovedDonorUpdate"
+            },
+            "title": "Approved Updates",
+            "type": "array"
+          }
+        },
+        "title": "ImportCommitIn",
+        "type": "object"
+      },
       "ImportListOut": {
         "properties": {
           "items": {
@@ -1656,6 +1730,13 @@
           },
           "summary": {
             "$ref": "#/components/schemas/ImportSummary"
+          },
+          "updates": {
+            "items": {
+              "$ref": "#/components/schemas/SpreadsheetDonorUpdate"
+            },
+            "title": "Updates",
+            "type": "array"
           }
         },
         "required": [
@@ -1685,6 +1766,9 @@
             "minimum": 0.0,
             "title": "Donation Cents",
             "type": "integer"
+          },
+          "donor_updates": {
+            "$ref": "#/components/schemas/ImportClassSummary"
           },
           "donors_matched": {
             "title": "Donors Matched",
@@ -1742,6 +1826,13 @@
             },
             "title": "Unmapped Campaigns",
             "type": "array"
+          },
+          "updated_count": {
+            "default": 0,
+            "description": "Proposed donors in preview; actually updated donors after commit",
+            "minimum": 0.0,
+            "title": "Updated Count",
+            "type": "integer"
           }
         },
         "required": [
@@ -3707,6 +3798,41 @@
           "retention_basis"
         ],
         "title": "SettingsOut",
+        "type": "object"
+      },
+      "SpreadsheetDonorUpdate": {
+        "properties": {
+          "changes": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/DonorFieldChange"
+            },
+            "propertyNames": {
+              "enum": [
+                "name",
+                "organization",
+                "email",
+                "phone",
+                "notes"
+              ]
+            },
+            "title": "Changes",
+            "type": "object"
+          },
+          "donor_id": {
+            "title": "Donor Id",
+            "type": "integer"
+          },
+          "donor_name": {
+            "title": "Donor Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "donor_id",
+          "donor_name",
+          "changes"
+        ],
+        "title": "SpreadsheetDonorUpdate",
         "type": "object"
       },
       "Summary": {
@@ -6145,6 +6271,23 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ImportCommitIn"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "content": {

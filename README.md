@@ -12,15 +12,16 @@ Built for CIC's [Donor & Funder Relationship Platform](https://www.ohack.dev/pro
 - Individual board-member accounts with secure login, sessions and CSRF protection.
 - A flat hierarchy by default, with an optional single super admin managed only from the command line.
 - An audit log of logins and governance changes.
-- Backend CSV/XLSX import preview, commit, batch history and soft reversal, with file/gift deduplication and balanced donor ownership.
+- CSV/XLSX import preview and commit, with a field-by-field confirmation dialog for spreadsheet donor updates; backend batch history, soft reversal, file/gift deduplication and balanced donor ownership.
 - Backend donor identity reviews and anonymous-gift attribution, with authorization and audit records.
 - A web app shell with navigation for Dashboard, Donors, Import, Review, Messages, Reports and Settings.
 
 Imports use assumed source layouts documented in [IMPORT_FORMATS.md](docs/IMPORT_FORMATS.md).
 Preview state lasts 20 minutes in one backend process; expiration or a restart requires re-upload.
 Committed batches and their history are stored in PostgreSQL. Employer matches remain org revenue;
-employee totals and retention count only employee donations (D-127). The Import and Review screens
-are lane B's work; these backend endpoints also appear in the app's API documentation.
+employee totals and retention count only employee donations (D-127). The Import screen supports
+upload, preview and commit; every proposed donor field starts unchecked. The identity Review
+screen remains lane B's work. Backend endpoints also appear in the app's API documentation.
 
 **Designed scope** (full requirements in [docs/SRS.md](docs/SRS.md))
 - Import gifts from CSV/XLSX exports (Zeffy, Benevity, a generic template, and CIC's donor spreadsheet) into one de-duplicated donor ledger.

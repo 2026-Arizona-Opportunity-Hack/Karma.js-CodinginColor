@@ -25,6 +25,7 @@ from app.db.models import (
 from app.errors import Conflict, Forbidden, Invalid, NotFound
 from app.repos import audit
 from app.schemas.common import DonorKind, ImportSource, MemberRef
+from app.schemas.imports import DonorUpdateField
 from app.services.ingest.adapters import IncomingDonor
 from app.services.ingest.preview import PlannedGift, PlannedRow, PreviewState, Snapshot
 
@@ -93,7 +94,10 @@ def snapshot(
             organization=donor.organization or "",
             email=donor.email or "",
             phone=donor.phone or "",
+            notes=donor.notes or "",
         )
+        if policy.can(actor, "donor.view_contact", donor):
+            out.visible_contact.add(donor.id)
     out.identities = [
         (identity.donor_id, identity.kind, identity.value_norm)
         for identity in db.scalars(select(DonorIdentity).order_by(DonorIdentity.id))
@@ -237,7 +241,11 @@ def save_row(
     require(actor)
     status: str = plan.status
     if batch.source == "spreadsheet":
-        status = {"new": "donor_new", "already_imported": "donor_matched"}.get(status, status)
+        status = {
+            "new": "donor_new",
+            "already_imported": "donor_matched",
+            "donor_update": "donor_matched",
+        }.get(status, status)
     row = ImportRow(
         batch_id=batch.id,
         row_number=plan.incoming.row_number,
@@ -286,12 +294,14 @@ def finish(
     inserted_gifts: int,
     disbursements: dict[str, int],
     at: datetime,
+    updated_count: int = 0,
 ) -> None:
     require(actor)
     batch.summary = (batch.summary or {}) | {
         "new_donor_ids": created_ids,
         "inserted_gifts": inserted_gifts,
         "disbursements": disbursements,
+        "updated_count": updated_count,
     }
     audit.write(
         db,
@@ -308,6 +318,30 @@ def finish(
         at=at,
     )
     db.flush()
+
+
+def apply_updates(
+    db: Session, actor: Actor, donor: Donor, changes: dict[DonorUpdateField, str], at: datetime
+) -> None:
+    require(actor)
+    for key, new in changes.items():
+        if key == "name":
+            donor.display_name = new
+            parts = new.rsplit(maxsplit=1)
+            donor.first_name = parts[0] if len(parts) > 1 and donor.kind == "person" else new
+            donor.last_name = parts[1] if len(parts) > 1 and donor.kind == "person" else None
+        else:
+            setattr(donor, key, new or None)
+    donor.updated_at = at
+    audit.write(
+        db,
+        actor,
+        "donor.import_update",
+        entity="donor",
+        entity_id=donor.id,
+        data={"fields": sorted(changes)},
+        at=at,
+    )
 
 
 def reverse(db: Session, actor: Actor, batch: ImportBatch, at: datetime) -> None:

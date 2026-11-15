@@ -19,6 +19,7 @@ from app.clock import Clock, today
 from app.errors import NotFound
 from app.schemas.common import ImportSource, MemberRef
 from app.schemas.imports import (
+    DonorUpdateField,
     ImportBatchOut,
     ImportClassSummary,
     ImportPreviewOut,
@@ -28,6 +29,7 @@ from app.schemas.imports import (
 from app.services.dedupe.resolver import IdentityIndex
 from app.services.ingest.adapters import IncomingDonor, IncomingGift, IncomingRow
 from app.services.ingest.row_keys import row_key
+from app.services.ingest.updates import Proposals
 from app.services.ingest.uploads import UploadTooLarge
 
 
@@ -41,6 +43,7 @@ class Snapshot:
     donors: dict[int, IncomingDonor] = field(default_factory=dict)
     identities: list[tuple[int, str, str]] = field(default_factory=list)
     remembered: dict[str, int | None] = field(default_factory=dict)
+    visible_contact: set[int] = field(default_factory=set)
 
 
 class PlannedGift(BaseModel):
@@ -53,7 +56,7 @@ class PlannedGift(BaseModel):
 
 class PlannedRow(BaseModel):
     incoming: IncomingRow
-    status: Literal["new", "already_imported", "needs_review", "invalid"]
+    status: Literal["new", "already_imported", "needs_review", "invalid", "donor_update"]
     donor_token: int | None = None
     candidates: list[int] = Field(default_factory=list)
     reason: str | None = None
@@ -65,6 +68,7 @@ class PreviewState(BaseModel):
     file_sha256: str
     rows: list[PlannedRow]
     source_rows: list[IncomingRow]
+    update_baselines: dict[int, dict[DonorUpdateField, str]] = Field(default_factory=dict)
     expires_at: datetime
 
 
@@ -78,6 +82,7 @@ def build_preview(
 ) -> PreviewState:
     cutoff = today(clock) - timedelta(days=snapshot.cutoff_days)
     resolver = IdentityIndex(snapshot.donors, snapshot.identities, snapshot.remembered)
+    proposals = Proposals(snapshot.donors, snapshot.visible_contact)
     occurrences: Counter[str] = Counter()
     seen = snapshot.row_keys.copy()
     counts: Counter[str] = Counter()
@@ -127,12 +132,19 @@ def build_preview(
                     did = resolver.create(incoming_row.donor)
                     created.add(did)
                 else:
-                    resolver.learn(did, incoming_row.donor)
+                    if source != "spreadsheet" or did < 0:
+                        resolver.learn(did, incoming_row.donor)
                     if did > 0:
                         matched.add(did)
                     if source == "spreadsheet":
                         row.status = "already_imported"
                 row.donor_token = did
+                if (
+                    source == "spreadsheet"
+                    and did > 0
+                    and proposals.consider(did, incoming_row.donor, incoming_row.provided_fields)
+                ):
+                    row.status = "donor_update"
         donation = sum(g.gift.gross_cents for g in row.gifts if not g.gift.is_matching_gift)
         match = sum(g.gift.gross_cents for g in row.gifts if g.gift.is_matching_gift)
         counts[row.status] += 1
@@ -170,6 +182,8 @@ def build_preview(
         needs_review=bucket("needs_review"),
         invalid=bucket("invalid"),
         anonymous=bucket("anonymous"),
+        donor_updates=bucket("donor_update"),
+        updated_count=len(proposals.items),
         new_donors=len(created),
         donors_matched=len(matched),
         unmapped_campaigns=sorted(unmapped),
@@ -189,6 +203,7 @@ def build_preview(
             batch=batch,
             summary=summary,
             commit_allowed=summary.reconciles,
+            updates=list(proposals.items.values()),
             invalid_rows=[
                 InvalidRow(row_number=r.incoming.row_number, reason=r.reason or "invalid")
                 for r in rows
@@ -198,6 +213,7 @@ def build_preview(
         file_sha256=sha256(data).hexdigest(),
         rows=rows,
         source_rows=[row.model_copy(deep=True) for row in incoming],
+        update_baselines=proposals.baselines,
         expires_at=clock.now() + timedelta(minutes=20),
     )
 
