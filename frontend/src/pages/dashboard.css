@@ -1,0 +1,251 @@
+.desk-dateline,
+.desk-dateline > span,
+.desk-dateline button,
+.queue-heading,
+.queue-heading h2 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.desk-dateline {
+  justify-content: space-between;
+  border-top: 1px solid var(--color-rule);
+  padding: 18px 0;
+  color: var(--color-ink-muted);
+  flex-wrap: wrap;
+}
+.desk-dateline small {
+  font-size: 12px;
+}
+.desk-queue-index {
+  display: flex;
+  gap: 12px 28px;
+  flex-wrap: wrap;
+  padding: 4px 0;
+}
+.desk-queue-index a {
+  display: inline-flex;
+  gap: 9px;
+  align-items: center;
+  min-height: 40px;
+  color: var(--color-forest);
+  font-size: 13px;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.desk-queue-index strong {
+  font-variant-numeric: tabular-nums;
+}
+.todo-workspace,
+.reassignment-workspace {
+  background: var(--color-surface);
+  border: 1px solid var(--color-rule);
+  margin-top: 20px;
+}
+.queue-heading {
+  justify-content: space-between;
+  padding: 26px 28px 20px;
+  flex-wrap: wrap;
+}
+.queue-heading .eyebrow {
+  margin: 0 0 7px;
+}
+.queue-heading h2 {
+  font-family: var(--font-editorial);
+  font-size: 28px;
+  font-weight: 400;
+  margin: 0;
+}
+.queue-heading h2 > span {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  background: var(--color-wash);
+  border-radius: 50%;
+  min-width: 28px;
+  padding: 4px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.queue-heading > p {
+  font-size: 13px;
+  color: var(--color-ink-muted);
+  margin: 0;
+}
+.todo-filters {
+  display: flex;
+  gap: 8px;
+  padding: 0 28px 22px;
+  flex-wrap: wrap;
+}
+.todo-filters button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--color-rule);
+  border-radius: 4px;
+  color: var(--color-ink-muted);
+  background: transparent;
+  font-size: 13px;
+}
+.todo-filters button[aria-pressed="true"] {
+  color: var(--color-surface);
+  background: var(--color-forest);
+  border-color: var(--color-forest);
+}
+.todo-filters button:hover {
+  border-color: var(--color-forest);
+}
+.todo-filters button > span {
+  font-variant-numeric: tabular-nums;
+}
+.todo-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.todo-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 150px 200px;
+  gap: 24px;
+  align-items: center;
+  padding: 23px 28px;
+  border-top: 1px solid var(--color-rule);
+}
+.todo-row:hover {
+  background: var(--color-canvas);
+}
+.todo-kind {
+  font-size: 12px;
+  color: var(--color-ink-muted);
+  margin: 0 0 5px;
+}
+.todo-identity {
+  min-width: 0;
+}
+.todo-identity h3 {
+  font-size: 17px;
+  font-weight: 600;
+  margin: 0 0 6px;
+  overflow-wrap: anywhere;
+}
+.todo-context {
+  font-size: 12px;
+  color: var(--color-ink-muted);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.todo-due,
+.todo-action {
+  display: flex;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 7px;
+}
+.todo-due {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-ink-muted);
+}
+.todo-status {
+  font-size: 12px;
+  color: var(--color-forest);
+  border: 1px solid var(--color-rule);
+  border-radius: 3px;
+  padding: 3px 8px;
+}
+.todo-status.needs-attention {
+  color: var(--color-warning);
+  background: var(--color-warning-wash);
+  border-color: transparent;
+}
+.todo-action .button {
+  width: 100%;
+  font-size: 13px;
+  min-height: 42px;
+  justify-content: space-between;
+}
+.todo-action small {
+  font-size: 12px;
+  color: var(--color-ink-muted);
+}
+.queue-footnote {
+  padding: 16px 28px;
+  margin: 0;
+  border-top: 1px solid var(--color-rule);
+  font-size: 12px;
+  color: var(--color-ink-muted);
+}
+.reassignment-workspace {
+  margin-top: 32px;
+  border-top: 3px solid var(--color-copper);
+}
+.reassignment-intro {
+  margin: 0;
+  padding: 0 28px 24px;
+  color: var(--color-ink-muted);
+  max-width: 760px;
+}
+@media (max-width: 1100px) {
+  .todo-row {
+    grid-template-columns: minmax(0, 1fr) 170px;
+    gap: 14px;
+  }
+  .todo-identity {
+    grid-column: 1;
+    grid-row: span 2;
+  }
+  .todo-due,
+  .todo-action {
+    grid-column: 2;
+  }
+}
+@media (max-width: 600px) {
+  .desk-dateline > span {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .desk-dateline small {
+    flex-basis: 100%;
+    margin-left: 24px;
+  }
+  .queue-heading {
+    padding: 22px 18px 18px;
+    gap: 10px;
+  }
+  .queue-heading h2 {
+    font-size: 25px;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .todo-filters {
+    padding: 0 18px 18px;
+    gap: 6px;
+  }
+  .todo-filters button {
+    flex: 1 1 45%;
+    justify-content: space-between;
+  }
+  .todo-row {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    padding: 20px 18px;
+    gap: 14px;
+  }
+  .todo-due {
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .todo-action .button {
+    min-height: 44px;
+  }
+  .reassignment-intro,
+  .queue-footnote {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+}
