@@ -77,6 +77,10 @@ def test_invite_is_one_time_stored_hashed_and_lets_the_person_log_in(db: Session
         json={"email": "new.person@example.org", "password": "a long enough password"},
     )
     assert login_r.status_code == 200
+    assert (
+        db.execute(text("SELECT count(*) FROM audit_log WHERE action = 'member.join'")).scalar_one()
+        == 1
+    )
     again = accept(token)  # used
     assert again.status_code == 400
     assert accept("not-a-real-token").json()["error"] == again.json()["error"]  # generic

@@ -51,6 +51,10 @@ def test_owner_adds_a_gift_that_counts_in_donor_and_org_totals(db: Session, w) -
     r = add(c, w["donor"], gross_cents=12_345)
     assert r.status_code == 201, r.text
     g = r.json()
+    assert (
+        db.execute(text("SELECT count(*) FROM audit_log WHERE action = 'gift.create'")).scalar_one()
+        == 1
+    )
     assert (g["donor_id"], g["attribution"], g["source"], g["program"]) == (
         w["donor"], "linked", "manual", "General",
     )  # fmt: skip
