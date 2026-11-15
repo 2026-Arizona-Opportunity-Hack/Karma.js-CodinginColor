@@ -1,5 +1,7 @@
 """Drafts from templates and the template screens (MSG-1, MSG-2, MSG-8, D-127)."""
 
+from urllib.parse import quote
+
 from sqlalchemy.orm import Session
 
 from app.authz.actor import Actor
@@ -19,7 +21,15 @@ def _ref(db: Session, user_id: int | None) -> MemberRef | None:
     return MemberRef(id=user.id, display_name=user.display_name, is_active=user.is_active)
 
 
-def to_out(db: Session, m: Message, *, sms_link: str | None = None) -> MessageOut:
+def sms_link(db: Session, m: Message) -> str | None:
+    """A pre-filled `sms:` link for an approved text, for the owner to tap (MSG-5)."""
+    if m.channel != "sms" or m.status != "approved":
+        return None
+    phone = messages.donor_phone(db, m.donor_id)
+    return f"sms:{quote(phone, safe='+')}?body={quote(m.body, safe='')}" if phone else None
+
+
+def to_out(db: Session, m: Message) -> MessageOut:
     return MessageOut(
         id=m.id, donor_id=m.donor_id, donor_name=messages.donor_name(db, m.donor_id),
         gift_id=m.gift_id, kind=m.kind, channel=m.channel, status=m.status,
@@ -27,7 +37,7 @@ def to_out(db: Session, m: Message, *, sms_link: str | None = None) -> MessageOu
         approved_by=_ref(db, m.approved_by), sent_by=_ref(db, m.sent_by),
         created_at=m.created_at, approved_at=m.approved_at, sent_at=m.sent_at,
         delivery_mode=m.delivery_mode, provider_ref=m.provider_ref,
-        error=m.error, sms_link=sms_link,
+        error=m.error, sms_link=sms_link(db, m),
     )  # fmt: skip
 
 

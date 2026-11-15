@@ -71,6 +71,7 @@ IMPLEMENTED = {
     ("GET", "/api/app/templates"), ("PUT", "/api/app/templates"),
     ("PATCH", "/api/app/messages/{}"), ("POST", "/api/app/messages/{}/approve"),  # #37
     ("POST", "/api/app/messages/{}/cancel"),
+    ("POST", "/api/app/messages/{}/send"), ("POST", "/api/app/messages/{}/mark-sent"),  # #38
 }  # fmt: skip
 PUBLIC_STUBS = {("POST", "/api/app/auth/invite/{}/accept")}
 

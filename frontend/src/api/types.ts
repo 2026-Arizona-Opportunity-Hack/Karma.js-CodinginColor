@@ -728,7 +728,9 @@ export interface paths {
         put?: never;
         /**
          * Send Message
-         * @description Only from `approved`, and only if the body hash still matches (MSG-3, MSG-4).
+         * @description Email only, from `approved`, and only if the hash still matches (MSG-3, MSG-4).
+         *
+         *     In dry_run mode nothing is delivered. A provider failure returns 200 with status `failed`.
          */
         post: operations["send_message_api_app_messages__message_id__send_post"];
         delete?: never;

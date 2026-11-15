@@ -113,3 +113,8 @@ def message_to_act_on(db: Session, actor: Actor, message_id: int) -> tuple[Messa
     if not can(actor, Action.DONOR_ACT, donor):
         raise Forbidden("Only the donor's owner can do this.")
     return msg, donor
+
+
+def donor_phone(db: Session, donor_id: int) -> str | None:
+    """Only used for messages the caller already passed `donor.act` on (contact detail, DON-3)."""
+    return db.execute(select(Donor.phone).where(Donor.id == donor_id)).scalar_one()

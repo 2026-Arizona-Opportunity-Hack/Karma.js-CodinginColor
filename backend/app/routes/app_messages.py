@@ -1,8 +1,10 @@
 """Donor messages and the reminder digest. Lane C (Phase 3)."""
 
+from collections.abc import Iterator
 from typing import Annotated
 
-from fastapi import Query, Response
+import httpx
+from fastapi import Depends, Query, Response
 
 from app.routes.deps import DB, ClockDep, CurrentDep
 from app.routes.stubs import session_router, todo
@@ -15,10 +17,31 @@ from app.schemas.messages import (
     MessageOut,
     MessageUpdate,
 )
+from app.services.messaging import send as sender
 from app.services.messaging import service as messaging
 from app.services.messaging import workflow
+from app.services.messaging.mailer import MailConfig
+from app.settings import get_settings
 
 router = session_router("messages")
+
+
+def mail_config() -> MailConfig:
+    """Mode and Resend settings from the environment. Tests override this dependency."""
+    s = get_settings()
+    return MailConfig(
+        mode=s.messaging_mode, api_key=s.resend_api_key.get_secret_value(), mail_from=s.mail_from
+    )
+
+
+def http_client() -> Iterator[httpx.Client]:
+    """The client used for live email. Tests replace it with one that fails if it is used."""
+    with httpx.Client() as client:
+        yield client
+
+
+MailCfg = Annotated[MailConfig, Depends(mail_config)]
+Http = Annotated[httpx.Client, Depends(http_client)]
 CONFLICT: dict[int | str, dict[str, object]] = {
     409: {"model": ErrorOut, "description": "Wrong state for this action (MSG-3)"}
 }
@@ -60,15 +83,19 @@ def approve_message(message_id: int, cur: CurrentDep, db: DB, clock: ClockDep) -
 
 
 @router.post("/messages/{message_id}/send", responses=CONFLICT)
-def send_message(message_id: int) -> MessageOut:
-    """Only from `approved`, and only if the body hash still matches (MSG-3, MSG-4)."""
-    todo("lane C, phase 3")
+def send_message(
+    message_id: int, cur: CurrentDep, db: DB, clock: ClockDep, cfg: MailCfg, client: Http
+) -> MessageOut:
+    """Email only, from `approved`, and only if the hash still matches (MSG-3, MSG-4).
+
+    In dry_run mode nothing is delivered. A provider failure returns 200 with status `failed`."""
+    return sender.send_email(db, clock, cur.actor, message_id, cfg=cfg, client=client)
 
 
 @router.post("/messages/{message_id}/mark-sent", responses=CONFLICT)
-def mark_sent(message_id: int) -> MessageOut:
+def mark_sent(message_id: int, cur: CurrentDep, db: DB, clock: ClockDep) -> MessageOut:
     """For text messages sent from the person's own phone (MSG-5)."""
-    todo("lane C, phase 3")
+    return sender.mark_sent(db, clock, cur.actor, message_id)
 
 
 @router.post("/messages/{message_id}/cancel", responses=CONFLICT)
