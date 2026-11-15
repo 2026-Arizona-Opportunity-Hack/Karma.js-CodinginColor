@@ -209,9 +209,6 @@ def timeline(db: Session, actor: Actor, donor_id: int, *, limit: int = 500) -> l
              'Due ' || to_char(n.due_date, 'YYYY-MM-DD'), u.display_name, NULL, n.id
         FROM next_steps n LEFT JOIN users u ON u.id = n.created_by WHERE n.donor_id = :id
       UNION ALL
-      SELECT 'next_step', n.done_at, 'Done: ' || n.title, NULL, NULL, NULL, n.id
-        FROM next_steps n WHERE n.donor_id = :id AND n.status = 'done' AND n.done_at IS NOT NULL
-      UNION ALL
       SELECT 'owner_change', h.changed_at,
              CASE WHEN f.id IS NULL THEN 'Assigned to ' || t.display_name
                   ELSE 'Moved from ' || f.display_name || ' to ' || t.display_name END,
