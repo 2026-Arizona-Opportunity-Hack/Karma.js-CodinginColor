@@ -15,7 +15,10 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "format": "prettier --write src",
-    "gen:api": "openapi-typescript src/api/openapi.json -o src/api/types.ts"
+    "gen:api": "openapi-typescript src/api/openapi.json -o src/api/types.ts",
+    "test:import": "tsc -p tsconfig.tests.json && node --test tests/import.test.mjs",
+    "test:import:browser": "node tests/import.browser.mjs",
+    "test:import:live": "node tests/import-live.browser.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "5.105.0",
