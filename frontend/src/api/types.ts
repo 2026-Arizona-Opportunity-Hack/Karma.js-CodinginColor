@@ -213,7 +213,13 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Add Gift */
+        /**
+         * Add Gift
+         * @description A gift typed in by hand, for example a check (DON-8). Owner and active super admin only.
+         *
+         *     `source` is `manual`; the program defaults to General. A non-empty `note` is refused (400)
+         *     until gifts can store one.
+         */
         post: operations["add_gift_api_app_donors__donor_id__gifts_post"];
         delete?: never;
         options?: never;

@@ -27,7 +27,7 @@ from app.schemas.donors import (
     PossibleDuplicateOut,
     TimelineOut,
 )
-from app.services.donors import contacts, writes
+from app.services.donors import contacts, gifts, writes
 from app.services.donors import service as donors_service
 
 router = session_router("donors")
@@ -103,8 +103,12 @@ def get_timeline(donor_id: int, cur: CurrentDep, db: DB, clock: ClockDep) -> Tim
 
 
 @router.post("/donors/{donor_id}/gifts", status_code=201)
-def add_gift(donor_id: int, body: GiftCreate) -> GiftOut:
-    todo("lane C, phase 2")
+def add_gift(donor_id: int, body: GiftCreate, cur: CurrentDep, db: DB, clock: ClockDep) -> GiftOut:
+    """A gift typed in by hand, for example a check (DON-8). Owner and active super admin only.
+
+    `source` is `manual`; the program defaults to General. A non-empty `note` is refused (400)
+    until gifts can store one."""
+    return gifts.add_gift(db, clock, cur.actor, donor_id, body)
 
 
 @router.get("/gifts/unattributed")

@@ -221,3 +221,16 @@ def timeline(db: Session, actor: Actor, donor_id: int, *, limit: int = 500) -> l
     ) t WHERE at IS NOT NULL ORDER BY at DESC, kind, entity_id DESC LIMIT :limit
     """
     return [dict(r) for r in db.execute(text(sql), {"id": donor_id, "limit": limit}).mappings()]
+
+
+def gift_row(db: Session, actor: Actor, gift_id: int) -> dict[str, Any]:
+    """One gift in the shape of `GiftOut`."""
+    _require_member(actor)
+    sql = f"""
+        SELECT {_GIFT_COLUMNS} FROM gifts g JOIN programs p ON p.id = g.program_id
+        LEFT JOIN donors d ON d.id = g.donor_id WHERE g.id = :id AND g.deleted_at IS NULL
+    """  # noqa: S608
+    row = db.execute(text(sql), {"id": gift_id}).mappings().first()
+    if row is None:
+        raise NotFound("Gift not found.")
+    return dict(row)
