@@ -5,6 +5,7 @@ import { Link, useLocation, useParams } from "react-router-dom";
 import { ApiError } from "../api/client";
 import { LogContact, NextStep } from "../components/DonorStewardship";
 import { DonorEntry } from "../components/DonorEntry";
+import { DonorOwnership } from "../components/DonorOwnership";
 import {
   EmptyState,
   ErrorState,
@@ -124,6 +125,7 @@ function Dossier({ id, actorId }: { id: number; actorId: number }) {
                 <h2>{d.owner?.display_name ?? "Not assigned"}</h2>
                 {d.owner && !d.owner.is_active && <p>Inactive member</p>}
                 <p className="secondary-text">Relationship added {calendarDate(d.created_at)}</p>
+                <DonorOwnership donor={d} actorId={actorId} />
               </section>
               <section>
                 <h2>Contact & context</h2>

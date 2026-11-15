@@ -203,6 +203,7 @@ try {
       });
     }
     if (path.endsWith("/timeline")) return reply(requestId, { items: [] });
+    if (path.endsWith("/owner-history")) return reply(requestId, { items: [] });
     if (path.endsWith("/interactions")) {
       if (contactStatus === 201)
         items = items.filter((r) => !(r.donor_id === 1 && r.type === "quarterly_due"));
@@ -277,7 +278,7 @@ try {
   );
   assert.ok((await text()).includes("2 overdue"));
   assert.ok((await text()).includes("Thank-you drafting is not available yet"));
-  assert.ok((await text()).includes("Reassignment controls are not available yet"));
+  assert.ok((await text()).includes("Open ownership to review history"));
   assert.equal(requests.find((r) => r.path === "/reminders").search, "?scope=mine");
   for (const [width, height] of [
     [1440, 900],
@@ -315,6 +316,12 @@ try {
   await dashboard();
   await clickLink('a[href="/donors/4#relationship-owner"]');
   await until("document.activeElement.id==='relationship-owner'");
+  assert.equal(
+    await evaluate(
+      "[...document.querySelectorAll('button')].some(b=>b.textContent==='Reassign donor')",
+    ),
+    false,
+  );
   assert.equal(await evaluate("document.querySelector('.contact-log-action > button')"), null);
   await dashboard();
   await clickLink('a[href="/donors/1#log-contact"]');
