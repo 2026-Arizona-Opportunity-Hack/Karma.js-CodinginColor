@@ -288,3 +288,20 @@
     padding: 24px;
   }
 }
+
+.nomination-banner {
+  margin: 1rem 0;
+}
+
+.nomination-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+@media (max-width: 480px) {
+  .nomination-actions .button {
+    width: 100%;
+  }
+}

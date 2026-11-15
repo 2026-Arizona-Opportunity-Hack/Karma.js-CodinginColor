@@ -10,7 +10,7 @@ Built for CIC's [Donor & Funder Relationship Platform](https://www.ohack.dev/pro
 
 **Available now**
 - Individual board-member accounts with secure login, sessions and CSRF protection.
-- A flat hierarchy by default, with an optional single super admin managed only from the command line.
+- A flat hierarchy by default, with an optional single super admin created and removed in the app (see Governance).
 - An audit log of logins and governance changes.
 - CSV/XLSX import preview and commit, with a field-by-field confirmation dialog for spreadsheet donor updates; backend batch history, soft reversal, file/gift deduplication and balanced donor ownership.
 - Backend donor identity reviews and anonymous-gift attribution, with authorization and audit records.
@@ -76,7 +76,16 @@ npm run dev                       # http://localhost:5173
 
 `setup` asks for members interactively, or reads `--file members.local.json` (git-ignored):
 `{"members": [{"email": "...", "display_name": "..."}], "super_admin": "optional email"}`.
-The optional super admin is managed only from the CLI:
+
+### Governance: the optional super admin
+
+The board starts **flat**: every active member has equal permissions. On the Members page:
+
+- **Nominate.** While flat, any active member can click *Nominate super admin* and pick an active member (themselves included). A **different** member must confirm within 72 hours; the nominator cannot. Either the nominator or the nominee can cancel. Unconfirmed nominations expire.
+- **Remove.** Only the super admin can click *Remove my super admin role* and type `REMOVE`. The org becomes flat, the reassignment scope returns to `anyone`, and the person stays a member and keeps their donors. A dormant super admin can remove the role too.
+- API keys, including full-access keys, can never nominate, confirm, cancel or remove (403). Every step is written to the audit log.
+
+**Break-glass:** the setup command still works when nobody can use the app, and can create, activate, transfer, flatten or deactivate the role:
 `uv run python -m app.cli superadmin {create,activate,flatten,transfer,deactivate} [--email X]`.
 
 ## Checks
