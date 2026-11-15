@@ -16,6 +16,7 @@ from app.routes import (
     app_ownership,
     app_reports,
     app_settings,
+    v1,
 )
 from app.settings import get_settings
 
@@ -36,6 +37,7 @@ def create_app() -> FastAPI:
         return {"status": "ok"}
 
     app.include_router(app_auth.router)
+    app.include_router(v1.router)  # public read API, API-key auth (docs/API.md section 1)
     # Contract stubs (docs/API.md section 3): real schemas, 501 until each lane builds them.
     app.include_router(app_members.public_router)
     for module in (

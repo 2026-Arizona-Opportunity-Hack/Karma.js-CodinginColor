@@ -6,6 +6,9 @@ Lane C owns templates and API keys; lane A owns settings, programs, the map and 
 
 from fastapi import Response
 
+from app.db.models import ApiKey
+from app.repos import apikeys
+from app.routes.deps import DB, ClockDep, CurrentDep
 from app.routes.stubs import session_router, todo
 from app.schemas.settings import (
     ApiKeyCreate,
@@ -28,6 +31,7 @@ from app.schemas.settings import (
     TemplateListOut,
     TemplateOut,
 )
+from app.services.apikeys import service as apikey_service
 
 router = session_router("settings")
 
@@ -93,20 +97,33 @@ def create_outcome(body: OutcomeIn) -> OutcomeOut:
     todo("lane A, phase 4")
 
 
+def _key_out(row: ApiKey) -> ApiKeyOut:
+    return ApiKeyOut(
+        id=row.id,
+        name=row.name,
+        prefix=row.prefix,
+        scopes=list(row.scopes),
+        created_at=row.created_at,
+        last_used_at=row.last_used_at,
+        revoked_at=row.revoked_at,
+    )
+
+
 @router.get("/api-keys")
-def list_api_keys() -> ApiKeyListOut:
-    todo("lane C, phase 2")
+def list_api_keys(cur: CurrentDep, db: DB) -> ApiKeyListOut:
+    return ApiKeyListOut(items=[_key_out(r) for r in apikeys.list_all(db, cur.actor)])
 
 
 @router.post("/api-keys", status_code=201)
-def create_api_key(body: ApiKeyCreate) -> ApiKeyCreated:
+def create_api_key(body: ApiKeyCreate, cur: CurrentDep, db: DB) -> ApiKeyCreated:
     """The full key is in this response only; afterwards just its prefix (API-1)."""
-    todo("lane C, phase 2")
+    made = apikey_service.create(db, cur.actor, name=body.name, scopes=list(body.scopes))
+    return ApiKeyCreated(**_key_out(made.row).model_dump(), key=made.key)
 
 
 @router.post("/api-keys/{key_id}/revoke")
-def revoke_api_key(key_id: int) -> ApiKeyOut:
-    todo("lane C, phase 2")
+def revoke_api_key(key_id: int, cur: CurrentDep, db: DB, clock: ClockDep) -> ApiKeyOut:
+    return _key_out(apikey_service.revoke(db, clock, cur.actor, key_id))
 
 
 @router.post("/demo/reset", status_code=204)
