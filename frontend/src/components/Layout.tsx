@@ -1,22 +1,26 @@
-import clsx from "clsx";
 import {
   Compass,
   FileUp,
   LayoutDashboard,
   LogOut,
   Mail,
+  Menu,
   PieChart,
   Settings,
   UserCheck,
   Users,
+  X,
 } from "lucide-react";
-import { NavLink, Navigate, Outlet, useLocation } from "react-router-dom";
+import { useRef, useState } from "react";
+import { Link, NavLink, Navigate, Outlet, useLocation } from "react-router-dom";
 
 import { useLogout, useMe } from "../hooks/useAuth";
+import { initials } from "../lib/format";
+import { ErrorState } from "./Workspace";
 
 export const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/donors", label: "Donors", icon: Users },
+  { to: "/donors", label: "Relationships", icon: Users },
   { to: "/import", label: "Import", icon: FileUp },
   { to: "/review", label: "Review", icon: UserCheck },
   { to: "/messages", label: "Messages", icon: Mail },
@@ -28,77 +32,91 @@ export function Layout() {
   const me = useMe();
   const logout = useLogout();
   const location = useLocation();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuButton = useRef<HTMLButtonElement>(null);
 
-  if (me.isPending) {
+  if (me.isPending)
     return (
-      <p role="status" className="p-6 text-slate-700">
-        Loading…
+      <p role="status" className="session-loading">
+        Opening your workspace…
       </p>
     );
-  }
-  if (me.isError) {
-    return (
-      <p role="alert" className="p-6 text-red-800">
-        Could not reach the server. Please reload.
-      </p>
-    );
-  }
+  if (me.isError) return <ErrorState error={me.error} retry={() => void me.refetch()} />;
   if (!me.data) return <Navigate to="/login" replace state={{ from: location.pathname }} />;
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      <a
-        href="#main"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:rounded focus:bg-white focus:p-2"
-      >
+    <div className="app-shell">
+      <a href="#main" className="skip-link">
         Skip to content
       </a>
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
-          <span className="flex items-center gap-2 font-semibold">
-            <Compass aria-hidden="true" className="h-5 w-5 text-indigo-700" />
-            CIC Compass
-          </span>
-          <div className="flex items-center gap-3 text-sm">
-            <span className="hidden sm:inline">
-              {me.data.display_name}
-              {me.data.is_super_admin && " (super admin)"}
+      <aside
+        className="app-rail"
+        aria-label="Workspace navigation"
+        onKeyDown={(event) => {
+          if (event.key === "Escape" && menuOpen) {
+            setMenuOpen(false);
+            menuButton.current?.focus();
+          }
+        }}
+      >
+        <div className="rail-brand">
+          <Link to="/donors" className="brand" onClick={() => setMenuOpen(false)}>
+            <Compass size={30} strokeWidth={1.25} aria-hidden="true" />
+            <span>
+              CIC Compass<small>CODING IN COLOR</small>
             </span>
-            <button
-              type="button"
-              onClick={() => logout.mutate()}
-              className="flex items-center gap-1 rounded-md px-2 py-1 text-slate-700 hover:bg-slate-100"
-            >
-              <LogOut aria-hidden="true" className="h-4 w-4" />
-              Log out
-            </button>
-          </div>
+          </Link>
+          <button
+            ref={menuButton}
+            className="icon-button mobile-menu-button"
+            aria-expanded={menuOpen}
+            aria-controls="main-navigation"
+            aria-label={menuOpen ? "Close navigation" : "Open navigation"}
+            onClick={() => setMenuOpen((value) => !value)}
+          >
+            {menuOpen ? <X size={21} aria-hidden="true" /> : <Menu size={21} aria-hidden="true" />}
+          </button>
         </div>
-        <nav aria-label="Main" className="mx-auto max-w-6xl overflow-x-auto px-2">
-          <ul className="flex gap-1">
+        <nav
+          id="main-navigation"
+          className={menuOpen ? "rail-navigation is-open" : "rail-navigation"}
+          aria-label="Main"
+        >
+          <p className="rail-label">Stewardship workspace</p>
+          <ul>
             {NAV.map(({ to, label, icon: Icon }) => (
               <li key={to}>
-                <NavLink
-                  to={to}
-                  end={to === "/"}
-                  className={({ isActive }) =>
-                    clsx(
-                      "flex items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2 text-sm",
-                      isActive
-                        ? "border-indigo-700 font-semibold text-indigo-800"
-                        : "border-transparent text-slate-700 hover:text-slate-900",
-                    )
-                  }
-                >
-                  <Icon aria-hidden="true" className="h-4 w-4" />
+                <NavLink to={to} end={to === "/"} onClick={() => setMenuOpen(false)}>
+                  <Icon size={18} strokeWidth={1.6} aria-hidden="true" />
                   {label}
                 </NavLink>
               </li>
             ))}
           </ul>
         </nav>
-      </header>
-      <main id="main" className="mx-auto max-w-6xl px-4 py-6">
+        <div className="rail-bottom">
+          <p className="rail-note">Care, carried forward.</p>
+          <div className="account">
+            <span className="account-mark" aria-hidden="true">
+              {initials(me.data.display_name)}
+            </span>
+            <span>
+              <strong>{me.data.display_name}</strong>
+              <small>{me.data.is_super_admin ? "Super admin" : "Board member"}</small>
+            </span>
+          </div>
+          <button
+            className="logout-button"
+            type="button"
+            disabled={logout.isPending}
+            onClick={() => logout.mutate()}
+          >
+            <LogOut size={16} aria-hidden="true" />
+            {logout.isPending ? "Signing out…" : "Sign out"}
+          </button>
+        </div>
+      </aside>
+      <main id="main" tabIndex={-1} className="app-workspace">
         <Outlet />
       </main>
     </div>

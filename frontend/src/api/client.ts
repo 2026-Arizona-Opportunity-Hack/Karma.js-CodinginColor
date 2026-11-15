@@ -29,7 +29,7 @@ async function errorMessage(res: Response): Promise<string> {
 
 export async function api<T>(
   path: string,
-  options: { method?: string; body?: unknown } = {},
+  options: { method?: string; body?: unknown; signal?: AbortSignal } = {},
 ): Promise<T> {
   const method = options.method ?? "GET";
   const form = options.body instanceof FormData ? options.body : undefined;
@@ -43,6 +43,7 @@ export async function api<T>(
     method,
     headers,
     credentials: "same-origin",
+    signal: options.signal,
     body: form ?? (options.body === undefined ? undefined : JSON.stringify(options.body)),
   });
   if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
