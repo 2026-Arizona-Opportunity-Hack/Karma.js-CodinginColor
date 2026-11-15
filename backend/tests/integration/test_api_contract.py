@@ -60,6 +60,8 @@ EXPECTED = {
 IMPLEMENTED = {
     ("POST", "/api/app/auth/login"), ("POST", "/api/app/auth/logout"),
     ("GET", "/api/app/auth/me"),
+    ("GET", "/api/app/api-keys"), ("POST", "/api/app/api-keys"),
+    ("POST", "/api/app/api-keys/{}/revoke"),  # lane C, issue #24
 }  # fmt: skip
 PUBLIC_STUBS = {("POST", "/api/app/auth/invite/{}/accept")}
 
