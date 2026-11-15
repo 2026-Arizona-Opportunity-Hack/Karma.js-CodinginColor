@@ -95,8 +95,10 @@
   letter-spacing: 2px;
   text-transform: uppercase;
 }
+/* Headings on green set their own color: the app theme makes every h1/h2 dark green. */
 .hero-title {
   max-width: 14ch;
+  color: var(--cic-white);
   font-size: clamp(40px, 4.2vw, 64px);
   line-height: 1.04;
   letter-spacing: -1.5px;
@@ -622,6 +624,7 @@
   position: relative;
 }
 .landing-final h2 {
+  color: var(--cic-white);
   font-size: clamp(30px, 4vw, 52px);
   letter-spacing: -1px;
 }
