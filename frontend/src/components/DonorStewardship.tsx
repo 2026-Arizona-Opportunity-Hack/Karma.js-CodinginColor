@@ -29,7 +29,7 @@ export function LogContact({ donor, actorId }: { donor: Donor; actorId: number }
     donor.contact_visible &&
     !(save.error instanceof ApiError && save.error.status === 403);
   return (
-    <div className="contact-log-action">
+    <div className="contact-log-action" id="log-contact" tabIndex={-1}>
       {allowed && (
         <button
           className="button"
@@ -183,7 +183,7 @@ export function NextStep({
       ? latest.entity_id
       : null;
   return (
-    <section className="next-step-workspace">
+    <section className="next-step-workspace" id="next-step" tabIndex={-1}>
       <p className="eyebrow">The next act of care</p>
       <h2>Next step</h2>
       <p className="next-step-title">{donor.next_step_title ?? "No next step set"}</p>

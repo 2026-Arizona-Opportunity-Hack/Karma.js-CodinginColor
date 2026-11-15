@@ -4,6 +4,8 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "test:dashboard": "node tests/dashboard.browser.mjs",
+    "test:dashboard:live": "node tests/dashboard-live.browser.mjs",
     "test:entry": "tsc -p tsconfig.tests.json && node --test tests/donor-entry.test.mjs",
     "test:entry:browser": "node tests/entry.browser.mjs",
     "test:contact": "node tests/contact.browser.mjs",

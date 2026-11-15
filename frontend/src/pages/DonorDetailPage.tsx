@@ -1,6 +1,6 @@
 import { ArrowLeft, ArrowDown, Mail, Phone } from "lucide-react";
 import { useEffect, useRef } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 
 import { ApiError } from "../api/client";
 import { LogContact, NextStep } from "../components/DonorStewardship";
@@ -34,13 +34,21 @@ export function DonorDetailPage() {
 
 function Dossier({ id, actorId }: { id: number; actorId: number }) {
   const { donor, timeline } = useDonorDetail(actorId, id);
+  const { hash } = useLocation();
+  useEffect(() => {
+    if (donor.isSuccess && hash) {
+      const target = document.getElementById(hash.slice(1));
+      target?.focus();
+      target?.scrollIntoView({ block: "center" });
+    }
+  }, [donor.isSuccess, hash]);
   const heading = useRef<HTMLDivElement>(null);
   useEffect(() => {
     document.title = `${donor.data?.display_name ?? "Donor detail"} · CIC Compass`;
   }, [donor.data?.display_name]);
   useEffect(() => {
-    heading.current?.focus();
-  }, []);
+    if (!hash) heading.current?.focus();
+  }, [hash]);
   const missing =
     !Number.isSafeInteger(id) ||
     id <= 0 ||
@@ -111,7 +119,7 @@ function Dossier({ id, actorId }: { id: number; actorId: number }) {
           </p>
           <div className="dossier-columns">
             <aside className="dossier-steward" aria-label="Relationship stewardship">
-              <section>
+              <section id="relationship-owner" tabIndex={-1}>
                 <p className="eyebrow">In the care of</p>
                 <h2>{d.owner?.display_name ?? "Not assigned"}</h2>
                 {d.owner && !d.owner.is_active && <p>Inactive member</p>}
