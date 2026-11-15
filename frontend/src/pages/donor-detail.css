@@ -1,0 +1,210 @@
+.donor-detail-link {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--color-control-border);
+  text-underline-offset: 4px;
+}
+.donor-detail-link:hover {
+  color: var(--color-forest);
+  text-decoration-color: currentColor;
+}
+.donor-dossier {
+  max-width: 1240px;
+  margin-inline: auto;
+}
+.dossier-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  color: var(--color-forest);
+  text-underline-offset: 4px;
+}
+.donor-dossier .page-masthead {
+  margin-top: 24px;
+}
+.donor-dossier h1 {
+  overflow-wrap: anywhere;
+  max-width: 24ch;
+}
+.dossier-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.giving-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-block: 1px solid var(--color-forest);
+  padding-block: 24px;
+  gap: 24px;
+}
+.giving-summary dt {
+  color: var(--color-ink-muted);
+  font-size: 12px;
+}
+.giving-summary dd {
+  margin: 8px 0 0;
+  font-size: 18px;
+}
+.giving-summary > div:nth-child(-n + 2) dd {
+  font-family: var(--font-editorial);
+  font-size: 32px;
+  line-height: 1.2;
+}
+.dossier-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 48px;
+  margin-top: 48px;
+}
+.dossier-columns h2 {
+  font-family: var(--font-editorial);
+  font-weight: 400;
+  font-size: 24px;
+  margin: 0;
+}
+.dossier-story,
+.dossier-steward {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.dossier-story {
+  grid-column: 1;
+  grid-row: 1;
+}
+.dossier-steward {
+  grid-column: 2;
+  grid-row: 1;
+}
+.relationship-timeline {
+  list-style: none;
+  padding: 0 0 0 24px;
+  margin: 32px 0;
+  border-left: 1px solid var(--color-control-border);
+}
+.trail-event {
+  position: relative;
+  padding: 0 0 28px 8px;
+}
+.trail-event::before {
+  content: "";
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  top: 5px;
+  left: -29px;
+  border: 1px solid var(--color-forest);
+  border-radius: 50%;
+  background: var(--color-canvas);
+}
+.trail-gift::before {
+  background: var(--color-forest);
+}
+.trail-meta {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: var(--color-ink-muted);
+  font-size: 12px;
+}
+.trail-meta > span {
+  color: var(--color-copper);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.trail-event h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 8px 0;
+}
+.trail-event p {
+  margin-block: 8px;
+}
+.trail-detail,
+.dossier-notes p {
+  white-space: pre-wrap;
+}
+.trail-amount {
+  font-size: 22px;
+  font-family: var(--font-editorial);
+}
+.dossier-steward {
+  border-left: 1px solid var(--color-rule);
+  padding-left: 28px;
+}
+.dossier-steward section {
+  border-bottom: 1px solid var(--color-rule);
+  padding-bottom: 24px;
+  margin-bottom: 24px;
+}
+.dossier-steward h2 {
+  font-size: 21px;
+}
+.contact-details {
+  margin-block: 20px;
+}
+.contact-details dt {
+  font-size: 12px;
+  color: var(--color-ink-muted);
+  margin-top: 12px;
+}
+.contact-details dd {
+  margin: 4px 0 0;
+}
+.contact-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.contact-via {
+  padding: 12px;
+  background: var(--color-wash);
+}
+.dossier-notes {
+  margin-top: 24px;
+}
+.dossier-notes h3 {
+  font-size: 14px;
+  font-weight: 600;
+}
+.dossier-gifts {
+  border-top: 1px solid var(--color-rule);
+  margin-top: 40px;
+  padding-top: 28px;
+}
+@media (max-width: 1100px) {
+  .dossier-columns {
+    grid-template-columns: minmax(0, 1fr) 240px;
+    gap: 24px;
+  }
+}
+@media (max-width: 760px) {
+  .giving-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px 16px;
+  }
+  .dossier-columns {
+    display: flex;
+    flex-direction: column;
+    margin-top: 32px;
+  }
+  .dossier-steward {
+    border-left: 0;
+    padding-left: 0;
+  }
+  .dossier-steward section {
+    padding-bottom: 20px;
+    margin-bottom: 20px;
+  }
+  .giving-summary > div:nth-child(-n + 2) dd {
+    font-size: 28px;
+  }
+  .dossier-gifts .section-heading {
+    flex-wrap: wrap;
+  }
+}
