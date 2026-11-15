@@ -33,6 +33,7 @@ from app.schemas.settings import (
 )
 from app.services.apikeys import service as apikey_service
 from app.services.messaging import service as messaging
+from app.services.reports import outcomes as outcome_service
 
 router = session_router("settings")
 
@@ -89,13 +90,13 @@ def update_program_map(entry_id: int, body: ProgramMapIn) -> ProgramMapEntry:
 
 
 @router.get("/program-outcomes")
-def list_outcomes() -> OutcomeListOut:
-    todo("lane A, phase 4")
+def list_outcomes(cur: CurrentDep, db: DB) -> OutcomeListOut:
+    return outcome_service.list_outcomes(db, cur.actor)
 
 
 @router.post("/program-outcomes", status_code=201)
-def create_outcome(body: OutcomeIn) -> OutcomeOut:
-    todo("lane A, phase 4")
+def create_outcome(body: OutcomeIn, cur: CurrentDep, db: DB) -> OutcomeOut:
+    return outcome_service.create_outcome(db, cur.actor, body)
 
 
 def _key_out(row: ApiKey) -> ApiKeyOut:
