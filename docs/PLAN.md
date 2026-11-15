@@ -172,7 +172,7 @@ Lane C's order: 1, 2, 6, 7, 3, 8, 4, 5. The donor API moved here from lane A bec
 
 ### Phase 4.5: CIC requirements update (Nov 15)
 
-New requirements from CIC on Sunday morning (SRS ING-12 to ING-14, DON-13, REM-9, MSG-9, CUS-1 to CUS-4, GOV-2, GOV-3, NFR-10; D-136 to D-144). Lanes are flexible for this phase: any agent may take any item. Run lanes after their Phase 4 lane is merged. The CUS migration lands first as a `shared` PR.
+New requirements from CIC on Sunday morning (SRS ING-12 to ING-14, DON-13, REM-9, MSG-9, CUS-1 to CUS-4, GOV-2, GOV-3, NFR-10; D-136 to D-144). Lanes are flexible for this phase: any agent may take any item. Run lanes after their Phase 4 lane is merged. The schema migration lands first as a `shared` PR.
 
 **Shared (first):** `Add field definitions, custom values, nominations and job runs schema` (migration: `field_definitions` seeded with built-ins, `donors.custom`, `gifts.custom`, `super_admin_nominations`, `job_runs`, new `app_settings` keys; models; schemas; regenerate `types.ts`).
 
@@ -185,14 +185,14 @@ New requirements from CIC on Sunday morning (SRS ING-12 to ING-14, DON-13, REM-9
 1. `Apply CIC brand theme` (NFR-10, `docs/BRAND.md`; Tailwind tokens; logo slot; recheck contrast).
 2. `Expand donor rows to show gift history` (DON-13).
 3. `Add field settings and dynamic field rendering` (CUS-1 to CUS-4; donors and gifts; list columns).
+4. `Show board member and ignored columns in the import preview` (ING-13, ING-14).
 5. `Add super admin nomination, confirmation and removal screens` (GOV-2, GOV-3).
-4. `Show Zeffy contacts preview, board member and ignored columns` (ING-12 to ING-14 in the import screen).
 
-**Lane C: custom field API and scheduled jobs**
+**Lane C: field API, scheduled jobs, governance**
 1. `Add field definition and value endpoints` (CUS-1 to CUS-4, validation by type, audit, policy).
-4. `Add super admin nomination and removal` (GOV-2, GOV-3, D-144; two different members; only the super admin removes; flat afterwards; audit; CLI unchanged).
 2. `Add run-job CLI, job_runs and quarterly board email` (REM-9, D-138; dry-run mail by default; `render.yaml` cron, disabled by default).
 3. `Add auto thank-you setting and job` (MSG-9, D-139; off by default; dashboard banner data).
+4. `Add super admin nomination and removal` (GOV-2, GOV-3, D-144; two different members; only the super admin removes; flat afterwards; audit; CLI unchanged).
 
 **Gate:** a board member column assigns the owner; a donor and a gift field can be added, filled, renamed and deactivated without losing values; a super admin is created by nomination plus confirmation and removed by themselves, leaving the org flat; `run-job quarterly_board_email` records one dry-run email per member with only their donors; full suite green.
 **Cut list (in order):** MSG-9 auto thank-you (keep the setting off, document it); multi-choice fields; gift fields (keep donors); ING-14 field import; nomination expiry job (manual cancel only). **Never cut** ING-13, CUS add/rename/deactivate on donors, super admin removal, the brand theme.
