@@ -47,6 +47,15 @@ The `key` value is your API key: `cic_live_` followed by 43 letters, digits, `-`
   `curl -s -b session.txt "$CIC_API_BASE/api/app/api-keys"`
 - **Revoke a key** (use its `id`): `curl -s -b session.txt -H "X-CSRF-Token: $CSRF" -X POST "$CIC_API_BASE/api/app/api-keys/1/revoke"`
 
+**Prefer not to use `curl`?** Whoever runs the server can do the same with the operator command, from
+the `backend` folder (it prints the key once; the email is the board member it is recorded for):
+
+```bash
+python -m app.cli apikey create --name Dashboard --email you@example.org
+python -m app.cli apikey list
+python -m app.cli apikey revoke 1
+```
+
 Who can create keys: any board member while the board is flat; only the super admin while one is
 active. Name each key after who uses it, for example "Dashboard".
 
