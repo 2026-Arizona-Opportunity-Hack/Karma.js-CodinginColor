@@ -14,6 +14,8 @@ from collections import deque
 from collections.abc import Awaitable, Callable, MutableMapping
 from typing import Any
 
+from starlette.middleware.cors import CORSMiddleware
+
 Scope = MutableMapping[str, Any]
 Message = MutableMapping[str, Any]
 Receive = Callable[[], Awaitable[Message]]
@@ -143,3 +145,28 @@ class SecurityMiddleware:
             }
         )
         await send({"type": "http.response.body", "body": body})
+
+
+class AppCORS:
+    """CORS for `/api/app/*` only: any origin, never with credentials (API-8).
+
+    Browsers will not send or expose cookies on these cross-origin calls, and the CSRF header is
+    not an allowed header, so only a bearer key can act from another site. Anything outside
+    `/api/app/` passes straight through."""
+
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+        self.cors = CORSMiddleware(
+            app,
+            allow_origins=["*"],
+            allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+            allow_headers=["Authorization", "Content-Type"],
+            allow_credentials=False,
+            max_age=600,
+        )
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] == "http" and scope["path"].startswith("/api/app/"):
+            await self.cors(scope, receive, send)
+        else:
+            await self.app(scope, receive, send)

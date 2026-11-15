@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.authz.actor import Actor
 from app.authz.policy import Action, can
-from app.db.models import ApiKey
+from app.db.models import ApiKey, User
 from app.errors import Forbidden, NotFound
 
 LAST_USED_GRANULARITY = timedelta(seconds=60)  # avoid a write on every request
@@ -28,13 +28,21 @@ def create(
     key_hash: str,
     scopes: list[str],
     created_by: int | None = None,
+    expires_at: datetime | None = None,
 ) -> ApiKey:
     """A member creates keys as themselves. The setup CLI names the member it acts for."""
     _require_manage(actor)
     owner = created_by if actor.kind == "cli" else actor.user_id
     if owner is None:
         raise Forbidden("API keys are created by a signed-in member.")
-    row = ApiKey(name=name, prefix=prefix, key_hash=key_hash, scopes=scopes, created_by=owner)
+    row = ApiKey(
+        name=name,
+        prefix=prefix,
+        key_hash=key_hash,
+        scopes=scopes,
+        created_by=owner,
+        expires_at=expires_at,
+    )
     db.add(row)
     db.flush()
     return row
@@ -43,6 +51,15 @@ def create(
 def list_all(db: Session, actor: Actor) -> list[ApiKey]:
     _require_manage(actor)
     return list(db.execute(select(ApiKey).order_by(ApiKey.id.desc())).scalars())
+
+
+def creator_names(db: Session, actor: Actor, rows: list[ApiKey]) -> dict[int, str]:
+    _require_manage(actor)
+    ids = {r.created_by for r in rows}
+    if not ids:
+        return {}
+    found = db.execute(select(User.id, User.display_name).where(User.id.in_(ids))).all()
+    return {uid: name for uid, name in found}
 
 
 def revoke(db: Session, actor: Actor, key_id: int, at: datetime) -> ApiKey:

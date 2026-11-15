@@ -18,6 +18,9 @@ class Actor:
     super_admin_active: bool = False
     reassign_scope: ReassignScope = "anyone"
     ip: str | None = None
+    # A full-access API key acting as its creating member (D-number in docs/DECISIONS.md).
+    full_access: bool = False
+    api_key_id: int | None = None
 
     @property
     def user_id(self) -> int | None:

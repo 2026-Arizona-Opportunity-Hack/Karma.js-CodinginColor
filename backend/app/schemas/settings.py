@@ -111,10 +111,14 @@ class OutcomeIn(BaseModel):
 class ApiKeyOut(BaseModel):
     id: int
     name: str
+    type: Literal["read_only", "full_access"]
     prefix: str = Field(description="First characters, for recognising a key")
     scopes: list[str]
+    created_by: int
+    created_by_name: str | None = None
     created_at: datetime
     last_used_at: datetime | None = None
+    expires_at: datetime | None = Field(default=None, description="None = never expires")
     revoked_at: datetime | None = None
 
 
@@ -124,7 +128,16 @@ class ApiKeyListOut(BaseModel):
 
 class ApiKeyCreate(BaseModel):
     name: ShortText
-    scopes: list[Literal["read:aggregates"]] = ["read:aggregates"]
+    scopes: list[Literal["read:aggregates", "full_access"]] = Field(
+        default=["read:aggregates"],
+        min_length=1,
+        description="`full_access` reads and changes everything on /api/app and stands alone.",
+    )
+    expires_at: datetime | None = Field(
+        default=None,
+        description="Omit for the default (90 days for full_access, never for read-only); "
+        "send null for never.",
+    )
 
 
 class ApiKeyCreated(ApiKeyOut):

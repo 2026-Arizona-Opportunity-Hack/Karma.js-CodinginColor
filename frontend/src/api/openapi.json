@@ -37,6 +37,19 @@
       },
       "ApiKeyCreate": {
         "properties": {
+          "expires_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Omit for the default (90 days for full_access, never for read-only); send null for never.",
+            "title": "Expires At"
+          },
           "name": {
             "maxLength": 200,
             "minLength": 1,
@@ -47,10 +60,15 @@
             "default": [
               "read:aggregates"
             ],
+            "description": "`full_access` reads and changes everything on /api/app and stands alone.",
             "items": {
-              "const": "read:aggregates",
+              "enum": [
+                "read:aggregates",
+                "full_access"
+              ],
               "type": "string"
             },
+            "minItems": 1,
             "title": "Scopes",
             "type": "array"
           }
@@ -67,6 +85,34 @@
             "format": "date-time",
             "title": "Created At",
             "type": "string"
+          },
+          "created_by": {
+            "title": "Created By",
+            "type": "integer"
+          },
+          "created_by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By Name"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "None = never expires",
+            "title": "Expires At"
           },
           "id": {
             "title": "Id",
@@ -116,13 +162,23 @@
             },
             "title": "Scopes",
             "type": "array"
+          },
+          "type": {
+            "enum": [
+              "read_only",
+              "full_access"
+            ],
+            "title": "Type",
+            "type": "string"
           }
         },
         "required": [
           "id",
           "name",
+          "type",
           "prefix",
           "scopes",
+          "created_by",
           "created_at",
           "key"
         ],
@@ -151,6 +207,34 @@
             "format": "date-time",
             "title": "Created At",
             "type": "string"
+          },
+          "created_by": {
+            "title": "Created By",
+            "type": "integer"
+          },
+          "created_by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By Name"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "None = never expires",
+            "title": "Expires At"
           },
           "id": {
             "title": "Id",
@@ -195,13 +279,23 @@
             },
             "title": "Scopes",
             "type": "array"
+          },
+          "type": {
+            "enum": [
+              "read_only",
+              "full_access"
+            ],
+            "title": "Type",
+            "type": "string"
           }
         },
         "required": [
           "id",
           "name",
+          "type",
           "prefix",
           "scopes",
+          "created_by",
           "created_at"
         ],
         "title": "ApiKeyOut",
