@@ -1591,6 +1591,11 @@
             "title": "Position",
             "type": "integer"
           },
+          "show_in_list": {
+            "default": false,
+            "title": "Show In List",
+            "type": "boolean"
+          },
           "type": {
             "enum": [
               "text",
@@ -1680,6 +1685,7 @@
             "type": "integer"
           },
           "show_in_list": {
+            "default": false,
             "title": "Show In List",
             "type": "boolean"
           },
@@ -1705,7 +1711,6 @@
           "position",
           "id",
           "entity",
-          "show_in_list",
           "is_active",
           "has_values"
         ],

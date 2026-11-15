@@ -307,7 +307,12 @@ function Directory({ actor }: { actor: { id: number; display_name: string } }) {
         ) : (
           <div aria-label="Relationships">
             {donors.data.items.map((donor) => (
-              <RelationshipRow key={donor.id} donor={donor} mine={donor.owner?.id === actor.id} />
+              <RelationshipRow
+                key={donor.id}
+                donor={donor}
+                mine={donor.owner?.id === actor.id}
+                fields={donors.data.fields}
+              />
             ))}
           </div>
         )}

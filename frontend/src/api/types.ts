@@ -1999,6 +1999,11 @@ export interface components {
             /** Position */
             position: number;
             /**
+             * Show In List
+             * @default false
+             */
+            show_in_list: boolean;
+            /**
              * Type
              * @enum {string}
              */
@@ -2043,7 +2048,10 @@ export interface components {
             label: string;
             /** Position */
             position: number;
-            /** Show In List */
+            /**
+             * Show In List
+             * @default false
+             */
             show_in_list: boolean;
             /**
              * Type

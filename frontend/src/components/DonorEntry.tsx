@@ -16,8 +16,19 @@ import {
   type Donor,
 } from "../lib/donorEntry";
 import { dollars } from "../lib/format";
+import {
+  CustomInputs,
+  fromStored,
+  toPayload,
+  useCustomFields,
+  type FormValue,
+  type FormValues,
+} from "./CustomFields";
+import type { Field } from "../hooks/useFields";
 import { phoenixToday, QuickNoteSheet } from "./QuickNoteSheet";
 import "./donor-entry.css";
+
+const nonEmpty = (o: Record<string, unknown>) => (Object.keys(o).length ? o : undefined);
 
 type Mode = "create" | "edit" | "gift";
 const titles = { create: "Create donor", edit: "Edit donor", gift: "Add gift" };
@@ -124,6 +135,11 @@ function EntryForm({
     gift_date: phoenixToday(),
     program_id: "",
   };
+  const donorFields = useCustomFields("donor");
+  const giftFields = useCustomFields("gift");
+  const [donorEdits, setDonorEdits] = useState<FormValues>({});
+  const [giftEdits, setGiftEdits] = useState<FormValues>({});
+  const donorCustom = { ...fromStored(donorFields, donor?.custom), ...donorEdits };
   const [original] = useState(initial);
   const [values, setValues] = useState(initial);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -136,7 +152,10 @@ function EntryForm({
   const save = useEntryMutation(actorId);
   const denied = error instanceof ApiError && [401, 403, 404, 501].includes(error.status);
   const allowed = mode === "create" || (!!donor && canEditDonor(donor));
-  const dirty = JSON.stringify(values) !== JSON.stringify(original);
+  const dirty =
+    JSON.stringify(values) !== JSON.stringify(original) ||
+    Object.keys(donorEdits).length > 0 ||
+    Object.keys(giftEdits).length > 0;
   function close() {
     if (!lock.current && (!dirty || window.confirm("Discard this unsaved entry?"))) onClose();
   }
@@ -198,6 +217,7 @@ function EntryForm({
         phone: optional(values.phone),
         notes: optional(values.notes),
         do_not_contact: values.do_not_contact,
+        custom: nonEmpty(toPayload(donorFields, donorCustom, mode === "edit")),
       } satisfies components["schemas"]["DonorUpdate"];
       const result = await save.mutateAsync(
         mode === "gift"
@@ -208,6 +228,7 @@ function EntryForm({
                 gift_date: values.gift_date,
                 gross_cents: cents!,
                 program_id: values.program_id ? Number(values.program_id) : null,
+                custom: nonEmpty(toPayload(giftFields, giftEdits, false)),
               },
             }
           : mode === "edit"
@@ -385,6 +406,9 @@ function EntryForm({
                 values={values}
                 change={change}
                 errors={errors}
+                fields={giftFields}
+                custom={giftEdits}
+                onCustom={(key, value) => setGiftEdits((prev) => ({ ...prev, [key]: value }))}
               />
             ) : (
               <>
@@ -472,6 +496,18 @@ function EntryForm({
                       : `In the care of ${donor?.owner?.display_name ?? "the board"}. Saving details does not change ownership.`}
                   </p>
                 </EntrySection>
+                {donorFields.length > 0 && (
+                  <EntrySection number="04" title="Additional details">
+                    <CustomInputs
+                      fields={donorFields}
+                      values={donorCustom}
+                      errors={errors}
+                      onChange={(key, value) =>
+                        setDonorEdits((prev) => ({ ...prev, [key]: value }))
+                      }
+                    />
+                  </EntrySection>
+                )}
               </>
             )}
           </fieldset>
@@ -525,12 +561,18 @@ function GiftFields({
   values,
   change,
   errors,
+  fields,
+  custom,
+  onCustom,
 }: {
   actorId: number;
   donor: Donor;
   values: { amount: string; gift_date: string; program_id: string };
   change: (key: "amount" | "gift_date" | "program_id", value: string) => void;
   errors: Record<string, string>;
+  fields: Field[];
+  custom: FormValues;
+  onCustom: (key: string, value: FormValue) => void;
 }) {
   const { programs } = useDirectoryOptions(actorId);
   const cents = amountCents(values.amount);
@@ -632,6 +674,7 @@ function GiftFields({
             Retry programs
           </button>
         )}
+        <CustomInputs fields={fields} values={custom} onChange={onCustom} />
       </EntrySection>
       <p className="quiet-note">
         Gift editing and gift notes are not available yet. For context, use stewardship notes or log

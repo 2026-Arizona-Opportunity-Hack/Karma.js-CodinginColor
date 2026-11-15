@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 
 import { ApiError } from "../api/client";
+import { CustomValues, formatValue } from "../components/CustomFields";
 import { LogContact, NextStep } from "../components/DonorStewardship";
 import { DonorEntry } from "../components/DonorEntry";
 import { DonorOwnership } from "../components/DonorOwnership";
@@ -163,6 +164,11 @@ function Dossier({ id, actorId }: { id: number; actorId: number }) {
                     )}
                   </>
                 )}
+                <CustomValues
+                  fields={d.fields ?? []}
+                  custom={d.custom}
+                  title="Additional details"
+                />
                 {d.do_not_contact && (
                   <p className="contact-via">
                     Do not contact. This donor has asked not to receive outreach.
@@ -249,6 +255,10 @@ function Dossier({ id, actorId }: { id: number; actorId: number }) {
                             {gift.is_matching_gift
                               ? ` · Employer match${gift.payer_name ? ` · ${gift.payer_name}` : ""}`
                               : ""}
+                            {(d.gift_fields ?? [])
+                              .filter((f) => !f.is_builtin && formatValue(f, gift.custom?.[f.key]))
+                              .map((f) => ` · ${f.label}: ${formatValue(f, gift.custom?.[f.key])}`)
+                              .join("")}
                           </span>
                         </span>
                         <strong className="numeric">{dollars(gift.gross_cents)}</strong>

@@ -50,7 +50,7 @@ def has_values(db: Session, d: FieldDefinition) -> bool:
 def _out(db: Session, d: FieldDefinition) -> FieldOut:
     return FieldOut(
         **FieldMeta.model_validate(d, from_attributes=True).model_dump(),
-        id=d.id, entity=d.entity, show_in_list=d.show_in_list, is_active=d.is_active,
+        id=d.id, entity=d.entity, is_active=d.is_active,
         has_values=has_values(db, d),
     )  # fmt: skip
 
