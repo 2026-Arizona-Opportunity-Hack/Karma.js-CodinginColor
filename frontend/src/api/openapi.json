@@ -5157,6 +5157,7 @@
     },
     "/api/app/donors/{donor_id}/messages": {
       "post": {
+        "description": "Idempotent: asking again returns the open draft with 200 instead of 201 (MSG-2).",
         "operationId": "create_draft_api_app_donors__donor_id__messages_post",
         "parameters": [
           {
