@@ -447,7 +447,10 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Set Scope */
+        /**
+         * Set Scope
+         * @description Active super admin only (GOV-4).
+         */
         put: operations["set_scope_api_app_governance_scope_put"];
         post?: never;
         delete?: never;

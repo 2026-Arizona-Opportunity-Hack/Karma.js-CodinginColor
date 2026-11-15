@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Request
 
 from app.routes.deps import DB, ClockDep, CurrentDep
-from app.routes.stubs import session_router, todo
+from app.routes.stubs import session_router
 from app.schemas.auth import MeOut
 from app.schemas.members import (
     GovernanceDetail,
@@ -16,6 +16,7 @@ from app.schemas.members import (
     MoveDonorsOut,
     ScopeIn,
 )
+from app.services.governance import service as governance
 from app.services.members import service as members
 from app.services.ownership import reassign
 
@@ -57,16 +58,17 @@ def move_donors(
 
 
 @router.get("/governance")
-def get_governance() -> GovernanceDetail:
-    todo("lane A, phase 3")
+def get_governance(cur: CurrentDep, db: DB) -> GovernanceDetail:
+    return governance.get(db, cur.actor)
 
 
 @router.put("/governance/scope")
-def set_scope(body: ScopeIn) -> GovernanceDetail:
-    todo("lane A, phase 3")
+def set_scope(body: ScopeIn, cur: CurrentDep, db: DB, clock: ClockDep) -> GovernanceDetail:
+    """Active super admin only (GOV-4)."""
+    return governance.set_scope(db, clock, cur.actor, body)
 
 
 @router.post("/governance/flatten")
-def flatten() -> GovernanceDetail:
+def flatten(cur: CurrentDep, db: DB, clock: ClockDep) -> GovernanceDetail:
     """Active super admin becomes dormant; scope returns to `anyone` (GOV-5)."""
-    todo("lane A, phase 3")
+    return governance.flatten(db, clock, cur.actor)

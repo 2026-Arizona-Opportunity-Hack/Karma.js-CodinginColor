@@ -1,15 +1,16 @@
 """Super admin lifecycle, reachable only from the setup CLI (GOV-2, GOV-3, GOV-6, GOV-7).
 
-There is deliberately no route that imports this module: no in-app path grants,
-re-activates or transfers the super admin role.
+Only `flatten` is also reachable from the app (GOV-5), for the active super admin through
+`policy.can(gov.flatten)`. No in-app path creates, re-activates or transfers the role.
 """
 
 from sqlalchemy.orm import Session
 
 from app.authz.actor import Actor
+from app.authz.policy import Action, can
 from app.clock import Clock
 from app.db.models import User
-from app.errors import Conflict, NotFound
+from app.errors import Conflict, Forbidden, NotFound
 from app.repos import audit, sessions, users
 
 
@@ -51,8 +52,10 @@ def activate(db: Session, actor: Actor, clock: Clock) -> None:
 
 
 def flatten(db: Session, actor: Actor, clock: Clock) -> None:
-    """Role becomes dormant and reassign scope returns to `anyone` (GOV-5 break-glass)."""
-    _require_cli(actor)
+    """Role becomes dormant and reassign scope returns to `anyone` (GOV-5 break-glass).
+    The setup CLI or the active super admin may do this."""
+    if actor.kind != "cli" and not can(actor, Action.GOV_FLATTEN):
+        raise Forbidden("Only the active super admin can flatten the hierarchy.")
     gov = users.get_governance(db)
     if gov.super_admin_state != "active":
         raise Conflict("Hierarchy is already flat.")
