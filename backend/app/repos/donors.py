@@ -195,7 +195,9 @@ def timeline(db: Session, actor: Actor, donor_id: int, *, limit: int = 500) -> l
         WHERE g.donor_id = :id AND g.attribution = 'linked' AND g.deleted_at IS NULL
       UNION ALL
       SELECT CASE WHEN i.kind = 'note' THEN 'note' ELSE 'contact' END,
-             (i.occurred_on::timestamp AT TIME ZONE 'America/Phoenix'),
+             CASE WHEN (i.created_at AT TIME ZONE 'America/Phoenix')::date = i.occurred_on
+                  THEN i.created_at  -- logged the same day: keep real order with same-day events
+                  ELSE (i.occurred_on::timestamp AT TIME ZONE 'America/Phoenix') END,
              initcap(replace(i.kind, '_', ' ')), i.summary, u.display_name, NULL, i.id
         FROM interactions i LEFT JOIN users u ON u.id = i.user_id
         WHERE i.donor_id = :id AND i.kind <> 'system' AND i.message_id IS NULL

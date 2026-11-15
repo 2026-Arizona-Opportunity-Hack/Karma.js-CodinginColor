@@ -108,9 +108,11 @@ def log_interaction(
 
 
 @router.put("/donors/{donor_id}/next-step")
-def set_next_step(donor_id: int, body: NextStepIn, cur: CurrentDep, db: DB) -> NextStepOut:
+def set_next_step(
+    donor_id: int, body: NextStepIn, cur: CurrentDep, db: DB, clock: ClockDep
+) -> NextStepOut:
     """One open next step per donor; replaces the current one (DON-10)."""
-    return contacts.set_next_step(db, cur.actor, donor_id, body)
+    return contacts.set_next_step(db, clock, cur.actor, donor_id, body)
 
 
 @router.post("/next-steps/{step_id}/done")
