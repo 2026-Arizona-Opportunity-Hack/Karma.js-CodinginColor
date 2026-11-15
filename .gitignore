@@ -11,6 +11,7 @@ service-account*.json
 node_modules/
 dist/
 build/
+.test-build/
 .next/
 out/
 __pycache__/

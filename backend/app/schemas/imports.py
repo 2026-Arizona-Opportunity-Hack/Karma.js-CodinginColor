@@ -3,7 +3,12 @@
 from datetime import date, datetime
 from typing import Any, Literal, Self
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    model_validator,
+)
 
 from app.schemas.common import CountCents, ImportSource, ImportStatus, MemberRef
 
@@ -11,6 +16,32 @@ from app.schemas.common import CountCents, ImportSource, ImportStatus, MemberRef
 class InvalidRow(BaseModel):
     row_number: int
     reason: str
+
+
+DonorUpdateField = Literal["name", "organization", "email", "phone", "notes"]
+
+
+class DonorFieldChange(BaseModel):
+    new_value: str
+    old_value: str | None = Field(default=None, exclude_if=lambda value: value is None)
+    old_hidden: bool = False
+
+
+class SpreadsheetDonorUpdate(BaseModel):
+    donor_id: int
+    donor_name: str
+    changes: dict[DonorUpdateField, DonorFieldChange]
+
+
+class ApprovedDonorUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    donor_id: int = Field(gt=0)
+    fields: list[DonorUpdateField] = Field(min_length=1)
+
+
+class ImportCommitIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    approved_updates: list[ApprovedDonorUpdate] = Field(default_factory=list)
 
 
 class ImportClassSummary(CountCents):
@@ -51,6 +82,20 @@ class ImportSummary(BaseModel):
     needs_review: ImportClassSummary
     invalid: ImportClassSummary
     anonymous: ImportClassSummary
+    donor_updates: ImportClassSummary = Field(
+        default_factory=lambda: ImportClassSummary(
+            count=0,
+            cents=0,
+            gift_count=0,
+            donation_cents=0,
+            match_cents=0,
+        )
+    )
+    updated_count: int = Field(
+        default=0,
+        ge=0,
+        description="Proposed donors in preview; actually updated donors after commit",
+    )
     new_donors: int
     donors_matched: int
     unmapped_campaigns: list[str] = Field(description="Raw values that fell back to General")
@@ -60,7 +105,13 @@ class ImportSummary(BaseModel):
 
     @model_validator(mode="after")
     def reconcile(self) -> Self:
-        classes = (self.new_gifts, self.already_imported, self.needs_review, self.invalid)
+        classes = (
+            self.new_gifts,
+            self.already_imported,
+            self.needs_review,
+            self.invalid,
+            self.donor_updates,
+        )
         self.rows_reconcile = self.rows_read == sum(c.count for c in classes)
         self.cents_reconcile = (
             self.total_cents
@@ -100,6 +151,7 @@ class ImportPreviewOut(BaseModel):
     summary: ImportSummary
     invalid_rows: list[InvalidRow]
     commit_allowed: bool = Field(description="False when totals do not reconcile")
+    updates: list[SpreadsheetDonorUpdate] = Field(default_factory=list)
 
 
 class ImportListOut(BaseModel):

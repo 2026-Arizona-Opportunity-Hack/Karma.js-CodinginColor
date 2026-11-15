@@ -133,6 +133,12 @@ Partial unique index: `UNIQUE (row_key) WHERE deleted_at IS NULL`.
 
 **import_rows**: id, batch_id, row_number, raw jsonb (the parsed row; dropped 30 days after commit), normalized jsonb, status (`new`,`already_imported`,`needs_review`,`invalid`,`donor_new`,`donor_matched`), reason text null, row_key, gift_id null, donor_id null.
 
+Spreadsheet update proposals use the logical preview class `donor_update` and
+summary bucket `donor_updates`; persisted rows retain `donor_matched`. No migration
+is needed. Summary `updated_count` counts unique actually changed donors after
+commit. Per-field preview baselines remain in the process-local preview cache;
+`donor.import_update` audit data stores approved field names only (D-130).
+
 **match_reviews**: id, import_row_id null, gift_id null, incoming jsonb (normalized fields), candidate_donor_ids bigint[], status (`open`,`linked`,`created_new`,`anonymous`), decided_by, decided_at.
 
 ### 2.5 Relationship work

@@ -18,6 +18,73 @@
 | 5 a11y/acceptance | todo | Sun 10:30 | | | |
 | 6 docs/video/submit | todo | Sun 13:30 | | | |
 
+## Phase 3 targeted work: confirmed spreadsheet updates (#105)
+
+**Scope:** one shared PR for the requested lane A backend, typed API contract and
+lane B import dialog. This does not start the remaining Phase 3 lanes. Separate
+deploy-note issue #106 is published as PR #107, branch
+`phase-3/106-single-process-note`, commit `badb16c`.
+
+**What changed:** existing DED-3 spreadsheet matches propose name, organization,
+email, phone and notes changes. The uploader selects fields in a modal with all
+checkboxes unchecked. Only approved fields change, with one audit per donor in
+the import transaction. DON-3 controls old-value visibility; ownership never
+changes. Missing columns preserve data; approved empty cells clear fields.
+Update rows participate in physical-row reconciliation, with unique-donor
+`updated_count`. Stale selected fields fail atomically; rejected contacts are
+not learned as donor identities. No model or migration changes.
+
+**Requirements:** ING-4, ING-5, ING-8, DED-3, DON-3; decision D-130.
+
+**Backend verification:** before syncing main, `pytest -p no:cacheprovider`
+reported `636 passed, 2 skipped`; after the final matching fix, the focused
+importer command below reported `47 passed` (including acceptance tests 1-4):
+
+```text
+pytest -p no:cacheprovider tests/unit/test_spreadsheet_updates.py tests/unit/test_import_preview.py tests/integration/test_spreadsheet_updates.py tests/integration/test_import_preview.py tests/integration/test_import_commit.py
+```
+
+After syncing `origin/main` at `ec6ef93`, `ruff check app tests` passes and
+`mypy app` reports `Success: no issues found in 96 source files`.
+The final merged-branch full run includes all importer tests and reports:
+
+```text
+pytest -p no:cacheprovider
+1 failed, 695 passed, 2 skipped, 1 warning in 600.80s (0:10:00)
+FAILED tests/integration/test_contact_and_next_step.py::test_completing_a_step_logs_an_interaction_and_clears_the_card
+```
+
+The two skips remain the intentional public invite-accept session/CSRF cases;
+no importer or donor-update test is skipped. The warning is the existing
+Starlette/httpx TestClient deprecation. See the clock/timeline gap below.
+
+**Verification:** frontend `npm run typecheck`, `npm run lint`,
+`npm run test:updates` (3 passed), and `npm run build` pass. With
+`npm run dev -- --host 127.0.0.1 --port 5173` running, execute
+`node tests/import-updates.browser.mjs` (Node 22+, local Chromium; optionally set
+`CHROME_PATH`). The browser test mocks all API calls with synthetic data and
+checks unchecked defaults, modal focus, Space selection, 390px width, empty
+approvals and an email-only commit payload. Screenshot:
+[donor update review](screenshots/105-donor-updates.png).
+
+**Known limits:** preview storage remains process-local and expires after 20
+minutes. Import history/reversal and identity review UI remain separate lane B
+work. Existing batch reversal semantics remove gifts/new donors; reversal does
+not restore approved edits to existing donor fields. Parent importer PRs must
+merge before this feature PR. Tests use only local PostgreSQL, never Neon.
+
+The merged-branch full suite exposes an unrelated existing failure:
+`test_completing_a_step_logs_an_interaction_and_clears_the_card` in
+`tests/integration/test_contact_and_next_step.py:207`. Its fixed clock dates the
+completion note at Phoenix midnight, while the next-step creation timestamp
+uses the database's real clock. Once the real date reaches November 15, the
+next-step item sorts ahead of the completion note. A single-test run on a
+separate local test database reproduces `1 failed` (`next_step` versus expected
+`note`). The test, relationship repository, donor repository and contacts
+service are unchanged from `origin/main` at `ec6ef93`. This clock/timeline fix
+is outside the requested spreadsheet feature; do not treat the full gate as
+green until it is addressed separately.
+
 ## Open questions for the human / CIC
 - Should initial passwords from `cli setup` force a change at first login? Not in the data model today (see Phase 0 known gaps).
 

@@ -1239,6 +1239,13 @@ export interface components {
             /** Scopes */
             scopes: string[];
         };
+        /** ApprovedDonorUpdate */
+        ApprovedDonorUpdate: {
+            /** Donor Id */
+            donor_id: number;
+            /** Fields */
+            fields: ("name" | "organization" | "email" | "phone" | "notes")[];
+        };
         /** BoardMemberItem */
         BoardMemberItem: {
             /** Board Member */
@@ -1523,6 +1530,18 @@ export interface components {
             /** Total Lifetime Cents */
             total_lifetime_cents: number;
         };
+        /** DonorFieldChange */
+        DonorFieldChange: {
+            /** New Value */
+            new_value: string;
+            /**
+             * Old Hidden
+             * @default false
+             */
+            old_hidden: boolean;
+            /** Old Value */
+            old_value?: string | null;
+        };
         /** DonorPage */
         DonorPage: {
             /** Items */
@@ -1772,6 +1791,11 @@ export interface components {
             /** Match Cents */
             match_cents: number;
         };
+        /** ImportCommitIn */
+        ImportCommitIn: {
+            /** Approved Updates */
+            approved_updates?: components["schemas"]["ApprovedDonorUpdate"][];
+        };
         /** ImportListOut */
         ImportListOut: {
             /** Items */
@@ -1788,6 +1812,8 @@ export interface components {
             /** Invalid Rows */
             invalid_rows: components["schemas"]["InvalidRow"][];
             summary: components["schemas"]["ImportSummary"];
+            /** Updates */
+            updates?: components["schemas"]["SpreadsheetDonorUpdate"][];
         };
         /**
          * ImportSummary
@@ -1807,6 +1833,7 @@ export interface components {
             cents_reconcile: boolean;
             /** Donation Cents */
             donation_cents: number;
+            donor_updates?: components["schemas"]["ImportClassSummary"];
             /** Donors Matched */
             donors_matched: number;
             /**
@@ -1843,6 +1870,12 @@ export interface components {
              * @description Raw values that fell back to General
              */
             unmapped_campaigns: string[];
+            /**
+             * Updated Count
+             * @description Proposed donors in preview; actually updated donors after commit
+             * @default 0
+             */
+            updated_count: number;
         };
         /**
          * InteractionCreate
@@ -2556,6 +2589,17 @@ export interface components {
             thank_you_days_first: number;
             /** Thank You Days Repeat */
             thank_you_days_repeat: number;
+        };
+        /** SpreadsheetDonorUpdate */
+        SpreadsheetDonorUpdate: {
+            /** Changes */
+            changes: {
+                [key: string]: components["schemas"]["DonorFieldChange"];
+            };
+            /** Donor Id */
+            donor_id: number;
+            /** Donor Name */
+            donor_name: string;
         };
         /** Summary */
         Summary: {
@@ -4371,7 +4415,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ImportCommitIn"] | null;
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {

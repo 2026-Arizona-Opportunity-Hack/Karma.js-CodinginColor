@@ -103,3 +103,28 @@ Summary totals expose `gift_count`, `donation_cents`, `match_cents` and `total_c
 and `cents_reconcile` are computed independently; `reconciles` additionally checks gift
 counts and the anonymous subset. Commit requires reconciliation. Benevity's fixture has
 80 source rows and 91 valid gifts; invalid rows contribute no accepted gifts or cents.
+
+Spreadsheet previews additionally return `updates`: one entry per matched donor with
+`donor_id`, `donor_name`, and `changes` keyed by `name`, `organization`, `email`,
+`phone` or `notes`. Each change has `new_value` and, for an uploader allowed to see
+the donor's contacts (DON-3), `old_value`. Otherwise `old_hidden: true` is returned
+and `old_value` is omitted. Missing columns never clear existing fields; an empty
+cell in a supplied column proposes clearing that field.
+
+`donor_updates` is an additional physical-row reconciliation class (no gifts or
+cents). `updated_count` counts unique donors proposed in preview and actually
+changed after commit. Duplicate source rows can therefore contribute multiple
+rows but only one donor update. Conflicting values for the same donor field
+reject the preview with `400`.
+
+`POST /imports/{id}/commit` accepts an optional JSON body:
+`{"approved_updates":[{"donor_id":123,"fields":["email","notes"]}]}`.
+Omitting the body or sending an empty list changes no existing donor fields.
+Only the original uploader may approve updates (`403` otherwise); unknown donors,
+unoffered fields, repeated donor approvals and owner changes are rejected (`400`).
+Approved values come from the cached preview, never from the commit request.
+If an approved field or its donor match changed since preview, commit returns
+`409` and writes nothing; an already-applied value is a no-op. All approved
+changes share the import transaction and produce one `donor.import_update` audit
+entry per changed donor, listing field names without contact values. Unselected
+spreadsheet contacts are not learned as identity aliases. Ownership is unchanged.

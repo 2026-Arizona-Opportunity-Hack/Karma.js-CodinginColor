@@ -34,6 +34,7 @@ One row per donor, people, organizations and funders. Creates or updates **donor
 | Column | Required | Meaning |
 |---|---|---|
 | `Name` | yes | Full name, or organization name for organizations and funders |
+| `Contact ID` | no | Existing Zeffy contact identity, when known; never synthesized from a name |
 | `Type` | no | `Individual`, `Organization` or `Funder` (default Individual) |
 | `First name`, `Last name` | no | Used when present, otherwise split from `Name` |
 | `Organization` | no | Employer, or the organization itself |
@@ -42,6 +43,17 @@ One row per donor, people, organizations and funders. Creates or updates **donor
 | `Notes` | no | Free text |
 
 Identity: `sheet_row` is not a stable platform id, so the adapter records `email` and `name_org` identities; matching follows DED-3.
+
+An existing donor matched by Contact ID, a remembered review or email without a
+name conflict is never silently overwritten. Different name, organization, email,
+phone and notes values appear as donor updates in preview. The uploader chooses
+each field in a review dialog; every checkbox starts unchecked. Commit applies
+only selected fields and never changes ownership. Old values are hidden when
+the uploader cannot see that donor's contacts (DON-3). Missing optional columns
+preserve existing values; an explicitly empty supplied cell proposes clearing
+the field. Repeated rows must agree on each supplied field. Name alone never
+matches an existing donor. These donor-only rows add no gifts or cents, and the
+`donor_updates` row class participates in summary reconciliation (D-130).
 
 ## 2. Zeffy payments export (`source = zeffy`), assumed
 

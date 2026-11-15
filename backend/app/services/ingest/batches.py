@@ -13,12 +13,13 @@ from sqlalchemy.orm import Session
 from app.authz.actor import Actor
 from app.clock import Clock
 from app.db.models import Donor
-from app.errors import Conflict, NotFound
+from app.errors import Conflict, Forbidden, NotFound
 from app.repos import dedupe, imports, ownership
-from app.schemas.imports import ImportBatchOut, ImportListOut
+from app.schemas.imports import DonorUpdateField, ImportBatchOut, ImportCommitIn, ImportListOut
 from app.services.dedupe.resolver import identity_keys
 from app.services.ingest.adapters import IncomingDonor
 from app.services.ingest.preview import PreviewState, build_preview, previews
+from app.services.ingest.updates import approved_changes
 from app.services.ownership.assignment import assign_new
 
 
@@ -39,7 +40,12 @@ def get(db: Session, actor: Actor, clock: Clock, batch_id: int) -> ImportBatchOu
 
 
 def _persist(
-    db: Session, actor: Actor, clock: Clock, state: PreviewState, previous: dict[int, IncomingDonor]
+    db: Session,
+    actor: Actor,
+    clock: Clock,
+    state: PreviewState,
+    previous: dict[int, IncomingDonor],
+    approved: dict[int, dict[DonorUpdateField, str]],
 ) -> ImportBatchOut:
     batch = imports.save_batch(db, actor, state, clock.now())
     donors: dict[int, Donor] = {}
@@ -72,6 +78,27 @@ def _persist(
             )
             learned.update(keys)
 
+    for did, fields in approved.items():
+        target = dedupe.active_donor(db, actor, did, action="import.run")
+        learn(target, previous[did])
+        imports.apply_updates(db, actor, target, fields, clock.now())
+        profile = previous[did].model_copy(
+            update={
+                key: getattr(target, key) or ""
+                for key in (
+                    "display_name",
+                    "first_name",
+                    "last_name",
+                    "organization",
+                    "email",
+                    "phone",
+                    "notes",
+                )
+            }
+        )
+        learn(target, profile)
+        donors[did] = target
+
     inserted = 0
     for plan in state.rows:
         donor = None
@@ -82,8 +109,9 @@ def _persist(
             donor = donors[token]
             if batch.source == "spreadsheet" and token in previous:
                 learn(donor, previous[token])  # preserve the old primary contact as an identity
-            learn(donor, plan.incoming.donor)
-            if batch.source == "spreadsheet":
+            if batch.source != "spreadsheet" or token < 0:
+                learn(donor, plan.incoming.donor)
+            if batch.source == "spreadsheet" and token < 0:
                 imports.update_profile(db, actor, donor, plan.incoming.donor, clock.now())
         gifts = imports.save_gifts(db, actor, batch, plan, donor.id if donor else None, clock.now())
         inserted += len(gifts)
@@ -102,15 +130,21 @@ def _persist(
         inserted_gifts=inserted,
         disbursements=dict(disbursements),
         at=clock.now(),
+        updated_count=len(approved),
     )
     return ImportBatchOut(**imports.batch_output(db, actor, batch))
 
 
-def commit(db: Session, actor: Actor, clock: Clock, batch_id: int) -> ImportBatchOut:
+def commit(
+    db: Session, actor: Actor, clock: Clock, batch_id: int, body: ImportCommitIn | None = None
+) -> ImportBatchOut:
     ownership.lock(db, actor)
     if imports.find_batch(db, actor, batch_id, lock=True):
         raise Conflict("This preview has already been committed.")
     cached = previews.get(batch_id, clock)
+    approvals = body.approved_updates if body else []
+    if approvals and actor.user_id != cached.output.batch.uploaded_by.id:
+        raise Forbidden("Only the uploader can approve these donor updates.")
     if not cached.output.commit_allowed or not cached.output.summary.reconciles:
         raise Conflict("Preview totals do not reconcile. Upload the file again.")
     context = imports.snapshot(
@@ -127,6 +161,17 @@ def commit(db: Session, actor: Actor, clock: Clock, batch_id: int) -> ImportBatc
     if not state.output.summary.reconciles:
         raise Conflict("Import totals do not reconcile.")
     state.file_sha256 = cached.file_sha256
+    approved = approved_changes(
+        cached.output.updates,
+        cached.update_baselines,
+        context.donors,
+        {
+            row.donor_token
+            for row in state.rows
+            if row.donor_token is not None and row.donor_token > 0
+        },
+        approvals,
+    )
     state.output.batch = cached.output.batch.model_copy(
         update={
             "summary": state.output.summary,
@@ -134,7 +179,7 @@ def commit(db: Session, actor: Actor, clock: Clock, batch_id: int) -> ImportBatc
         }
     )
     try:
-        return _persist(db, actor, clock, state, context.donors)
+        return _persist(db, actor, clock, state, context.donors, approved)
     except IntegrityError as exc:
         raise Conflict(
             "The import conflicted with another change. Preview the file again."

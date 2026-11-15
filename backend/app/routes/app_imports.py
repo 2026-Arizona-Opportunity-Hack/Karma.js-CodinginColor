@@ -10,6 +10,7 @@ from app.schemas.common import ErrorOut, ImportSource
 from app.schemas.donors import GiftAttributeIn, GiftOut
 from app.schemas.imports import (
     ImportBatchOut,
+    ImportCommitIn,
     ImportListOut,
     ImportPreviewOut,
     ReviewDecisionIn,
@@ -53,9 +54,11 @@ def get_import(batch_id: int, db: DB, cur: CurrentDep, clock: ClockDep) -> Impor
 
 
 @router.post("/imports/{batch_id}/commit", responses={409: {"model": ErrorOut}})
-def commit_import(batch_id: int, db: DB, cur: CurrentDep, clock: ClockDep) -> ImportBatchOut:
+def commit_import(
+    batch_id: int, db: DB, cur: CurrentDep, clock: ClockDep, body: ImportCommitIn | None = None
+) -> ImportBatchOut:
     """One transaction; blocked when totals do not reconcile (ING-5, ING-9)."""
-    return batches.commit(db, cur.actor, clock, batch_id)
+    return batches.commit(db, cur.actor, clock, batch_id, body)
 
 
 @router.post("/imports/{batch_id}/reverse")

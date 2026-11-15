@@ -32,8 +32,9 @@ export async function api<T>(
   options: { method?: string; body?: unknown } = {},
 ): Promise<T> {
   const method = options.method ?? "GET";
+  const form = options.body instanceof FormData ? options.body : undefined;
   const headers: Record<string, string> = { Accept: "application/json" };
-  if (options.body !== undefined) headers["Content-Type"] = "application/json";
+  if (options.body !== undefined && !form) headers["Content-Type"] = "application/json";
   if (method !== "GET") {
     const csrf = readCookie("cic_csrf");
     if (csrf) headers["X-CSRF-Token"] = decodeURIComponent(csrf);
@@ -42,7 +43,7 @@ export async function api<T>(
     method,
     headers,
     credentials: "same-origin",
-    body: options.body === undefined ? undefined : JSON.stringify(options.body),
+    body: form ?? (options.body === undefined ? undefined : JSON.stringify(options.body)),
   });
   if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
   if (res.status === 204) return undefined as T;

@@ -43,6 +43,7 @@ class IncomingRow(BaseModel):
     reason: str | None = None
     disbursement_id: str = ""
     disbursement_date: str = ""
+    provided_fields: list[str] = Field(default_factory=list)
 
 
 REQUIRED = {
@@ -92,7 +93,7 @@ def _donor(source: ImportSource, row: dict[str, object]) -> IncomingDonor:
     donor.organization = get("Company Name" if source == "benevity" else "Organization")
     if source == "benevity" and re.fullmatch(r"[A-Z]\d{4}", donor.organization):
         donor.organization = ""
-    donor.zeffy_contact = get("Contact ID") if source == "zeffy" else ""
+    donor.zeffy_contact = get("Contact ID") if source in ("zeffy", "spreadsheet") else ""
     donor.notes = get("Notes") if source == "spreadsheet" else ""
     donor.anonymous = source != "spreadsheet" and not (full or donor.email)
     if source == "spreadsheet" and not full:
@@ -121,6 +122,17 @@ def _record(source: ImportSource, n: int, row: dict[str, object]) -> IncomingRow
             raise ValueError("non_usd")
         if source == "spreadsheet":
             result.donor = _donor(source, row)
+            result.provided_fields = [
+                field
+                for field, column in {
+                    "name": "Name",
+                    "organization": "Organization",
+                    "email": "Email",
+                    "phone": "Phone",
+                    "notes": "Notes",
+                }.items()
+                if header(column) in row
+            ]
             return result
         benevity = source == "benevity"
         when = norm.gift_date(get("Donation Date" if benevity else "Date"))
