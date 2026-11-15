@@ -8,12 +8,12 @@ import "./index.css";
 import { LoginPage } from "./pages/LoginPage";
 import { ImportPage } from "./pages/ImportPage";
 import { PlaceholderPage } from "./pages/PlaceholderPage";
+import { DonorsPage } from "./pages/DonorsPage";
 
 const queryClient = new QueryClient();
 
 const SCREENS = [
   { path: "/", title: "Dashboard", phase: "Phase 3" },
-  { path: "/donors", title: "Donors", phase: "Phase 2" },
   { path: "/review", title: "Review", phase: "Phase 2" },
   { path: "/messages", title: "Messages", phase: "Phase 4" },
   { path: "/reports", title: "Reports", phase: "Phase 4" },
@@ -27,6 +27,7 @@ createRoot(document.getElementById("root")!).render(
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route element={<Layout />}>
+            <Route path="/donors" element={<DonorsPage />} />
             <Route path="/import" element={<ImportPage />} />
             {SCREENS.map((s) => (
               <Route
