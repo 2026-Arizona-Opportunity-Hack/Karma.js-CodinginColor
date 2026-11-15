@@ -5523,6 +5523,7 @@
     },
     "/api/app/donors/{donor_id}/reassign": {
       "post": {
+        "description": "Hand a donor to an active member, per the reassign scope (OWN-3).",
         "operationId": "reassign_donor_api_app_donors__donor_id__reassign_post",
         "parameters": [
           {
