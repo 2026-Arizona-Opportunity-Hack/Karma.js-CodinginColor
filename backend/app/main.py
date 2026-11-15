@@ -11,6 +11,7 @@ from app.openapi import install as install_openapi
 from app.routes import (
     app_auth,
     app_donors,
+    app_fields,
     app_imports,
     app_members,
     app_messages,
@@ -48,6 +49,7 @@ def create_app() -> FastAPI:
         app_members,
         app_imports,
         app_donors,
+        app_fields,
         app_messages,
         app_ownership,
         app_reports,

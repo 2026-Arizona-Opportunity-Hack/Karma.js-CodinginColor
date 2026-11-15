@@ -79,6 +79,7 @@ All non-GET calls need header `X-CSRF-Token`. Authorization is decided in `authz
 |---|---|
 | Auth | `POST /auth/login`, `POST /auth/logout`, `GET /auth/me`, `POST /auth/invite/{token}/accept` |
 | Members | `GET /members`, `POST /members/invite`, `POST /members/{id}/deactivate` |
+| Fields | `GET /fields?entity=donor|gift`, `POST /fields`, `PATCH /fields/{id}`, `DELETE /fields/{id}`. Needs `settings.manage` to change; any member can read. Donor and gift create, update and read carry `custom` (values by field key) and `fields` (key, label, type, position). Delete is allowed only for a custom field that never held a value, otherwise 409: deactivate it instead (CUS-1 to CUS-4, D-145). |
 | Governance | `GET /governance`, `PUT /governance/scope`, `POST /governance/flatten`, `GET /governance/nominations`, `POST /governance/nominations`, `POST /governance/nominations/{id}/confirm`, `POST /governance/nominations/{id}/cancel`, `DELETE /governance/super-admin` (body `{"confirm": "REMOVE"}`). Nomination and removal routes are session-only: API keys get 403 (GOV-2, GOV-3, D-144). |
 | Imports | `POST /imports/preview` (multipart: `source`, `file`), `GET /imports/{id}`, `POST /imports/{id}/commit`, `POST /imports/{id}/reverse`, `GET /imports` |
 | Review | `GET /reviews?status=open`, `POST /reviews/{id}/decide` (`link` + donor_id, `create_new`, `anonymous`) |

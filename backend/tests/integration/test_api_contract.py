@@ -31,6 +31,8 @@ EXPECTED = {
     ("POST", "/api/app/governance/nominations/{}/confirm"),
     ("POST", "/api/app/governance/nominations/{}/cancel"),
     ("DELETE", "/api/app/governance/super-admin"),
+    ("GET", "/api/app/fields"), ("POST", "/api/app/fields"),
+    ("PATCH", "/api/app/fields/{}"), ("DELETE", "/api/app/fields/{}"),
     ("POST", "/api/app/imports/preview"), ("GET", "/api/app/imports"),
     ("GET", "/api/app/imports/{}"), ("POST", "/api/app/imports/{}/commit"),
     ("POST", "/api/app/imports/{}/reverse"),
@@ -99,6 +101,8 @@ IMPLEMENTED = {
     ("POST", "/api/app/governance/nominations/{}/confirm"),
     ("POST", "/api/app/governance/nominations/{}/cancel"),
     ("DELETE", "/api/app/governance/super-admin"),  # super admin nominations
+    ("GET", "/api/app/fields"), ("POST", "/api/app/fields"),
+    ("PATCH", "/api/app/fields/{}"), ("DELETE", "/api/app/fields/{}"),
     ("GET", "/api/app/reminders"), ("GET", "/api/app/reminders/needs-reassignment"),  # #32
     ("GET", "/api/app/members"), ("POST", "/api/app/members/invite"),  # lane A, #30
     ("POST", "/api/app/members/{}/deactivate"), ("POST", "/api/app/auth/invite/{}/accept"),

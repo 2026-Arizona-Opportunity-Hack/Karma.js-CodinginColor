@@ -18,6 +18,7 @@ from app.schemas.donors import (
     TimelineEntry,
     TimelineOut,
 )
+from app.services.fields.view import FieldView
 
 
 def statuses(row: dict[str, Any]) -> list[DonorStatus]:
@@ -34,11 +35,18 @@ def statuses(row: dict[str, Any]) -> list[DonorStatus]:
     return out
 
 
-def _gift(r: dict[str, Any]) -> GiftOut:
-    return GiftOut(**{k: v for k, v in r.items() if k != "rn"})
+def _gift(r: dict[str, Any], view: FieldView) -> GiftOut:
+    row = {k: v for k, v in r.items() if k not in ("rn", "donor_owner_id", "custom")}
+    return GiftOut(**row, custom=view.custom("gift", r.get("custom"), r.get("donor_owner_id")))
 
 
-def _card_fields(row: dict[str, Any], gifts: list[dict[str, Any]]) -> dict[str, Any]:
+def gift_out(row: dict[str, Any], view: FieldView) -> GiftOut:
+    return _gift(row, view)
+
+
+def _card_fields(
+    row: dict[str, Any], gifts: list[dict[str, Any]], view: FieldView
+) -> dict[str, Any]:
     owner = (
         MemberRef(
             id=row["owner_user_id"], display_name=row["owner_name"], is_active=row["owner_active"]
@@ -59,7 +67,8 @@ def _card_fields(row: dict[str, Any], gifts: list[dict[str, Any]]) -> dict[str, 
         "next_step_title": row["next_step_title"],
         "next_step_due": row["next_step_due"],
         "statuses": statuses(row),
-        "recent_gifts": [_gift(g) for g in gifts],
+        "recent_gifts": [_gift(g, view) for g in gifts],
+        "custom": view.custom("donor", row.get("custom"), row["owner_user_id"]),
     }
 
 
@@ -81,8 +90,10 @@ def list_donors(
         status=status, program=program, page=page, page_size=page_size,
     )  # fmt: skip
     gifts = repo.recent_gifts(db, actor, [r["id"] for r in rows])
+    view = FieldView(db, actor)
     return DonorPage(
-        items=[DonorCard(**_card_fields(r, gifts[r["id"]])) for r in rows],
+        items=[DonorCard(**_card_fields(r, gifts[r["id"]], view)) for r in rows],
+        fields=view.meta("donor"),
         total=total,
         page=page,
         page_size=page_size,
@@ -94,8 +105,11 @@ def get_donor(db: Session, clock: Clock, actor: Actor, donor_id: int) -> DonorDe
     gifts = repo.recent_gifts(db, actor, [donor_id])[donor_id]
     owned = repo.OwnedBy(row["owner_user_id"])
     visible = can(actor, Action.DONOR_VIEW_CONTACT, owned)
+    view = FieldView(db, actor)
     return DonorDetail(
-        **_card_fields(row, gifts),
+        **_card_fields(row, gifts, view),
+        fields=view.meta("donor"),
+        gift_fields=view.meta("gift"),
         first_name=row["first_name"],
         last_name=row["last_name"],
         # Contact details and free-text notes stay with the owner and an active super admin.
@@ -117,4 +131,5 @@ def get_timeline(db: Session, clock: Clock, actor: Actor, donor_id: int) -> Time
 
 
 def unattributed(db: Session, actor: Actor) -> GiftListOut:
-    return GiftListOut(items=[_gift(r) for r in repo.unattributed_gifts(db, actor)])
+    view = FieldView(db, actor)
+    return GiftListOut(items=[_gift(r, view) for r in repo.unattributed_gifts(db, actor)])

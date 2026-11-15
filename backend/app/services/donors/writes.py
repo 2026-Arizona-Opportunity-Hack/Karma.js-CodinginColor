@@ -2,11 +2,13 @@
 
 from typing import Any
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.authz.actor import Actor
 from app.clock import Clock
-from app.errors import Invalid
+from app.db.models import Donor
+from app.errors import Invalid, NotFound
 from app.repos import donor_writes as repo
 from app.schemas.common import ErrorDetail, MemberRef
 from app.schemas.donors import (
@@ -17,6 +19,8 @@ from app.schemas.donors import (
     PossibleDuplicateOut,
 )
 from app.services.donors import service
+from app.services.fields import service as fields
+from app.services.fields import values
 from app.services.ingest import normalizers
 from app.services.ingest.adapters import IncomingDonor
 
@@ -38,6 +42,7 @@ def create_donor(
     db: Session, clock: Clock, actor: Actor, body: DonorCreate
 ) -> DonorDetail | PossibleDuplicateOut:
     email, phone = _contact(body.email, body.phone)
+    custom = values.validate(fields.definitions(db, "donor"), body.custom or {}, creating=True)
     incoming = IncomingDonor(
         kind=body.kind,
         display_name=body.display_name,
@@ -83,6 +88,7 @@ def create_donor(
             "phone": phone,
             "do_not_contact": body.do_not_contact,
             "notes": body.notes,
+            "custom": custom,
         },
         clock.now(),
     )
@@ -98,6 +104,15 @@ def update_donor(
     for required in ("display_name", "do_not_contact"):
         if required in changes and changes[required] is None:
             raise Invalid(f"{required} cannot be cleared.")
+    if "custom" in changes:
+        patch = changes.pop("custom") or {}
+        if patch:
+            current = db.scalar(select(Donor.custom).where(Donor.id == donor_id))
+            if current is None:
+                raise NotFound("Donor not found.")
+            changes["custom"] = values.validate(fields.definitions(db, "donor"), patch, current)
+    if not changes:
+        raise Invalid("Send at least one field to change.")
     if "email" in changes or "phone" in changes:
         email, phone = _contact(changes.get("email"), changes.get("phone"))
         if "email" in changes:

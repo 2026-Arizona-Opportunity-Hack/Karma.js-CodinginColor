@@ -75,7 +75,7 @@ def create(
     dedupe.learn(db, actor, donor, incoming, "manual", at=at, action="import.run")
     audit.write(
         db, actor, "donor.create", entity="donor", entity_id=donor.id,
-        data={"kind": donor.kind},
+        data={"kind": donor.kind, "custom_keys": sorted(donor.custom or {})},
         at=at,
     )  # fmt: skip
     return donor
@@ -94,17 +94,25 @@ def _editable(db: Session, actor: Actor, donor_id: int) -> Donor:
     return donor
 
 
+def _changed_keys(old: dict[str, Any], new: dict[str, Any] | None) -> list[str]:
+    """Which custom fields changed. Values are never written to the audit log."""
+    new = new or {}
+    return sorted(k for k in old.keys() | new.keys() if old.get(k) != new.get(k))
+
+
 def update(
     db: Session, actor: Actor, donor_id: int, changes: dict[str, Any], at: datetime
 ) -> tuple[Donor, IncomingDonor]:
     """Apply `changes` and return the donor with its new identity data for the caller to learn."""
     donor = _editable(db, actor, donor_id)
+    old_custom = dict(donor.custom or {})
     for name, value in changes.items():
         setattr(donor, name, value)
     donor.updated_at = at
     audit.write(
         db, actor, "donor.update", entity="donor", entity_id=donor.id,
-        data={"fields": sorted(changes)},
+        data={"fields": sorted(changes)}
+        | ({"custom_keys": _changed_keys(old_custom, donor.custom)} if "custom" in changes else {}),
         at=at,
     )  # fmt: skip
     db.flush()
@@ -139,6 +147,7 @@ def add_manual_gift(
     program_id: int | None,
     assumed_thanked: bool,
     at: datetime,
+    custom: dict[str, Any] | None = None,
 ) -> Gift:
     """A gift typed in by hand, for example a check (DON-8). Owner and active super admin only.
 
@@ -162,13 +171,14 @@ def add_manual_gift(
         net_cents=gross_cents,
         program_id=program.id,
         assumed_thanked=assumed_thanked,
+        custom=custom or {},
         created_by=actor.user_id,
     )
     db.add(gift)
     db.flush()
     audit.write(
         db, actor, "gift.create", entity="gift", entity_id=gift.id,
-        data={"donor_id": donor.id, "source": "manual"},
+        data={"donor_id": donor.id, "source": "manual", "custom_keys": sorted(custom or {})},
         at=at,
     )  # fmt: skip
     return gift

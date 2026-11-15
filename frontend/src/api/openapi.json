@@ -644,6 +644,12 @@
       "DonorCard": {
         "description": "A list item (DON-5).",
         "properties": {
+          "custom": {
+            "additionalProperties": true,
+            "description": "Custom field values by key",
+            "title": "Custom",
+            "type": "object"
+          },
           "display_name": {
             "title": "Display Name",
             "type": "string"
@@ -782,6 +788,18 @@
             "title": "Confirm New",
             "type": "boolean"
           },
+          "custom": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom"
+          },
           "display_name": {
             "maxLength": 200,
             "minLength": 1,
@@ -918,6 +936,12 @@
             "title": "Created At",
             "type": "string"
           },
+          "custom": {
+            "additionalProperties": true,
+            "description": "Custom field values by key",
+            "title": "Custom",
+            "type": "object"
+          },
           "display_name": {
             "title": "Display Name",
             "type": "string"
@@ -937,6 +961,14 @@
             ],
             "title": "Email"
           },
+          "fields": {
+            "description": "Active donor fields in order, to render `custom`",
+            "items": {
+              "$ref": "#/components/schemas/FieldMeta"
+            },
+            "title": "Fields",
+            "type": "array"
+          },
           "first_name": {
             "anyOf": [
               {
@@ -947,6 +979,13 @@
               }
             ],
             "title": "First Name"
+          },
+          "gift_fields": {
+            "items": {
+              "$ref": "#/components/schemas/FieldMeta"
+            },
+            "title": "Gift Fields",
+            "type": "array"
           },
           "id": {
             "title": "Id",
@@ -1143,6 +1182,13 @@
       },
       "DonorPage": {
         "properties": {
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/FieldMeta"
+            },
+            "title": "Fields",
+            "type": "array"
+          },
           "items": {
             "items": {
               "$ref": "#/components/schemas/DonorCard"
@@ -1174,6 +1220,19 @@
       },
       "DonorUpdate": {
         "properties": {
+          "custom": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Merged into the stored values; null clears one",
+            "title": "Custom"
+          },
           "display_name": {
             "anyOf": [
               {
@@ -1378,6 +1437,342 @@
         "title": "ErrorOut",
         "type": "object"
       },
+      "FieldCreate": {
+        "properties": {
+          "choices": {
+            "anyOf": [
+              {
+                "items": {
+                  "maxLength": 100,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "maxItems": 50,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Choices"
+          },
+          "entity": {
+            "enum": [
+              "donor",
+              "gift"
+            ],
+            "title": "Entity",
+            "type": "string"
+          },
+          "is_contact": {
+            "default": false,
+            "description": "Values follow DON-3. Fixed after creation",
+            "title": "Is Contact",
+            "type": "boolean"
+          },
+          "is_required": {
+            "default": false,
+            "title": "Is Required",
+            "type": "boolean"
+          },
+          "label": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Label",
+            "type": "string"
+          },
+          "show_in_list": {
+            "default": false,
+            "title": "Show In List",
+            "type": "boolean"
+          },
+          "type": {
+            "enum": [
+              "text",
+              "long_text",
+              "number",
+              "money",
+              "date",
+              "bool",
+              "choice",
+              "multi_choice"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "entity",
+          "label",
+          "type"
+        ],
+        "title": "FieldCreate",
+        "type": "object"
+      },
+      "FieldListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/FieldOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "FieldListOut",
+        "type": "object"
+      },
+      "FieldMeta": {
+        "description": "Enough to render a custom value: sent beside `custom` on donor and gift reads.",
+        "properties": {
+          "choices": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Choices"
+          },
+          "is_builtin": {
+            "default": false,
+            "title": "Is Builtin",
+            "type": "boolean"
+          },
+          "is_contact": {
+            "default": false,
+            "title": "Is Contact",
+            "type": "boolean"
+          },
+          "is_required": {
+            "default": false,
+            "title": "Is Required",
+            "type": "boolean"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "position": {
+            "title": "Position",
+            "type": "integer"
+          },
+          "type": {
+            "enum": [
+              "text",
+              "long_text",
+              "number",
+              "money",
+              "date",
+              "bool",
+              "choice",
+              "multi_choice"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "type",
+          "position"
+        ],
+        "title": "FieldMeta",
+        "type": "object"
+      },
+      "FieldOut": {
+        "properties": {
+          "choices": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Choices"
+          },
+          "entity": {
+            "enum": [
+              "donor",
+              "gift"
+            ],
+            "title": "Entity",
+            "type": "string"
+          },
+          "has_values": {
+            "description": "True when any record holds a value (blocks delete)",
+            "title": "Has Values",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "is_active": {
+            "title": "Is Active",
+            "type": "boolean"
+          },
+          "is_builtin": {
+            "default": false,
+            "title": "Is Builtin",
+            "type": "boolean"
+          },
+          "is_contact": {
+            "default": false,
+            "title": "Is Contact",
+            "type": "boolean"
+          },
+          "is_required": {
+            "default": false,
+            "title": "Is Required",
+            "type": "boolean"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "position": {
+            "title": "Position",
+            "type": "integer"
+          },
+          "show_in_list": {
+            "title": "Show In List",
+            "type": "boolean"
+          },
+          "type": {
+            "enum": [
+              "text",
+              "long_text",
+              "number",
+              "money",
+              "date",
+              "bool",
+              "choice",
+              "multi_choice"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "type",
+          "position",
+          "id",
+          "entity",
+          "show_in_list",
+          "is_active",
+          "has_values"
+        ],
+        "title": "FieldOut",
+        "type": "object"
+      },
+      "FieldPatch": {
+        "description": "Key, type, entity and the contact flag never change. Built-ins accept only label,\nposition, show_in_list and is_active.",
+        "properties": {
+          "choices": {
+            "anyOf": [
+              {
+                "items": {
+                  "maxLength": 100,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "maxItems": 50,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Choices"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          },
+          "is_required": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Required"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "position": {
+            "anyOf": [
+              {
+                "maximum": 100000.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Position"
+          },
+          "show_in_list": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Show In List"
+          }
+        },
+        "title": "FieldPatch",
+        "type": "object"
+      },
       "GiftAttributeIn": {
         "description": "Attach an anonymous gift to a donor once CIC learns who gave (issue #71).",
         "properties": {
@@ -1395,6 +1790,19 @@
       "GiftCreate": {
         "description": "A manual gift, for example a check (DON-8).",
         "properties": {
+          "custom": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Custom gift field values by key",
+            "title": "Custom"
+          },
           "gift_date": {
             "format": "date",
             "title": "Gift Date",
@@ -1482,6 +1890,12 @@
               }
             ],
             "title": "Campaign Name"
+          },
+          "custom": {
+            "additionalProperties": true,
+            "description": "Custom field values by key",
+            "title": "Custom",
+            "type": "object"
           },
           "donor_id": {
             "anyOf": [
@@ -5966,6 +6380,330 @@
         "summary": "Get Timeline",
         "tags": [
           "app:donors"
+        ]
+      }
+    },
+    "/api/app/fields": {
+      "get": {
+        "description": "Every field of one entity in display order, including deactivated ones.",
+        "operationId": "list_fields_api_app_fields_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "entity",
+            "required": true,
+            "schema": {
+              "enum": [
+                "donor",
+                "gift"
+              ],
+              "title": "Entity",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FieldListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Validation failed"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "No session"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Policy denied or bad CSRF token"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not found or not visible"
+          }
+        },
+        "summary": "List Fields",
+        "tags": [
+          "app:fields"
+        ]
+      },
+      "post": {
+        "description": "Add a custom field. Needs `settings.manage`.",
+        "operationId": "create_field_api_app_fields_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FieldCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FieldOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Validation failed"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "No session"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Policy denied or bad CSRF token"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not found or not visible"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "summary": "Create Field",
+        "tags": [
+          "app:fields"
+        ]
+      }
+    },
+    "/api/app/fields/{field_id}": {
+      "delete": {
+        "description": "Only a custom field that never held a value; otherwise 409 and deactivate it.",
+        "operationId": "delete_field_api_app_fields__field_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "field_id",
+            "required": true,
+            "schema": {
+              "title": "Field Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Validation failed"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "No session"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Policy denied or bad CSRF token"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not found or not visible"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "summary": "Delete Field",
+        "tags": [
+          "app:fields"
+        ]
+      },
+      "patch": {
+        "description": "Relabel, reorder, show in list, edit choices, require, deactivate or restore.",
+        "operationId": "update_field_api_app_fields__field_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "field_id",
+            "required": true,
+            "schema": {
+              "title": "Field Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FieldPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FieldOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Validation failed"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "No session"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Policy denied or bad CSRF token"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not found or not visible"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "summary": "Update Field",
+        "tags": [
+          "app:fields"
         ]
       }
     },

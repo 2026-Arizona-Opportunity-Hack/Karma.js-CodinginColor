@@ -17,6 +17,7 @@ from app.schemas.common import (
     Phone,
     ShortText,
 )
+from app.schemas.fields import Custom, FieldMeta
 
 
 class GiftOut(BaseModel):
@@ -34,6 +35,7 @@ class GiftOut(BaseModel):
     is_matching_gift: bool = False
     payer_name: str | None = None
     assumed_thanked: bool = False
+    custom: Custom = Field(default_factory=dict, description="Custom field values by key")
 
 
 class GiftCreate(BaseModel):
@@ -43,6 +45,7 @@ class GiftCreate(BaseModel):
     gross_cents: Cents = Field(gt=0)
     program_id: int | None = Field(default=None, description="Defaults to General")
     note: LongText | None = None
+    custom: Custom | None = Field(default=None, description="Custom gift field values by key")
 
 
 class GiftAttributeIn(BaseModel):
@@ -71,6 +74,7 @@ class DonorCard(BaseModel):
     next_step_due: date | None = None
     statuses: list[DonorStatus]
     recent_gifts: list[GiftOut] = Field(description="Last 5, newest first")
+    custom: Custom = Field(default_factory=dict, description="Custom field values by key")
 
 
 class DonorDetail(DonorCard):
@@ -86,6 +90,10 @@ class DonorDetail(DonorCard):
     can_act: bool
     can_reassign: bool
     created_at: datetime
+    fields: list[FieldMeta] = Field(
+        default_factory=list, description="Active donor fields in order, to render `custom`"
+    )
+    gift_fields: list[FieldMeta] = Field(default_factory=list)
 
 
 class DonorPage(BaseModel):
@@ -93,6 +101,7 @@ class DonorPage(BaseModel):
     total: int
     page: int
     page_size: int
+    fields: list[FieldMeta] = Field(default_factory=list)
 
 
 class DonorCreate(BaseModel):
@@ -105,6 +114,7 @@ class DonorCreate(BaseModel):
     phone: Phone | None = None
     do_not_contact: bool = False
     notes: LongText | None = None
+    custom: Custom | None = None
     confirm_new: bool = Field(
         default=False, description="Create anyway after a 409 possible-duplicate warning (DED-6)"
     )
@@ -119,6 +129,9 @@ class DonorUpdate(BaseModel):
     phone: Phone | None = None
     do_not_contact: bool | None = None
     notes: LongText | None = None
+    custom: Custom | None = Field(
+        default=None, description="Merged into the stored values; null clears one"
+    )
 
 
 class DuplicateCandidate(BaseModel):
