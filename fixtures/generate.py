@@ -77,9 +77,18 @@ HEADERS = {
               "Notes"],
     "zeffy": ["Payment ID", "Date", "Amount", "Currency", "Payment status", "Refunded amount",
               "Campaign", "Contact ID", "First name", "Last name", "Email", "Phone"],
-    "benevity": ["Disbursement ID", "Transaction ID", "Donation Date", "Donation Type",
-                 "Company", "Donor First Name", "Donor Last Name", "Email", "Benevity Donor ID",
-                 "Cause", "Currency", "Amount", "Fee"],
+    # Column names from Benevity's Causes Portal "Reporting glossary" (see docs/IMPORT_FORMATS.md).
+    "benevity": [
+        "Nonprofit Name", "Nonprofit ID", "Disbursement ID", "Disbursement Date", "Bank Date",
+        "Bank Reference ID", "Payment Method", "Disbursement From (Grantor)", "Company Name",
+        "Corporate / Peer Campaign", "Project Name", "Project ID", "Project External ID",
+        "Grant Requirements", "Transaction ID", "Donation Date", "Donation Amount",
+        "Match Amount", "Donation Currency", "Foreign Exchange Rate", "Cause Support Fee",
+        "Merchant Fee", "Disbursement Check Fee", "Fee Comment", "Donation Frequency",
+        "Donation Method", "Donation Type", "Donor First Name", "Donor Last Name", "Donor Email",
+        "Donor Address", "Donor City", "Original Donor State / Province",
+        "Donor Zip / Postal Code", "Donor Country", "Donor Comment",
+    ],
     "generic": ["Date", "Amount", "Platform", "Donor name", "Email", "Phone", "Organization",
                 "Campaign", "Transaction ID", "Fee", "Notes"],
 }  # fmt: skip
@@ -96,7 +105,6 @@ class P:
     email: str | None = None
     phone: str | None = None
     zeffy_id: str | None = None
-    benevity_id: str | None = None
 
 
 @dataclass
@@ -110,6 +118,7 @@ class Row:
     # linked | pending_review | anonymous | invalid | donor (spreadsheet row)
     attr: str = "linked"
     why: str | None = None  # review reason or invalid code
+    extra: int = 0  # Benevity Match Amount in cents: a second gift on the same row
 
 
 # ---------------------------------------------------------------- people
@@ -360,86 +369,117 @@ def build(seed: int = SEED) -> tuple[dict[str, list[Row]], World]:
         )
     )
 
-    # --- Benevity-like
+    # --- Benevity-like (documented Causes Portal disbursement report columns)
     bv = rows["benevity"]
     disb = [f"DISB-{n}" for n in ("2025-03", "2025-06", "2025-09", "2025-12", "2026-03", "2026-06")]
     disb_date = [date(2025, 3, 15), date(2025, 6, 15), date(2025, 9, 15), date(2025, 12, 15),
                  date(2026, 3, 15), date(2026, 6, 15)]  # fmt: skip
+    projects = ["AI Academy", "K12 Program", "Summer Camp", "Coding in Color general fund"]
     txn = iter(range(700000, 800000))
+    anon_codes = iter(f"A{n}" for n in range(1200, 9999, 37))
 
     def brow(
         p: P | None,
         i: int,
         cents: int,
         *,
-        kind: str = "User Portfolio Donation",
+        match: int = 0,
         company: str | None = None,
-        email: str | None = "",
-        bid: str = "",
+        email: str | None = None,
+        card: bool = False,
+        recurring: bool = False,
         **over: str,
     ) -> Row:
-        company = (
-            company
-            if company is not None
-            else (p.employer if p and p.employer else "Sonoran Aerospace Inc")
-        )
+        """One report line: the donor's gift, plus a corporate match when Match Amount > 0."""
+        if company is None:
+            company = p.employer if p and p.employer else "Sonoran Aerospace Inc"
         when = disb_date[i] - timedelta(days=rng.randrange(1, 28))
-        cells = {"Disbursement ID": disb[i], "Transaction ID": f"BV-{next(txn)}", "Donation Date": when.isoformat(),
-                 "Donation Type": kind, "Company": company,
-                 "Donor First Name": (p.first or p.name) if p else "", "Donor Last Name": (p.last or "") if p else "",
-                 "Email": (p.email if email == "" else email) if p else "", "Benevity Donor ID": bid,
-                 "Cause": rng.choice(["AI Academy", "K12 Program", "Summer Camp", "Coding in Color"]),
-                 "Currency": "USD", "Amount": money(cents), "Fee": "0.00"} | over  # fmt: skip
-        return Row(cells, when, cents, p.pid if p else None, "linked" if p else "anonymous")
+        project = rng.choice(projects)
+        fee = cents * 3 // 100 if card else 0
+        shared = p is not None  # donors can opt out of sharing; hidden rows have blank donor fields
+        cells = {
+            "Nonprofit Name": "Coding in Color (synthetic fixture)",
+            "Nonprofit ID": "840-000000000",
+            "Disbursement ID": disb[i],
+            "Disbursement Date": disb_date[i].isoformat(),
+            "Bank Date": (disb_date[i] + timedelta(days=2)).isoformat(),
+            "Bank Reference ID": f"BANK-{disb[i][-7:]}",
+            "Payment Method": "EFT",
+            "Disbursement From (Grantor)": "Synthetic Giving Foundation",
+            "Company Name": company,
+            "Corporate / Peer Campaign": rng.choice(["Workplace Giving 2025", "Matching Month", ""]),
+            "Project Name": project,
+            "Project ID": f"PRJ-{projects.index(project) + 1}",
+            "Project External ID": "",
+            "Grant Requirements": "",
+            "Transaction ID": f"BV-{next(txn)}",
+            "Donation Date": when.isoformat(),
+            "Donation Amount": money(cents),
+            "Match Amount": money(match),
+            "Donation Currency": "USD",
+            "Foreign Exchange Rate": "1.0000",
+            "Cause Support Fee": "0.00",
+            "Merchant Fee": money(fee),
+            "Disbursement Check Fee": "0.00",
+            "Fee Comment": "",
+            "Donation Frequency": "Recurring" if recurring else "One-Time",
+            "Donation Method": "Credit Card" if card else "Payroll",
+            "Donation Type": "Match Request" if match else "Payroll Deduction",
+            "Donor First Name": (p.first or p.name) if p and shared else "",
+            "Donor Last Name": (p.last or "") if p and shared else "",
+            "Donor Email": (email if email is not None else (p.email or "")) if p and shared else "",
+            "Donor Address": "",
+            "Donor City": "Phoenix" if shared else "",
+            "Original Donor State / Province": "AZ" if shared else "",
+            # The glossary: the postal code defaults to visible even when other details are hidden.
+            "Donor Zip / Postal Code": "85004",
+            "Donor Country": "United States" if shared else "",
+            "Donor Comment": "",
+        } | over  # fmt: skip
+        return Row(
+            cells, when, cents, p.pid if p else None, "linked" if p else "anonymous", extra=match
+        )
+
+    def work_email(p: P, domain: str) -> str:
+        return w.email(f"{p.first}.{p.last}".replace("é", "e").replace("ë", "e"), domain)
 
     # Eight sheet donors with an employer: same name and employer, a work email -> review.
     for p in employed[:8]:
-        work = w.email(f"{p.first}.{p.last}".replace("é", "e").replace("ë", "e"), "workmail.test")
-        row = brow(p, rng.randrange(6), rng.choice(AMOUNTS[:5]), email=work, company=p.employer)
+        row = brow(p, rng.randrange(6), rng.choice(AMOUNTS[:5]), company=p.employer,
+                   email=work_email(p, "workmail.test"))  # fmt: skip
         row.attr, row.why = "pending_review", "name_employer"
         bv.append(row)
     # Six donors seen in Zeffy under the same email: auto-link.
     for p in zeffy_link[14:20]:
-        bv.append(brow(p, rng.randrange(6), rng.choice(AMOUNTS[:5])))
-    # Six repeat donors with a Benevity id: the first row creates, later rows link by id.
+        bv.append(brow(p, rng.randrange(6), rng.choice(AMOUNTS[:5]), card=True))
+    # Six recurring donors: no donor id exists in the report, so the same email links the rows.
     repeaters = [w.add(employer=True) for _ in range(6)]
     for p in repeaters:
-        p.benevity_id = f"bd_{p.pid:05d}"
         for i in sorted(rng.sample(range(6), 3)):
-            bv.append(brow(p, i, rng.choice(AMOUNTS[:5]), bid=p.benevity_id,
-                           email=w.email(f"{p.first}.{p.last}".replace("é", "e").replace("ë", "e"), "corp.test") if i % 2 else p.email))  # fmt: skip
-    # Twenty new donors, two gifts each for the first fourteen; four employer matches among them.
+            bv.append(brow(p, i, rng.choice(AMOUNTS[:5]), recurring=True))
+    # Twenty new donors, two gifts each for the first fourteen; the first six get a full match.
     fresh = [w.add(employer=True) for _ in range(20)]
     for n, p in enumerate(fresh):
         for _ in range(2 if n < 14 else 1):
-            kind = "Match" if n < 4 else "User Portfolio Donation"
-            bv.append(
-                brow(p, rng.randrange(6), rng.choice(AMOUNTS[:5]), kind=kind, company=p.employer)
-            )
-    # Ten anonymous gifts (donor details hidden) and two match rows with no donor.
+            amount = rng.choice(AMOUNTS[:5])
+            bv.append(brow(p, rng.randrange(6), amount, match=amount if n < 6 else 0,
+                           company=p.employer, card=n % 3 == 0))  # fmt: skip
+    # Ten anonymous gifts: donor details hidden, and for some the company code replaces its name.
     for n in range(10):
-        bv.append(brow(None, rng.randrange(6), rng.choice(AMOUNTS[:4]), kind="Anonymous Donation"))
-    for n in range(2):
-        bv.append(
-            brow(
-                None, rng.randrange(6), rng.choice(AMOUNTS[1:5]), kind="Match", company=EMPLOYERS[n]
-            )
-        )
-    # Two invalid rows.
-    for over, code in [
+        amount = rng.choice(AMOUNTS[:4])
+        bv.append(brow(None, rng.randrange(6), amount, match=amount // 2 if n < 3 else 0,
+                       company=next(anon_codes) if n % 2 else None))  # fmt: skip
+    # Invalid rows: bad date, zero, a negative amount (reversals are not handled), and CAD.
+    bad = [
         ({"Donation Date": "2025-13-45"}, BAD_DATE),
-        ({"Amount": "0.00"}, NON_POSITIVE),
-    ]:
-        row = brow(
-            repeaters[0],
-            rng.randrange(6),
-            0 if code == NON_POSITIVE else 5000,
-            bid=repeaters[0].benevity_id,
-            **over,
-        )
+        ({"Donation Amount": "0.00"}, NON_POSITIVE),
+        ({"Donation Amount": "-25.00"}, NON_POSITIVE),
+        ({"Donation Currency": "CAD", "Foreign Exchange Rate": "0.7300"}, NON_USD),
+    ]  # fmt: skip
+    for over, code in bad:
+        row = brow(repeaters[0], rng.randrange(6), 5000, **over)
         row.attr, row.why = "invalid", code
-        if code == BAD_DATE:
-            row.when, row.cents = None, 0
+        row.when, row.cents, row.extra = None, 0, 0
         bv.append(row)
     bv.sort(key=lambda r: (r.cells["Disbursement ID"], r.cells["Transaction ID"]))
 
@@ -591,8 +631,8 @@ def manifest(rows: dict[str, list[Row]], hashes: dict[str, str]) -> dict:
             elif r.attr == "pending_review":
                 review.append({"file": name, "row": n, "reason": r.why})
                 if key != "sheet":
-                    attr["pending_review"]["gifts"] += 1
-                    attr["pending_review"]["cents"] += r.cents
+                    attr["pending_review"]["gifts"] += 1 + bool(r.extra)
+                    attr["pending_review"]["cents"] += r.cents + r.extra
             elif r.attr == "donor":
                 created.setdefault(r.pid, name)
                 f["created_donors"] += 1
@@ -602,8 +642,10 @@ def manifest(rows: dict[str, list[Row]], hashes: dict[str, str]) -> dict:
                         created[r.pid] = name
                         f["created_donors"] += 1
                     gifts.setdefault(r.pid, []).append((r.when, r.cents))
-                attr[r.attr]["gifts"] += 1
-                attr[r.attr]["cents"] += r.cents
+                    if r.extra:
+                        gifts[r.pid].append((r.when, r.extra))
+                attr[r.attr]["gifts"] += 1 + bool(r.extra)
+                attr[r.attr]["cents"] += r.cents + r.extra
         if key != "sheet":
             f["valid_gifts"] = sum(v["gifts"] for v in attr.values())
             f["gross_cents"] = sum(v["cents"] for v in attr.values())
