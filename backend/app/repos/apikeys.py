@@ -20,14 +20,21 @@ def _require_manage(actor: Actor) -> None:
 
 
 def create(
-    db: Session, actor: Actor, *, name: str, prefix: str, key_hash: str, scopes: list[str]
+    db: Session,
+    actor: Actor,
+    *,
+    name: str,
+    prefix: str,
+    key_hash: str,
+    scopes: list[str],
+    created_by: int | None = None,
 ) -> ApiKey:
+    """A member creates keys as themselves. The setup CLI names the member it acts for."""
     _require_manage(actor)
-    if actor.user_id is None:
+    owner = created_by if actor.kind == "cli" else actor.user_id
+    if owner is None:
         raise Forbidden("API keys are created by a signed-in member.")
-    row = ApiKey(
-        name=name, prefix=prefix, key_hash=key_hash, scopes=scopes, created_by=actor.user_id
-    )
+    row = ApiKey(name=name, prefix=prefix, key_hash=key_hash, scopes=scopes, created_by=owner)
     db.add(row)
     db.flush()
     return row

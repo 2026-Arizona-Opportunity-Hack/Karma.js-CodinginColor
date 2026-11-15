@@ -18,7 +18,8 @@ FastAPI generates OpenAPI at `/api/openapi.json`; the human docs page is `/api/d
 ```
 Authorization: Bearer cic_live_<32 random bytes, base64url>
 ```
-- Keys are created in Settings → API keys, shown once, stored as SHA-256. Scope for all endpoints below: `read:aggregates`.
+- Keys are shown once and stored as SHA-256. Scope for all endpoints below: `read:aggregates`.
+- There is no Settings screen for keys yet (planned, issue #86). Until then a signed-in member creates, lists and revokes keys with `POST/GET /api/app/api-keys` and `POST /api/app/api-keys/{id}/revoke` (steps in `docs/API_GUIDE.md`), or the operator runs `python -m app.cli apikey {create,list,revoke}`.
 - `401` missing, malformed, unknown or revoked key. `403` wrong scope. `429` over 60 requests/minute (with `Retry-After`).
 - Error body: `{"error": {"code": "unauthorized", "message": "..."}}`.
 - Every response includes `as_of` (ISO timestamp) and `currency: "USD"`. Money is integer cents.
