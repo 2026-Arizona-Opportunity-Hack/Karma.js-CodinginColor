@@ -10,6 +10,7 @@ type Props = {
   onConfirm: () => void;
   busy: boolean;
   error?: string;
+  confirmLabel?: string;
 };
 
 export function DonorUpdateReview(props: Props) {
@@ -26,7 +27,7 @@ export function DonorUpdateReview(props: Props) {
     <dialog
       ref={ref}
       aria-labelledby="update-review-title"
-      className="m-auto max-h-[85vh] w-[calc(100%-2rem)] max-w-2xl overflow-y-auto rounded-xl border border-slate-300 bg-white p-5 shadow-xl backdrop:bg-slate-900/50"
+      className="import-update-review"
       onCancel={(event) => {
         event.preventDefault();
         if (!props.busy) props.onCancel();
@@ -82,17 +83,12 @@ export function DonorUpdateReview(props: Props) {
           type="button"
           onClick={props.onCancel}
           disabled={props.busy}
-          className="rounded border border-slate-400 px-4 py-2"
+          className="button button-secondary"
         >
           Cancel
         </button>
-        <button
-          type="button"
-          onClick={props.onConfirm}
-          disabled={props.busy}
-          className="rounded bg-indigo-700 px-4 py-2 text-white disabled:opacity-50"
-        >
-          {props.busy ? "Committing…" : "Commit import"}
+        <button type="button" onClick={props.onConfirm} disabled={props.busy} className="button">
+          {props.busy ? "Committing…" : (props.confirmLabel ?? "Commit import")}
         </button>
       </div>
     </dialog>
