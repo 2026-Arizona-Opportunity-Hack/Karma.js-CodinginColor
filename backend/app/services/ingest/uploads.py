@@ -23,7 +23,11 @@ class UnsupportedUpload(AppError):
     status, code = 415, "unsupported_upload"
 
 
-def read_table(filename: str, data: bytes) -> list[list[object]]:
+def has_value(value: object) -> bool:
+    return value is not None and (not isinstance(value, str) or bool(value.strip()))
+
+
+def read_table(filename: str, data: bytes) -> list[tuple[int, list[object]]]:
     if len(data) > MAX_BYTES:
         raise UploadTooLarge("File must be at most 5 MB.")
     suffix = Path(filename).suffix.lower()
@@ -34,9 +38,11 @@ def read_table(filename: str, data: bytes) -> list[list[object]]:
                 raise ValueError("binary content")
             if text.lstrip().startswith(("%PDF", "PK", "<", "{")):
                 raise ValueError("not CSV")
-            table: list[list[object]] = []
-            for row in csv.reader(StringIO(text, newline=""), strict=True):
-                table.append(list(row))
+            table: list[tuple[int, list[object]]] = []
+            for number, row in enumerate(csv.reader(StringIO(text, newline=""), strict=True)):
+                if not any(has_value(value) for value in row):
+                    continue
+                table.append((number, list(row)))
                 if len(table) > MAX_ROWS + 1:
                     raise Invalid("File exceeds 20,000 rows.")
             if not table:
@@ -58,8 +64,10 @@ def read_table(filename: str, data: bytes) -> list[list[object]]:
             sheet = book.worksheets[0]
             # Do not trust declared dimensions in files produced by other exporters.
             sheet.reset_dimensions()
-            for row in sheet.iter_rows(values_only=True):
-                table.append(list(row))
+            for number, row in enumerate(sheet.iter_rows(values_only=True)):
+                if not any(has_value(value) for value in row):
+                    continue
+                table.append((number, list(row)))
                 if len(table) > MAX_ROWS + 1:
                     raise Invalid("File exceeds 20,000 rows.")
             return table

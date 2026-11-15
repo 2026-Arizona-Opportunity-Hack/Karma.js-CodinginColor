@@ -76,10 +76,47 @@ def test_random_zip_is_not_xlsx():
 
 
 def test_single_column_spreadsheet_is_valid_and_invalid_rows_are_retained():
-    rows = parse_upload("spreadsheet", "donors.csv", b"Name\nAda Jones\n\n")
+    rows = parse_upload("spreadsheet", "donors.csv", b"Name,Email\nAda Jones,\n,ada@example.org\n")
     assert len(rows) == 2
     assert rows[0].donor.display_name == "Ada Jones"
     assert rows[1].reason == "missing_name"
+
+
+def test_blank_csv_records_are_not_data_rows_and_keep_source_row_numbers():
+    data = b"Date,Amount,Platform\n2026-11-14,5,other\n\n , , \n2026-11-15,10,other\n\n\r\n,,\n"
+    rows = parse_upload("generic", "gifts.csv", data)
+    assert [r.row_number for r in rows] == [1, 4]
+    assert all(r.reason is None for r in rows)
+
+
+def test_formatted_empty_xlsx_rows_are_not_data_rows():
+    book = Workbook()
+    sheet = book.active
+    sheet.append(["Date", "Amount", "Platform"])
+    sheet.append([datetime(2026, 11, 14), 5, "other"])
+    sheet.cell(3, 1).number_format = "yyyy-mm-dd"
+    sheet.cell(4, 2).number_format = "0.00"
+    sheet.append([" ", "", "\t"])
+    sheet.cell(6, 1, datetime(2026, 11, 15))
+    sheet.cell(6, 2, 10)
+    sheet.cell(6, 3, "other")
+    sheet.cell(100, 3).number_format = "@"
+    out = BytesIO()
+    book.save(out)
+    rows = parse_upload("generic", "gifts.xlsx", out.getvalue())
+    assert [r.row_number for r in rows] == [1, 5]
+    assert all(r.reason is None for r in rows)
+
+
+def test_blank_headers_are_ignored_but_values_under_them_are_extra_cells():
+    rows = parse_upload(
+        "generic",
+        "gifts.csv",
+        b"Date,Amount,Platform,,\n"
+        b"2026-11-14,5,other,,\n2026-11-14,5,other,unexpected,\n"
+        b"2026-11-14,5,other,,unexpected\n2026-11-14,5,other, , \n",
+    )
+    assert [r.reason for r in rows] == [None, "extra_cells", "extra_cells", None]
 
 
 def test_duplicate_headers_and_extra_cells():
