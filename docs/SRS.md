@@ -46,7 +46,8 @@ There is no separate staff role this weekend. Donors are stakeholders, not users
 | Donor messages | Templates, drafts, approval, send, send history | MSG |
 | Reporting | Summary, retention view, funder export | RPT |
 | Read API and MCP | Key-authenticated aggregated API, read-only MCP server | API |
-| Custom donor fields (Nov 15 update) | Add, rename, deactivate donor fields in settings; import and show them | CUS |
+| Dynamic fields (Nov 15 update) | Add, rename, hide, deactivate donor and gift fields in settings; import and show them | CUS |
+| Super admin lifecycle (Nov 15 update) | Create a super admin in the app with a second member's confirmation; only the super admin can remove the role, which returns the org to flat | GOV |
 | Custom roles (Nov 15 update, Phase 5.5) | Named roles with editable permission sets, assigned to members | ROLE |
 | Non-functional | Security, accessibility, cost, docs | NFR |
 
@@ -61,8 +62,8 @@ There is no separate staff role this weekend. Donors are stakeholders, not users
 | 5 | Milestone messages ("we passed $X thanks to you"), holiday touch reminders | Ours |
 | 6 | Dashboard charts, likelihood-to-give score | P2 |
 | 7 | Debrief to action (note becomes contact record, next step and draft) | P1 |
-| 8 | Custom fields on gifts, programs and members (CUS covers donors only) | CIC Nov 15 |
-| 9 | Frontend on Vercel with `/api/*` proxied to Render (stated stack preference, D-139) | CIC Nov 15 |
+| 8 | Custom fields on programs and members (CUS covers donors and gifts) | CIC Nov 15 |
+| 9 | Frontend on Vercel with `/api/*` proxied to Render (stated stack preference, D-140) | CIC Nov 15 |
 
 **Non-goals:** a general CRM; replacing Zeffy or the other platforms; automatic sending to donors unless a member turns on MSG-9; merging people by name similarity; real donor data anywhere in the repo; PDF or plain-text parsing; Problem 1 features (instructors, students, lessons).
 
@@ -89,8 +90,8 @@ Priority: **M** = must (P0), **S** = should (P0 thin version acceptable), **C** 
 | ID | Requirement | Pri |
 |---|---|---|
 | GOV-1 | Default mode is **flat**: no super admin; every active board member has equal permissions. | M |
-| GOV-2 | At most one super admin. It is created, re-activated or transferred **only** by the setup command run by whoever controls the deployment. No in-app path grants super admin. | M |
-| GOV-3 | The super admin account cannot be deleted. It can be deactivated (no login) only by the setup command. | M |
+| GOV-2 | At most one super admin. **In the app** (Nov 15 update, D-144): while the org is flat, any active member can nominate an active member (themselves included); a **different** active member must confirm within 72 hours, then the nominee becomes the active super admin. Nominations can be cancelled by either party and expire unconfirmed. The setup command can still create, transfer or re-activate (break-glass, GOV-6). | M |
+| GOV-3 | **Remove super admin**: only the super admin can remove their own role in the app (typed confirmation). The role is deleted, `reassign_scope` resets to `anyone` and the org is **flat** again; the person stays an ordinary member and keeps their donors. Removal does not delete the account. The setup command can also remove it (GOV-6). | M |
 | GOV-4 | Setting `reassign_scope` = `anyone` or `own_only`. In flat mode it is fixed to `anyone`. With an active super admin, only the super admin can change it. Inviting members, editing templates and programs, and managing API keys are open to all members in flat mode and super-admin-only when a super admin is active. | M |
 | GOV-5 | **Flatten**: an active super admin can click "Flatten hierarchy". The role becomes `dormant`, `reassign_scope` becomes `anyone`, and the super admin acts as a regular board member. Re-activation requires the setup command. | M |
 | GOV-6 | Break-glass: the setup command can set the role dormant, transfer it, or deactivate the account when the super admin is unavailable. | M |
@@ -101,7 +102,7 @@ Priority: **M** = must (P0), **S** = should (P0 thin version acceptable), **C** 
 | ID | Requirement | Pri |
 |---|---|---|
 | ING-1 | Any board member can upload a file (CSV or XLSX, max 5 MB, by extension **and** content sniffing). Anything else is rejected with a friendly message. | M |
-| ING-2 | The user picks the source: **CIC donor spreadsheet** (donor list), **Zeffy payments export**, **Zeffy contacts export** (one row per donor, ING-12), **Benevity disbursement report**, or **Generic gifts template** (used for AZ Gives, United Way and anything else). Each source has an adapter that maps columns to the normalized shape. | M |
+| ING-2 | The user picks the source: **CIC donor spreadsheet** (donor list), **Zeffy payments export**, **Benevity disbursement report**, or **Generic gifts template** (used for AZ Gives, United Way and anything else). Each source has an adapter that maps columns to the normalized shape. | M |
 | ING-3 | Column layouts for Zeffy and Benevity are modelled on their publicly documented formats (Zeffy API payment/contact/campaign objects; Benevity's reporting glossary). Each adapter records where its columns came from in `docs/IMPORT_FORMATS.md`, marked `assumed` until a real CIC file is seen. | M |
 | ING-4 | Import is two-step: **preview** (parse, validate, dedupe, classify every row) then **commit** (single DB transaction). Nothing is written before commit. | M |
 | ING-5 | The preview and saved batch show an **import summary**: physical rows read = new + already imported + needs review + invalid + donor update source rows (including donor-only spreadsheet rows). Each class shows a separate gift count, donation cents, employer-match cents and combined gross cents (D-127). Anonymous rows are a subset of new rows. Reconcile both physical rows and total cents exactly or block commit. Show new donors, donors matched and unique donors updated (D-130). | M |
@@ -111,8 +112,8 @@ Priority: **M** = must (P0), **S** = should (P0 thin version acceptable), **C** 
 | ING-9 | On commit, new donors are assigned owners (OWN-2) inside the same transaction. | M |
 | ING-10 | Batch history page: who uploaded what, when, counts. A batch can be reversed (soft-deletes its gifts; donors it created with no other gifts are soft-deleted; audited). | S |
 | ING-11 | Gifts older than the import cutoff (default 60 days before the import date) are marked `assumed_thanked` so a history backfill does not create hundreds of thank-you reminders. | M |
-| ING-12 | **Zeffy contacts export** (CIC sample, Nov 15): one row per donor with `Amount` and first/last payment dates. Creates or updates donors like ING-8 and stores `Amount` as the donor's Zeffy giving total with its as-of date; it creates **no gifts** until CIC confirms what `Amount` means (D-135). Address columns are ignored (NFR-3). Layout in `docs/IMPORT_FORMATS.md` section 2c. | M |
-| ING-13 | Every source accepts an optional **assigned board member** column (`Board member`, `Contact person`, `Assigned to`). It is matched to an active member by email, then exact display name. A match sets the owner of a **new** donor instead of round-robin and is a proposed owner change (approved like ING-8) for an existing donor. Blank or unmatched values fall back to OWN-2 and are listed in the preview (D-136). | M |
+| ING-12 | **Any file layout** (CIC Nov 15: files can have any columns; the Zeffy contacts sample in `docs/IMPORT_FORMATS.md` 2c is one example). AI-assisted column mapping into the normalized shape is specified and built separately by a teammate (D-136); until it lands, the four existing sources stay as they are. | M |
+| ING-13 | Every source accepts an optional **assigned board member** column (`Board member`, `Contact person`, `Assigned to`). It is matched to an active member by email, then exact display name. A match sets the owner of a **new** donor instead of round-robin and is a proposed owner change (approved like ING-8) for an existing donor. Blank or unmatched values fall back to OWN-2 and are listed in the preview (D-137). | M |
 | ING-14 | Columns whose header matches an active custom field (CUS-1) import into that field; other unknown columns are listed in the preview as ignored. | S |
 
 ### 4.4 DED: dedupe
@@ -172,7 +173,7 @@ Reminders are **derived from data, never stored**, so re-imports cannot duplicat
 | REM-6 | **Email digest**: one email per board member summarizing their open reminders with a link to the app. Never sent to donors. Sent only when a person clicks **Send reminder digest** (flat mode: any member; super admin active: super admin). Uses MSG-6 send modes; default dry-run. | M |
 | REM-7 | Thresholds (2, 7, 90 days, cutoff 60) are settings, editable per GOV-4. | S |
 | REM-8 | Open question for organizers: does an internal reminder email count under the brief's "every outbound message or reminder is drafted by the system and sent by a human"? If they say no, a scheduled weekly digest is a later change. | Note |
-| REM-9 | **Quarterly board assignment email**: a scheduled job (Render cron, first day of each quarter, America/Phoenix) sends each active member one email listing the donors they own: name, last gift date and amount (donations only, D-127), open reminders, link to the app. No other member's donors, no donor email or phone. Off until a member enables it in settings; every run is recorded in `job_runs` and audited (D-137). | M |
+| REM-9 | **Quarterly board assignment email**: a scheduled job (Render cron, first day of each quarter, America/Phoenix) sends each active member one email listing the donors they own: name, last gift date and amount (donations only, D-127), open reminders, link to the app. No other member's donors, no donor email or phone. Off until a member enables it in settings; every run is recorded in `job_runs` and audited (D-138). | M |
 
 ### 4.8 MSG: donor messages
 
@@ -186,7 +187,7 @@ Reminders are **derived from data, never stored**, so re-imports cannot duplicat
 | MSG-6 | `MESSAGING_MODE` = `dry_run` (default; records the send, delivers nothing) or `live` (needs provider key in env). The UI shows a visible "Dry run" badge. | M |
 | MSG-7 | Every send writes send history (who, when, channel, mode, provider reference), a timeline interaction, and an audit entry; it clears the matching reminder. | M |
 | MSG-8 | Do-not-contact donors cannot get drafts. | M |
-| MSG-9 | **Automated thank-you emails** (CIC Nov 15): setting `auto_thank_you`, **off by default**. When on, a scheduled job sends the default thank-you for each thank-you reminder that is due, to donors with an email who are not do-not-contact, then records it like a sent message (clears REM-1). Matches never trigger it. Turning it on is audited and shows a banner on the dashboard. Pending the organizers' answer on the brief's "a human sends" rule (D-138). | S |
+| MSG-9 | **Automated thank-you emails** (CIC Nov 15): setting `auto_thank_you`, **off by default**. When on, a scheduled job sends the default thank-you for each thank-you reminder that is due, to donors with an email who are not do-not-contact, then records it like a sent message (clears REM-1). Matches never trigger it. Turning it on is audited and shows a banner on the dashboard. Pending the organizers' answer on the brief's "a human sends" rule (D-139). | S |
 
 ### 4.9 RPT: reporting
 
@@ -206,18 +207,19 @@ Reminders are **derived from data, never stored**, so re-imports cannot duplicat
 | API-4 | Rate limit 60 requests per minute per key; 401 for missing, wrong or revoked key; 403 for scope mismatch. | M |
 | API-5 | OpenAPI is generated by FastAPI; a human docs page with curl examples lets CIC's dashboard owner connect without us. | M |
 | API-6 | **MCP server** (separate small package `mcp_server/`) exposes the same read endpoints as read-only tools; it calls the REST API with a key from its own env. No write tools. | S |
-| API-7 | All writes happen only through the logged-in web app (session + CSRF). The app's internal endpoints live under `/api/app/*` and are not part of the public contract. | M |
+| API-7 | Writes happen through the logged-in web app (session + CSRF), or with a full-access key (API-8). The app's internal endpoints live under `/api/app/*` and are not part of the public contract. | M |
+| API-8 | **Full-access keys** (`cic_full_...`) let another app call every `/api/app/*` route as the member who created the key: no login, cookie or CSRF. They hold every permission except governance (flatten, scope, super admin) and key management, expire after 90 days unless set otherwise, are limited to 300 requests per minute, and stamp their key id on every audit entry. Created and revoked from Settings or the CLI, by members allowed `apikey.manage`. CORS allows any origin on `/api/app/*` without credentials. | M |
 
 ---
 
-### 4.11 CUS: custom donor fields (Nov 15 update)
+### 4.11 CUS: dynamic fields for donors and gifts (Nov 15 update)
 
 | ID | Requirement | Pri |
 |---|---|---|
-| CUS-1 | Settings page lists donor fields: built-in ones (read-only) and custom ones. Any member (flat mode) or the active super admin can **add** a field (label, type: text, number, date, yes/no, choice list), **rename** it, edit its choices, reorder it, and **deactivate** it. | M |
-| CUS-2 | Deactivating hides the field everywhere but keeps stored values; reactivating brings them back. Hard delete is not offered (D-140). | M |
+| CUS-1 | Settings > Fields lists fields for **donors** and **gifts**: built-in fields (relabel, reorder, hide; never delete, retype or re-key; donor name or email, gift date and amount cannot be hidden) and custom fields (add, rename, edit choices, reorder, mark required, show as a donor list column, deactivate). Types: text, long text, number, money, date, yes/no, choice, multi-choice. Needs `settings.manage` (GOV-4). | M |
+| CUS-2 | **Remove** means deactivate: hidden everywhere, values kept, restorable. Hard delete only for a custom field that never held a value (D-141). | M |
 | CUS-3 | Custom values show and are editable on donor detail and manual entry, validated by type; they never contain contact details unless the field is marked contact (then DON-3 applies). | M |
-| CUS-4 | Field changes and value edits are audited. The read API and MCP never return custom values. | M |
+| CUS-4 | Field changes and value edits are audited. `/api/app` returns values in `custom` plus field metadata; `/api/v1` and MCP never return custom values. Import maps columns matching an active field label or key (ING-14). | M |
 
 ### 4.12 ROLE: custom roles and permissions (Nov 15 update, Phase 5.5)
 
@@ -283,6 +285,6 @@ Reminders are **derived from data, never stored**, so re-imports cannot duplicat
 | Internal digest email | Sent by a human click | Organizers: does it count as a "reminder"? |
 | Contact details | Owner and active super admin only | Confirm |
 | Mail provider | Dry-run default; live provider chosen in Phase 0, cost recorded | CIC sending domain |
-| Zeffy contacts `Amount` | Lifetime giving total; stored on the donor, no gifts created (D-135) | CIC: total or last payment? Can they also export Zeffy **Payments** for per-gift history? |
-| Automated sending | `auto_thank_you` and the quarterly email stay off by default (D-137, D-138) | Organizers: do automated thank-yous break the "a human sends" rule? |
-| Board member column | Optional; names `Board member`, `Contact person`, `Assigned to` (D-136) | CIC: what will the column be called? |
+| Arbitrary import layouts | Handled by AI-assisted column mapping (ING-12, separate work) | CIC: can they also export Zeffy **Payments** for per-gift history? |
+| Automated sending | `auto_thank_you` and the quarterly email stay off by default (D-138, D-139) | Organizers: do automated thank-yous break the "a human sends" rule? |
+| Board member column | Optional; names `Board member`, `Contact person`, `Assigned to` (D-137) | CIC: what will the column be called? |

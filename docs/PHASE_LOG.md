@@ -17,7 +17,7 @@
 | 4C hardening | ready-for-review | Sun 09:00 | #45, #46, #47 | #131, #133, #141 | merge in that order; #131 is `shared` (main.py) |
 | 4.5 CIC Nov 15 update | todo | Sun 10:15 | | | new SRS ING-12 to ING-14, DON-13, REM-9, MSG-9, CUS, NFR-10; shared migration PR first |
 | 5 a11y/acceptance | todo | Sun 10:30 | | | |
-| 5.5 custom roles | todo | Sun 11:45 hard stop | | | SRS ROLE-1 to ROLE-6, D-142; ships only if policy matrix and acceptance 5, 6, 7, 12 pass again |
+| 5.5 custom roles | todo | Sun 11:45 hard stop | | | SRS ROLE-1 to ROLE-6, D-143; ships only if policy matrix and acceptance 5, 6, 7, 12 pass again |
 | 6 docs/video/submit | todo | Sun 13:30 | | | |
 
 ## Phase 3 targeted work: confirmed spreadsheet updates (#105)

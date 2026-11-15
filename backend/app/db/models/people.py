@@ -118,6 +118,7 @@ class ApiKey(Base):
     created_at: Mapped[datetime] = _created()
     last_used_at: Mapped[datetime | None] = mapped_column(TS)
     revoked_at: Mapped[datetime | None] = mapped_column(TS)
+    expires_at: Mapped[datetime | None] = mapped_column(TS)  # None = never expires
 
 
 class AuditLog(Base):

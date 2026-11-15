@@ -1,6 +1,6 @@
 # Coding in Color brand rules for CIC Compass
 
-Source: CIC brand guidelines PDF shared by CIC on Nov 15 (not stored in the repo). This file is the contract for the UI theme (NFR-10, D-141). When it conflicts with accessibility (NFR-4), accessibility wins and the conflict is noted here.
+Source: CIC brand guidelines PDF shared by CIC on Nov 15 (not stored in the repo). This file is the contract for the UI theme (NFR-10, D-142). When it conflicts with accessibility (NFR-4), accessibility wins and the conflict is noted here.
 
 ## Colors
 

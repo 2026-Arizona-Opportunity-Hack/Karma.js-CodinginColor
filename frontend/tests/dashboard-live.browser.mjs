@@ -90,7 +90,7 @@ try {
   };
   const clickText = (text) =>
     evaluate(
-      `[...document.querySelectorAll('button')].find(b => b.textContent.trim() === ${JSON.stringify(text)}).click()`,
+      `[...document.querySelectorAll('button')].find(b => b.textContent.trim() === ${JSON.stringify(text)}).focus(); [...document.querySelectorAll('button')].find(b => b.textContent.trim() === ${JSON.stringify(text)}).click()`,
     );
   const errors = [];
   const oldHandler = socket.onmessage;
@@ -134,12 +134,15 @@ try {
       mobile: false,
     });
     assert.equal(await evaluate("document.documentElement.scrollWidth<=innerWidth"), true);
-    await mkdir("qa/33", { recursive: true });
+    await mkdir(process.env.REASSIGN_QA ? "qa/34" : "qa/33", { recursive: true });
     const { data } = await call("Page.captureScreenshot", {
       format: "png",
       captureBeyondViewport: true,
     });
-    await writeFile(`qa/33/${width}-live.png`, Buffer.from(data, "base64"));
+    await writeFile(
+      `${process.env.REASSIGN_QA ? "qa/34" : "qa/33"}/${width}-live.png`,
+      Buffer.from(data, "base64"),
+    );
   }
   await evaluate("document.querySelector('a[href$=\"#log-contact\"]').click()");
   await until("document.activeElement.id==='log-contact'");
@@ -167,11 +170,141 @@ try {
     format: "png",
     captureBeyondViewport: true,
   });
-  await writeFile("qa/33/390-live-contact-cleared.png", Buffer.from(data, "base64"));
+  await writeFile(
+    process.env.REASSIGN_QA
+      ? "qa/34/390-live-contact-cleared.png"
+      : "qa/33/390-live-contact-cleared.png",
+    Buffer.from(data, "base64"),
+  );
   assert.deepEqual(errors, []);
   console.log(
     "PASS live FastAPI/PostgreSQL: authenticated dashboard, four real reminder categories, 390/768/1440 layouts, contact saved, quarterly reminder absent from backend response and refreshed dashboard.",
   );
+  if (process.env.REASSIGN_QA) {
+    await mkdir("qa/34", { recursive: true });
+    await evaluate("document.querySelector('a[href$=\"#relationship-owner\"]').click()");
+    await until("document.activeElement.id==='relationship-owner'");
+    await clickText("Reassign donor");
+    await until("document.querySelector('dialog[open] select option[value=\"1\"]')");
+    const choose = () =>
+      evaluate(
+        "(() => { const s=document.querySelector('dialog[open] select'); s.value='1'; s.dispatchEvent(new Event('change',{bubbles:true})); })()",
+      );
+    await choose();
+    await evaluate("document.querySelector('dialog[open] textarea').focus()");
+    await call("Input.insertText", { text: "Synthetic handoff for student outreach" });
+    assert.equal(await evaluate("document.querySelector('dialog[open] textarea').maxLength"), 2000);
+    assert.equal(
+      await evaluate("document.querySelector('dialog[open] button.button').disabled"),
+      true,
+    );
+    await evaluate("document.querySelector('dialog[open] input[type=checkbox]').click()");
+    for (const [width, height] of [
+      [1440, 900],
+      [768, 1024],
+      [390, 844],
+      [720, 450],
+    ]) {
+      await call("Emulation.setDeviceMetricsOverride", {
+        width,
+        height,
+        deviceScaleFactor: 1,
+        mobile: false,
+      });
+      assert.equal(await evaluate("document.documentElement.scrollWidth<=innerWidth"), true);
+      await delay(300);
+      const { data } = await call("Page.captureScreenshot", { format: "png" });
+      await writeFile(`qa/34/${width}-dialog.png`, Buffer.from(data, "base64"));
+    }
+    // Keyboard trap and Escape restore the opener without a write.
+    await evaluate("[...document.querySelectorAll('dialog[open] button')].at(-1).focus()");
+    await key("Tab", "Tab", 9);
+    assert.equal(
+      await evaluate("document.activeElement.getAttribute('aria-label')"),
+      "Close sheet",
+    );
+    await key("Escape", "Escape", 27);
+    assert.equal(await evaluate("document.activeElement.textContent.trim()"), "Reassign donor");
+    await clickText("Reassign donor");
+    await until("document.querySelector('dialog[open] select')");
+    await choose();
+    await evaluate("document.querySelector('dialog[open] textarea').focus()");
+    await call("Input.insertText", { text: "Synthetic handoff for student outreach" });
+    // Controlled transport failures exercise recovery; success below uses the real API.
+    let failure = 409;
+    const handler = socket.onmessage;
+    socket.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+      if (message.method === "Fetch.requestPaused")
+        void call("Fetch.fulfillRequest", {
+          requestId: message.params.requestId,
+          responseCode: failure,
+          responseHeaders: [{ name: "Content-Type", value: "application/json" }],
+          body: Buffer.from(
+            JSON.stringify({ error: { message: "Synthetic conflict or permission change" } }),
+          ).toString("base64"),
+        });
+      handler(event);
+    };
+    await call("Fetch.enable", {
+      patterns: [{ urlPattern: "*/reassign", requestStage: "Request" }],
+    });
+    for (const status of [409, 500, 422, 501, 401, 403]) {
+      failure = status;
+      await evaluate("document.querySelector('dialog[open] input[type=checkbox]').click()");
+      await clickText("Confirm reassignment");
+      await until(
+        "document.querySelector('dialog[open] [role=alert]') && !document.querySelector('dialog[open] input[type=checkbox]').checked",
+      );
+      assert.equal(
+        await evaluate("document.querySelector('dialog[open] textarea').value"),
+        "Synthetic handoff for student outreach",
+      );
+      if (status === 403)
+        assert.equal(
+          await evaluate("document.querySelector('dialog[open] button.button').disabled"),
+          true,
+        );
+    }
+    await call("Fetch.disable");
+    await clickText("Cancel");
+    await clickText("Reassign donor");
+    await until("document.querySelector('dialog[open] select')");
+    await choose();
+    await evaluate("document.querySelector('dialog[open] textarea').focus()");
+    await call("Input.insertText", { text: "Synthetic handoff for student outreach" });
+    await evaluate("document.querySelector('dialog[open] input[type=checkbox]').click()");
+    await clickText("Confirm reassignment");
+    await until("!document.querySelector('dialog[open]')");
+    const history = await evaluate("fetch('/api/app/donors/4/owner-history').then(r=>r.json())");
+    assert.equal(history.items[0].to_user.id, 1);
+    assert.equal(history.items[0].from_user.id, 2);
+    assert.equal(history.items[0].method, "manual");
+    assert.equal(history.items[0].changed_by.id, 1);
+    assert.equal(history.items[0].reason, "Synthetic handoff for student outreach");
+    await call("Emulation.setDeviceMetricsOverride", {
+      width: 390,
+      height: 844,
+      deviceScaleFactor: 1,
+      mobile: false,
+    });
+    await evaluate("document.querySelector('.owner-history').open=true");
+    const { data } = await call("Page.captureScreenshot", {
+      format: "png",
+      captureBeyondViewport: true,
+    });
+    await writeFile("qa/34/390-history.png", Buffer.from(data, "base64"));
+    await evaluate("document.querySelector('a[href=\"/\"]').click()");
+    await until("document.querySelectorAll('.todo-row').length===2");
+    assert.equal(
+      await evaluate("document.querySelectorAll('.reassignment-workspace .todo-row').length"),
+      0,
+    );
+    assert.deepEqual(errors, []);
+    console.log(
+      "PASS #34: real dashboard handoff/history, six failure statuses, preserved reason, validation, focus trap/restoration, responsive screenshots, refreshed dashboard.",
+    );
+  }
 } finally {
   socket?.close();
   browser.kill();

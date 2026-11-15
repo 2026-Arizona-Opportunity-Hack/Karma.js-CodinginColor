@@ -172,28 +172,30 @@ Lane C's order: 1, 2, 6, 7, 3, 8, 4, 5. The donor API moved here from lane A bec
 
 ### Phase 4.5: CIC requirements update (Nov 15)
 
-New requirements from CIC on Sunday morning (SRS ING-12 to ING-14, DON-13, REM-9, MSG-9, CUS-1 to CUS-4, NFR-10; D-135 to D-141). Run lanes after their Phase 4 lane is merged. The CUS migration lands first as a `shared` PR.
+New requirements from CIC on Sunday morning (SRS ING-12 to ING-14, DON-13, REM-9, MSG-9, CUS-1 to CUS-4, GOV-2, GOV-3, NFR-10; D-136 to D-144). Lanes are flexible for this phase: any agent may take any item. Run lanes after their Phase 4 lane is merged. The CUS migration lands first as a `shared` PR.
 
-**Shared (first, lane A opens it):** `Add custom fields, Zeffy totals and job runs schema` (migration: `custom_field_definitions`, `donors.custom`, `donors.zeffy_total_cents`, `donors.zeffy_total_as_of`, `job_runs`, new `app_settings` keys; models; schemas; regenerate `types.ts`).
+**Shared (first):** `Add field definitions, custom values, nominations and job runs schema` (migration: `field_definitions` seeded with built-ins, `donors.custom`, `gifts.custom`, `super_admin_nominations`, `job_runs`, new `app_settings` keys; models; schemas; regenerate `types.ts`).
 
 **Lane A: imports**
-1. `Import Zeffy contacts exports` (ING-12; auto-detect; numbered duplicate headers; dates with times; ignore address columns; synthetic fixture with the exact 20 headers from IMPORT_FORMATS 2c; manifest and tests).
+1. Arbitrary file layouts (ING-12): built separately by a teammate (AI-assisted mapping); not part of this phase's agents.
 2. `Read the board member column on every import` (ING-13; owner for new donors; approved owner change for existing; preview lists unmatched).
 3. `Import columns that match custom fields` (ING-14).
 
 **Lane B: screens and brand**
 1. `Apply CIC brand theme` (NFR-10, `docs/BRAND.md`; Tailwind tokens; logo slot; recheck contrast).
 2. `Expand donor rows to show gift history` (DON-13).
-3. `Add custom field settings and donor field editing` (CUS-1 to CUS-3).
+3. `Add field settings and dynamic field rendering` (CUS-1 to CUS-4; donors and gifts; list columns).
+5. `Add super admin nomination, confirmation and removal screens` (GOV-2, GOV-3).
 4. `Show Zeffy contacts preview, board member and ignored columns` (ING-12 to ING-14 in the import screen).
 
 **Lane C: custom field API and scheduled jobs**
-1. `Add custom field definition and value endpoints` (CUS-1 to CUS-4, audit, policy).
-2. `Add run-job CLI, job_runs and quarterly board email` (REM-9, D-137; dry-run mail by default; `render.yaml` cron, disabled by default).
-3. `Add auto thank-you setting and job` (MSG-9, D-138; off by default; dashboard banner data).
+1. `Add field definition and value endpoints` (CUS-1 to CUS-4, validation by type, audit, policy).
+4. `Add super admin nomination and removal` (GOV-2, GOV-3, D-144; two different members; only the super admin removes; flat afterwards; audit; CLI unchanged).
+2. `Add run-job CLI, job_runs and quarterly board email` (REM-9, D-138; dry-run mail by default; `render.yaml` cron, disabled by default).
+3. `Add auto thank-you setting and job` (MSG-9, D-139; off by default; dashboard banner data).
 
-**Gate:** Zeffy contacts fixture imports and reconciles; a board member column assigns the owner; a custom field can be added, filled, renamed and deactivated without losing values; `run-job quarterly_board_email` records one dry-run email per member with only their donors; full suite green.
-**Cut list (in order):** MSG-9 auto thank-you (keep the setting off, document it); ING-14 custom field import; CUS choice lists and reordering; Zeffy contacts preview polish. **Never cut** ING-12, ING-13, CUS add/rename/deactivate, the brand theme.
+**Gate:** a board member column assigns the owner; a donor and a gift field can be added, filled, renamed and deactivated without losing values; a super admin is created by nomination plus confirmation and removed by themselves, leaving the org flat; `run-job quarterly_board_email` records one dry-run email per member with only their donors; full suite green.
+**Cut list (in order):** MSG-9 auto thank-you (keep the setting off, document it); multi-choice fields; gift fields (keep donors); ING-14 field import; nomination expiry job (manual cancel only). **Never cut** ING-13, CUS add/rename/deactivate on donors, super admin removal, the brand theme.
 
 ### Phase 5: Accessibility and acceptance (freeze 10:30)
 1. `Fix accessibility to Lighthouse 95+` (Lighthouse CI on main pages; keyboard path; 390 px).
@@ -204,7 +206,7 @@ New requirements from CIC on Sunday morning (SRS ING-12 to ING-14, DON-13, REM-9
 
 ### Phase 5.5: Custom roles and permissions (after the Phase 5 gate)
 
-SRS ROLE-1 to ROLE-6, D-142. Changes authorization after acceptance, so it ships only if the full policy matrix and acceptance tests 5, 6, 7 and 12 pass again on production. **Hard stop 11:45**: anything not merged by then moves to the roadmap; nothing merges after 12:00 recording starts.
+SRS ROLE-1 to ROLE-6, D-143. Changes authorization after acceptance, so it ships only if the full policy matrix and acceptance tests 5, 6, 7 and 12 pass again on production. **Hard stop 11:45**: anything not merged by then moves to the roadmap; nothing merges after 12:00 recording starts.
 
 **Shared (first, lane C opens it):** `Add roles table and role-based checks to policy` (migration with seeded Board member and Viewer, `users.role_id`, `Action.ROLES_MANAGE`; `can()` checks the actor's role for org-wide actions and the two donor-wide grants; the policy matrix proves Board member equals today's behaviour).
 

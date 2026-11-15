@@ -217,8 +217,8 @@ function Dashboard({ actorId }: { actorId: number }) {
               </EmptyState>
             )}
             <p className="queue-footnote">
-              Reassignment controls are not available yet. Viewing this queue does not grant
-              permission to change ownership.
+              Open ownership to review history and reassign when permitted. Viewing this queue does
+              not grant permission to change ownership.
             </p>
           </section>
         </>

@@ -76,9 +76,7 @@ No foreign key `ON DELETE` path can remove the super admin: `users` rows are nev
 | created_via | text (`import`,`manual`,`merge`) | |
 | created_at, updated_at, deleted_at | | |
 | merged_into_id | bigint FK donors null | set on merge loser |
-| zeffy_total_cents | bigint null | Zeffy contacts `Amount` (D-135); not a gift, not in revenue reports |
-| zeffy_total_as_of | date null | last payment date from that export |
-| custom | jsonb not null default `{}` | values keyed by `custom_field_definitions.key` (CUS) |
+| custom | jsonb not null default `{}` | values keyed by `field_definitions.key` (CUS); `gifts.custom` is the same |
 
 Indexes: `(owner_user_id) where deleted_at is null`, trigram index on `display_name` for search.
 
@@ -94,7 +92,9 @@ Indexes: `(owner_user_id) where deleted_at is null`, trigram index on `display_n
 
 Unique `(kind, value_norm)` for `email`, `phone`, `zeffy_contact`, `benevity_donor`, `sheet_row`. `name_org` is not unique (used only to find review candidates).
 
-**custom_field_definitions** (CUS-1): id, key text unique (slug, never changes), label text, type CHECK in (`text`,`number`,`date`,`bool`,`choice`), choices text[] null, is_contact bool default false, position int, is_active bool default true, created_by, created_at, updated_at. Renaming changes `label` only; deactivating sets `is_active = false` and keeps values.
+**field_definitions** (CUS-1): id, entity CHECK in (`donor`,`gift`), key text (slug, immutable, unique per entity), label, type CHECK in (`text`,`long_text`,`number`,`money`,`date`,`bool`,`choice`,`multi_choice`), choices text[] null, is_builtin, is_required, is_contact (DON-3 applies), show_in_list, position, is_active default true, created_by, created_at, updated_at. Seeded with one row per built-in donor and gift field. Values live in `donors.custom` and `gifts.custom` (jsonb, GIN index).
+
+**super_admin_nominations** (GOV-2): id, nominee_user_id, nominated_by, confirmed_by null, status (`pending`,`confirmed`,`cancelled`,`expired`), created_at, expires_at (72 h), decided_at.
 
 **roles** (ROLE-1, Phase 5.5): id, name text unique, description text, permissions text[] (values from `authz.policy.Action`, grantable subset only), is_builtin bool, created_by, created_at, updated_at. Seeded: `Board member` (today's flat-mode set) and `Viewer`. **users.role_id** bigint FK roles not null, default Board member.
 

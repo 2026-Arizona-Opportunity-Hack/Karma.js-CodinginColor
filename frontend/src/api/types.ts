@@ -1257,15 +1257,21 @@ export interface components {
         };
         /** ApiKeyCreate */
         ApiKeyCreate: {
+            /**
+             * Expires At
+             * @description Omit for the default (90 days for full_access, never for read-only); send null for never.
+             */
+            expires_at?: string | null;
             /** Name */
             name: string;
             /**
              * Scopes
+             * @description `full_access` reads and changes everything on /api/app and stands alone.
              * @default [
              *       "read:aggregates"
              *     ]
              */
-            scopes: "read:aggregates"[];
+            scopes: ("read:aggregates" | "full_access")[];
         };
         /** ApiKeyCreated */
         ApiKeyCreated: {
@@ -1274,6 +1280,15 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            /** Created By */
+            created_by: number;
+            /** Created By Name */
+            created_by_name?: string | null;
+            /**
+             * Expires At
+             * @description None = never expires
+             */
+            expires_at?: string | null;
             /** Id */
             id: number;
             /**
@@ -1294,6 +1309,11 @@ export interface components {
             revoked_at?: string | null;
             /** Scopes */
             scopes: string[];
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "read_only" | "full_access";
         };
         /** ApiKeyListOut */
         ApiKeyListOut: {
@@ -1307,6 +1327,15 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            /** Created By */
+            created_by: number;
+            /** Created By Name */
+            created_by_name?: string | null;
+            /**
+             * Expires At
+             * @description None = never expires
+             */
+            expires_at?: string | null;
             /** Id */
             id: number;
             /** Last Used At */
@@ -1322,6 +1351,11 @@ export interface components {
             revoked_at?: string | null;
             /** Scopes */
             scopes: string[];
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "read_only" | "full_access";
         };
         /** ApprovedDonorUpdate */
         ApprovedDonorUpdate: {

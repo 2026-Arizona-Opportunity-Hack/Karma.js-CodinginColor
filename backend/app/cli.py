@@ -11,6 +11,7 @@ import argparse
 import json
 import sys
 from collections.abc import Callable, Sequence
+from datetime import timedelta
 from pathlib import Path
 
 from sqlalchemy import text
@@ -95,10 +96,11 @@ def cmd_apikey(db: Session, clock: Clock, args: argparse.Namespace) -> None:
     settings page; every change is audited like the in-app one."""
     if args.action == "list":
         rows = apikeys.list_all(db, CLI)
-        print(f"{'id':>3}  {'name':<24} {'prefix':<14} {'last used':<20} status")
+        print(f"{'id':>3}  {'name':<24} {'prefix':<14} {'last used':<20} {'expires':<11} status")
         for k in rows:
             used = k.last_used_at.strftime("%Y-%m-%d %H:%M") if k.last_used_at else "never"
-            print(f"{k.id:>3}  {k.name:<24} {k.prefix:<14} {used:<20} "
+            ends = k.expires_at.strftime("%Y-%m-%d") if k.expires_at else "never"
+            print(f"{k.id:>3}  {k.name:<24} {k.prefix:<14} {used:<20} {ends:<11} "
                   f"{'revoked' if k.revoked_at else 'active'}")  # fmt: skip
         if not rows:
             print("No API keys yet.")
@@ -110,18 +112,25 @@ def cmd_apikey(db: Session, clock: Clock, args: argparse.Namespace) -> None:
         db.commit()
         print(f"Revoked key {row.id} ({row.name}); it stops working immediately.")
         return
-    if not args.name or not args.email:
-        raise SystemExit("apikey create needs --name and --email (the member it is recorded for)")
-    member = users.find_by_email_for_login(db, args.email.strip().lower())
+    email = args.as_member or args.email
+    if not args.name or not email:
+        raise SystemExit("apikey create needs --name and --as (the member it is recorded for)")
+    member = users.find_by_email_for_login(db, email.strip().lower())
     if member is None or not member.is_active:
-        raise SystemExit(f"No active board member with email {args.email}")
+        raise SystemExit(f"No active board member with email {email}")
+    scopes = [args.scope]
+    given = args.expires_days is not None
+    value = clock.now() + timedelta(days=args.expires_days) if args.expires_days else None
+    expires = apikey_service.resolve_expiry(clock, scopes, given=given, value=value)
     made = apikey_service.create(
-        db, CLI, name=args.name.strip(), scopes=[apikey_service.SCOPE_AGGREGATES],
-        created_by=member.id,
+        db, CLI, name=args.name.strip(), scopes=scopes, created_by=member.id, expires_at=expires,
     )  # fmt: skip
     db.commit()
     print()
-    print(f"API key {made.row.id} ({made.row.name}), scope read:aggregates.")
+    print(f"API key {made.row.id} ({made.row.name}), scope {args.scope}.")
+    if args.scope == apikey_service.SCOPE_FULL:
+        print("Full access: it can read and change all donor data. Share only with apps you trust.")
+        print(f"Expires: {expires.strftime('%Y-%m-%d') if expires else 'never'}.")
     print("Shown once; it cannot be recovered. Store it in a password manager:")
     print()
     print(f"  {made.key}")
@@ -185,7 +194,18 @@ def parser() -> argparse.ArgumentParser:
     ak.add_argument("action", choices=["create", "list", "revoke"])
     ak.add_argument("key_id", nargs="?", type=int, help="for revoke: the key id")
     ak.add_argument("--name", help="for create: what the key is for, e.g. Dashboard")
-    ak.add_argument("--email", help="for create: the board member the key is recorded for")
+    ak.add_argument("--as", dest="as_member", metavar="EMAIL", help="for create: member to act as")
+    ak.add_argument("--email", help=argparse.SUPPRESS)  # older spelling of --as
+    ak.add_argument(
+        "--scope",
+        choices=[apikey_service.SCOPE_AGGREGATES, apikey_service.SCOPE_FULL],
+        default=apikey_service.SCOPE_AGGREGATES,
+        help="for create: read:aggregates (default, /api/v1) or full_access (/api/app)",
+    )
+    ak.add_argument(
+        "--expires-days", type=int,
+        help="for create: days until it expires; 0 = never (default: 90 for full_access)",
+    )  # fmt: skip
     sd = sub.add_parser("seed-demo", help="add demo members and synthetic data (DEMO_MODE only)")
     sd.add_argument("--members-only", action="store_true", help="skip the synthetic data import")
     sub.add_parser("reset-demo", help="wipe all data and seed demo members (DEMO_MODE only)")

@@ -77,15 +77,15 @@ One row per payment. Built from the documented export order (Amount, Payment met
 
 Fee is 0 (Zeffy charges nonprofits no platform fee; optional donor tips are not modelled). Monthly recurring gifts are simply repeated payments with distinct `Payment ID`s.
 
-## 2c. Zeffy contacts export (`source = zeffy_contacts`), from CIC's sample header row
+## 2c. Zeffy contacts export: reference layout only (not an adapter, D-136)
 
-CIC shared a sanitized sample on Nov 15. Its **header row is the contract**; none of its data is used anywhere. One row per donor. Fixture: `fixtures/synthetic_zeffy_contacts.xlsx` (synthetic values, same headers and order, styled header row).
+CIC shared a sanitized sample on Nov 15 as an example of what an upload *may* look like. It is kept here as a test case for AI-assisted mapping (ING-12); none of its data is used anywhere. One row per donor. Fixture: `fixtures/synthetic_zeffy_contacts.xlsx` (synthetic values, same headers and order, styled header row).
 
 | # | Header (exact) | Use |
 |---|---|---|
 | 1-3 | `First name`, `Last name`, `Email` | donor name and primary email; required: First name or Email |
 | 4 | `Secondary email` | extra `email` identity, never primary |
-| 5 | `Amount` | Zeffy giving total in dollars (integer or decimal) → `donors.zeffy_total_cents` (D-135) |
+| 5 | `Amount` | probably the donor's Zeffy total, not one gift (unconfirmed) |
 | 6-7 | `First payment date (America/Phoenix)`, `Last payment date (America/Phoenix)` | `MM/DD/YYYY, h:mm AM`; date part only; last date → `zeffy_total_as_of` |
 | 8 | `Language` | ignored |
 | 9-13 | `Address`, `City`, `Postal code`, `Country`, `Region` | **ignored** (NFR-3, no addresses) |
@@ -96,7 +96,6 @@ CIC shared a sanitized sample on Nov 15. Its **header row is the contract**; non
 | 18 | `Unsubscribed` | `yes`/`true`/`1` → `do_not_contact = true` |
 | 19 | `Interested in volunteering?` | ignored unless a custom field has that name |
 
-Auto-detect: a Zeffy upload with `Payment ID` is the payments export (section 2); one with `First payment date (America/Phoenix)` is the contacts export. Rows with neither name nor email are invalid (`missing_identity`). Matching follows DED-3 (`email`, then review); changed fields need uploader approval (ING-8).
 
 ## 2b. Zeffy API payments (documented), for the later API pull job
 
