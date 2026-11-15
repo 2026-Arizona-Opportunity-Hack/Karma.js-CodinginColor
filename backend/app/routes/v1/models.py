@@ -71,3 +71,27 @@ class ActivityDay(BaseModel):
 class RecentActivity(V1Response):
     days: int
     items: list[ActivityDay]
+
+
+class Summary(RangedResponse):
+    gross_cents: int
+    net_cents: int
+    gift_count: int
+    donor_count: int
+    new_donors: int = Field(description="Donors whose first ever gift falls in the range")
+    avg_gift_cents: int
+
+
+class RetentionClassTotals(BaseModel):
+    donors: int
+    cents_cur: int
+    cents_prev: int
+
+
+class Retention(V1Response):
+    retention_date: date = Field(description="The `as_of` date the windows are measured from")
+    basis: Literal["rolling", "calendar"]
+    classes: dict[
+        Literal["new", "reactivated", "increased", "same", "decreased", "lapsed"],
+        RetentionClassTotals,
+    ]

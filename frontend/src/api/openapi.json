@@ -3164,6 +3164,60 @@
         "title": "ReportSummary",
         "type": "object"
       },
+      "Retention": {
+        "properties": {
+          "as_of": {
+            "format": "date-time",
+            "title": "As Of",
+            "type": "string"
+          },
+          "basis": {
+            "enum": [
+              "rolling",
+              "calendar"
+            ],
+            "title": "Basis",
+            "type": "string"
+          },
+          "classes": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/RetentionClassTotals"
+            },
+            "propertyNames": {
+              "enum": [
+                "new",
+                "reactivated",
+                "increased",
+                "same",
+                "decreased",
+                "lapsed"
+              ]
+            },
+            "title": "Classes",
+            "type": "object"
+          },
+          "currency": {
+            "const": "USD",
+            "default": "USD",
+            "title": "Currency",
+            "type": "string"
+          },
+          "retention_date": {
+            "description": "The `as_of` date the windows are measured from",
+            "format": "date",
+            "title": "Retention Date",
+            "type": "string"
+          }
+        },
+        "required": [
+          "as_of",
+          "retention_date",
+          "basis",
+          "classes"
+        ],
+        "title": "Retention",
+        "type": "object"
+      },
       "RetentionClass": {
         "properties": {
           "cents_cur": {
@@ -3185,6 +3239,29 @@
           "cents_prev"
         ],
         "title": "RetentionClass",
+        "type": "object"
+      },
+      "RetentionClassTotals": {
+        "properties": {
+          "cents_cur": {
+            "title": "Cents Cur",
+            "type": "integer"
+          },
+          "cents_prev": {
+            "title": "Cents Prev",
+            "type": "integer"
+          },
+          "donors": {
+            "title": "Donors",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "donors",
+          "cents_cur",
+          "cents_prev"
+        ],
+        "title": "RetentionClassTotals",
         "type": "object"
       },
       "RetentionDonor": {
@@ -3569,6 +3646,69 @@
           "retention_basis"
         ],
         "title": "SettingsOut",
+        "type": "object"
+      },
+      "Summary": {
+        "properties": {
+          "as_of": {
+            "format": "date-time",
+            "title": "As Of",
+            "type": "string"
+          },
+          "avg_gift_cents": {
+            "title": "Avg Gift Cents",
+            "type": "integer"
+          },
+          "currency": {
+            "const": "USD",
+            "default": "USD",
+            "title": "Currency",
+            "type": "string"
+          },
+          "donor_count": {
+            "title": "Donor Count",
+            "type": "integer"
+          },
+          "from": {
+            "format": "date",
+            "title": "From",
+            "type": "string"
+          },
+          "gift_count": {
+            "title": "Gift Count",
+            "type": "integer"
+          },
+          "gross_cents": {
+            "title": "Gross Cents",
+            "type": "integer"
+          },
+          "net_cents": {
+            "title": "Net Cents",
+            "type": "integer"
+          },
+          "new_donors": {
+            "description": "Donors whose first ever gift falls in the range",
+            "title": "New Donors",
+            "type": "integer"
+          },
+          "to": {
+            "format": "date",
+            "title": "To",
+            "type": "string"
+          }
+        },
+        "required": [
+          "as_of",
+          "from",
+          "to",
+          "gross_cents",
+          "net_cents",
+          "gift_count",
+          "donor_count",
+          "new_donors",
+          "avg_gift_cents"
+        ],
+        "title": "Summary",
         "type": "object"
       },
       "TemplateIn": {
@@ -8466,6 +8606,215 @@
           }
         },
         "summary": "Health",
+        "tags": [
+          "v1"
+        ]
+      }
+    },
+    "/api/v1/retention": {
+      "get": {
+        "operationId": "retention_api_v1_retention_get",
+        "parameters": [
+          {
+            "description": "Default today",
+            "in": "query",
+            "name": "as_of",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Default today",
+              "title": "As Of"
+            }
+          },
+          {
+            "in": "query",
+            "name": "basis",
+            "required": false,
+            "schema": {
+              "default": "rolling",
+              "enum": [
+                "rolling",
+                "calendar"
+              ],
+              "title": "Basis",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Retention"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Missing, invalid or revoked API key"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Key lacks the read:aggregates scope"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Over 60 requests per minute; see Retry-After"
+          }
+        },
+        "summary": "Retention",
+        "tags": [
+          "v1"
+        ]
+      }
+    },
+    "/api/v1/summary": {
+      "get": {
+        "operationId": "summary_api_v1_summary_get",
+        "parameters": [
+          {
+            "description": "First day, default 12 months ago",
+            "in": "query",
+            "name": "from",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "First day, default 12 months ago",
+              "title": "From"
+            }
+          },
+          {
+            "description": "Last day, default today",
+            "in": "query",
+            "name": "to",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Last day, default today",
+              "title": "To"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Summary"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Missing, invalid or revoked API key"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Key lacks the read:aggregates scope"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Over 60 requests per minute; see Retry-After"
+          }
+        },
+        "summary": "Summary",
         "tags": [
           "v1"
         ]
