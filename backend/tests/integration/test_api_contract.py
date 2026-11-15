@@ -56,9 +56,11 @@ EXPECTED = {
     ("POST", "/api/app/api-keys/{}/revoke"),
     ("GET", "/api/app/program-outcomes"), ("POST", "/api/app/program-outcomes"),
     ("POST", "/api/app/program-outcomes/upload"),
+    ("GET", "/api/app/reports/lapsed"), ("POST", "/api/app/reports/lapsed/draft"),  # not in API.md
     ("POST", "/api/app/demo/reset"),
 }  # fmt: skip
 IMPLEMENTED = {
+    ("GET", "/api/app/reports/lapsed"), ("POST", "/api/app/reports/lapsed/draft"),  # lane A, #41
     ("GET", "/api/app/program-outcomes"), ("POST", "/api/app/program-outcomes"),  # lane A, #40
     ("POST", "/api/app/program-outcomes/upload"),  # lane A, #135
     ("GET", "/api/app/reports/funder/{}"),  # lane A, #40

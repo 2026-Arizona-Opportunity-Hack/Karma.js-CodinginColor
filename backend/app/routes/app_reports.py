@@ -9,8 +9,9 @@ from app.clock import today
 from app.errors import Invalid
 from app.routes.deps import DB, ClockDep, CurrentDep
 from app.routes.stubs import session_router
+from app.schemas.messages import DraftBatchOut
 from app.schemas.reports import ReportSummary, RetentionReport
-from app.services.reports import funder, retention, summary
+from app.services.reports import funder, lapsed, retention, summary
 
 router = session_router("reports")
 
@@ -64,3 +65,17 @@ def funder_export(
             headers={"Content-Disposition": f'attachment; filename="giving-{donor_id}.csv"'},
         )
     return Response(funder.render_html(x), media_type="text/html")
+
+
+@router.get("/reports/lapsed")
+def report_lapsed(
+    cur: CurrentDep, db: DB, clock: ClockDep, as_of: Annotated[date | None, Query()] = None
+) -> lapsed.LapsedReport:
+    """Lapsed donors (RPT-2) per owner, without do-not-contact donors (MSG-8)."""
+    return lapsed.build(db, cur.actor, as_of=as_of or today(clock))
+
+
+@router.post("/reports/lapsed/draft")
+def draft_lapsed(cur: CurrentDep, db: DB, clock: ClockDep) -> DraftBatchOut:
+    """Draft a lapsed nudge for each of my lapsed donors. Idempotent (MSG-2); a human approves."""
+    return lapsed.draft_mine(db, clock, cur.actor)
