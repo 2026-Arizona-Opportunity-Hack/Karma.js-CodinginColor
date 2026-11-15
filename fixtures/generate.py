@@ -624,8 +624,13 @@ def manifest(rows: dict[str, list[Row]], hashes: dict[str, str]) -> dict:
     files, created, gifts, review = {}, {}, {}, []
     for key, name in zip(["sheet", "zeffy", "benevity", "generic"], FILES, strict=True):
         f = {"sha256": hashes[name], "rows": len(rows[key]), "invalid": [], "created_donors": 0}
-        attr = {k: {"gifts": 0, "cents": 0} for k in ("linked", "pending_review", "anonymous")}
+        attr = {k: {"gifts": 0, "cents": 0, "rows": 0, "donation_cents": 0, "match_cents": 0}
+                for k in ("linked", "pending_review", "anonymous")}
         for n, r in enumerate(rows[key], start=1):
+            if key != "sheet" and r.attr != "invalid":
+                attr[r.attr]["rows"] += 1
+                attr[r.attr]["donation_cents"] += r.cents
+                attr[r.attr]["match_cents"] += r.extra
             if r.attr == "invalid":
                 f["invalid"].append({"row": n, "code": r.why})
             elif r.attr == "pending_review":
@@ -642,16 +647,18 @@ def manifest(rows: dict[str, list[Row]], hashes: dict[str, str]) -> dict:
                         created[r.pid] = name
                         f["created_donors"] += 1
                     gifts.setdefault(r.pid, []).append((r.when, r.cents))
-                    if r.extra:
-                        gifts[r.pid].append((r.when, r.extra))
+                    # D-127: employer matches count as revenue, not employee giving.
                 attr[r.attr]["gifts"] += 1 + bool(r.extra)
                 attr[r.attr]["cents"] += r.cents + r.extra
         if key != "sheet":
             f["valid_gifts"] = sum(v["gifts"] for v in attr.values())
             f["gross_cents"] = sum(v["cents"] for v in attr.values())
+            f["donation_cents"] = sum(v["donation_cents"] for v in attr.values())
+            f["match_cents"] = sum(v["match_cents"] for v in attr.values())
             f["by_attribution"] = attr
         files[name] = f
-    total = {k: sum(f.get(k, 0) for f in files.values()) for k in ("valid_gifts", "gross_cents")}
+    total = {k: sum(f.get(k, 0) for f in files.values())
+             for k in ("valid_gifts", "gross_cents", "donation_cents", "match_cents")}
     return {
         "note": "Synthetic data. Derived from designed row outcomes; see tests/integration/test_fixtures.py.",
         "seed": SEED,

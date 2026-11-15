@@ -1034,6 +1034,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/retention": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Retention */
+        get: operations["retention_api_v1_retention_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Summary */
+        get: operations["summary_api_v1_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/totals/by-board-member": {
         parameters: {
             query?: never;
@@ -1310,13 +1344,6 @@ export interface components {
              * Format: date
              */
             to: string;
-        };
-        /** CountCents */
-        CountCents: {
-            /** Cents */
-            cents: number;
-            /** Count */
-            count: number;
         };
         /** DigestMember */
         DigestMember: {
@@ -1705,6 +1732,31 @@ export interface components {
             summary?: components["schemas"]["ImportSummary"] | null;
             uploaded_by: components["schemas"]["MemberRef"];
         };
+        /**
+         * ImportClassSummary
+         * @description Physical source rows, independently counted gifts, and gross USD cents.
+         */
+        ImportClassSummary: {
+            /**
+             * Cents
+             * @description Donation cents plus employer-match cents
+             */
+            cents: number;
+            /**
+             * Count
+             * @description Physical source rows in this class
+             */
+            count: number;
+            /** Donation Cents */
+            donation_cents: number;
+            /**
+             * Gift Count
+             * @description Gifts represented by these rows; donor-only rows add 0
+             */
+            gift_count: number;
+            /** Match Cents */
+            match_cents: number;
+        };
         /** ImportListOut */
         ImportListOut: {
             /** Items */
@@ -1724,22 +1776,53 @@ export interface components {
         };
         /**
          * ImportSummary
-         * @description rows_read = new + already_imported + needs_review + invalid; must reconcile (ING-5).
+         * @description Reconcile physical rows and gross cents independently (ING-5, D-127).
+         *
+         *     Anonymous is a subset of new rows; it is excluded from the conservation sum.
+         *     Invalid rows contribute no accepted gifts or cents. Counts include donor-only
+         *     spreadsheet rows; gift_count never counts those as gifts.
          */
         ImportSummary: {
-            already_imported: components["schemas"]["CountCents"];
-            anonymous: components["schemas"]["CountCents"];
+            already_imported: components["schemas"]["ImportClassSummary"];
+            anonymous: components["schemas"]["ImportClassSummary"];
+            /**
+             * Cents Reconcile
+             * @default false
+             */
+            cents_reconcile: boolean;
+            /** Donation Cents */
+            donation_cents: number;
             /** Donors Matched */
             donors_matched: number;
-            invalid: components["schemas"]["CountCents"];
-            needs_review: components["schemas"]["CountCents"];
+            /**
+             * Gift Count
+             * @description Parsed valid gifts, including matches and review gifts
+             */
+            gift_count: number;
+            invalid: components["schemas"]["ImportClassSummary"];
+            /** Match Cents */
+            match_cents: number;
+            needs_review: components["schemas"]["ImportClassSummary"];
             /** New Donors */
             new_donors: number;
-            new_gifts: components["schemas"]["CountCents"];
-            /** Reconciles */
+            new_gifts: components["schemas"]["ImportClassSummary"];
+            /**
+             * Reconciles
+             * @default false
+             */
             reconciles: boolean;
             /** Rows Read */
             rows_read: number;
+            /**
+             * Rows Reconcile
+             * @default false
+             */
+            rows_reconcile: boolean;
+            /**
+             * Total Cents
+             * @description Gross donation plus match cents before fees
+             */
+            total_cents: number;
             /**
              * Unmapped Campaigns
              * @description Raw values that fell back to General
@@ -2286,8 +2369,46 @@ export interface components {
             /** Unattributed Gifts */
             unattributed_gifts: number;
         };
+        /** Retention */
+        Retention: {
+            /**
+             * As Of
+             * Format: date-time
+             */
+            as_of: string;
+            /**
+             * Basis
+             * @enum {string}
+             */
+            basis: "rolling" | "calendar";
+            /** Classes */
+            classes: {
+                [key: string]: components["schemas"]["RetentionClassTotals"];
+            };
+            /**
+             * Currency
+             * @default USD
+             * @constant
+             */
+            currency: "USD";
+            /**
+             * Retention Date
+             * Format: date
+             * @description The `as_of` date the windows are measured from
+             */
+            retention_date: string;
+        };
         /** RetentionClass */
         RetentionClass: {
+            /** Cents Cur */
+            cents_cur: number;
+            /** Cents Prev */
+            cents_prev: number;
+            /** Donors */
+            donors: number;
+        };
+        /** RetentionClassTotals */
+        RetentionClassTotals: {
             /** Cents Cur */
             cents_cur: number;
             /** Cents Prev */
@@ -2420,6 +2541,45 @@ export interface components {
             thank_you_days_first: number;
             /** Thank You Days Repeat */
             thank_you_days_repeat: number;
+        };
+        /** Summary */
+        Summary: {
+            /**
+             * As Of
+             * Format: date-time
+             */
+            as_of: string;
+            /** Avg Gift Cents */
+            avg_gift_cents: number;
+            /**
+             * Currency
+             * @default USD
+             * @constant
+             */
+            currency: "USD";
+            /** Donor Count */
+            donor_count: number;
+            /**
+             * From
+             * Format: date
+             */
+            from: string;
+            /** Gift Count */
+            gift_count: number;
+            /** Gross Cents */
+            gross_cents: number;
+            /** Net Cents */
+            net_cents: number;
+            /**
+             * New Donors
+             * @description Donors whose first ever gift falls in the range
+             */
+            new_donors: number;
+            /**
+             * To
+             * Format: date
+             */
+            to: string;
         };
         /** TemplateIn */
         TemplateIn: {
@@ -6242,6 +6402,113 @@ export interface operations {
                     "application/json": {
                         [key: string]: string;
                     };
+                };
+            };
+        };
+    };
+    retention_api_v1_retention_get: {
+        parameters: {
+            query?: {
+                /** @description Default today */
+                as_of?: string | null;
+                basis?: "rolling" | "calendar";
+            };
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Retention"];
+                };
+            };
+            /** @description Missing, invalid or revoked API key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Key lacks the read:aggregates scope */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Over 60 requests per minute; see Retry-After */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    summary_api_v1_summary_get: {
+        parameters: {
+            query?: {
+                /** @description First day, default 12 months ago */
+                from?: string | null;
+                /** @description Last day, default today */
+                to?: string | null;
+            };
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Summary"];
+                };
+            };
+            /** @description Missing, invalid or revoked API key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Key lacks the read:aggregates scope */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Over 60 requests per minute; see Retry-After */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
                 };
             };
         };

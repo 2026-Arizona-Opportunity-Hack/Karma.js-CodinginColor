@@ -37,7 +37,7 @@ def by_period(
                COALESCE(sum(g.gross_cents), 0)::bigint AS gross_cents,
                COALESCE(sum(g.net_cents), 0)::bigint AS net_cents,
                count(*)::int AS gift_count,
-               count(DISTINCT g.donor_id)::int AS donor_count
+               count(DISTINCT g.donor_id) FILTER (WHERE NOT g.is_matching_gift)::int AS donor_count
         FROM gifts g
         WHERE {_COUNTED} AND g.gift_date BETWEEN :start AND :end
         GROUP BY 1 ORDER BY 1
@@ -56,7 +56,7 @@ def by_program(db: Session, actor: Actor, *, start: date, end: date) -> list[dic
         SELECT p.name AS program,
                COALESCE(sum(g.gross_cents), 0)::bigint AS gross_cents,
                count(*)::int AS gift_count,
-               count(DISTINCT g.donor_id)::int AS donor_count
+               count(DISTINCT g.donor_id) FILTER (WHERE NOT g.is_matching_gift)::int AS donor_count
         FROM gifts g JOIN programs p ON p.id = g.program_id
         WHERE {_COUNTED} AND g.gift_date BETWEEN :start AND :end
         GROUP BY p.name ORDER BY gross_cents DESC, p.name
@@ -72,12 +72,13 @@ def by_board_member(db: Session, actor: Actor, *, start: date, end: date) -> lis
     return _rows(
         db,
         """
-        SELECT u.display_name AS board_member,
+        SELECT u.id AS member_id, u.display_name AS board_member, u.is_active,
           (SELECT count(*) FROM donors d
              WHERE d.owner_user_id = u.id AND d.deleted_at IS NULL)::int AS donors_owned,
           COALESCE((SELECT sum(g.gross_cents) FROM gifts g JOIN donors d ON d.id = g.donor_id
              WHERE d.owner_user_id = u.id AND d.deleted_at IS NULL AND g.deleted_at IS NULL
-               AND g.attribution = 'linked' AND g.gift_date BETWEEN :start AND :end), 0
+               AND g.attribution = 'linked' AND NOT g.is_matching_gift
+               AND g.gift_date BETWEEN :start AND :end), 0
           )::bigint AS gross_cents,
           (SELECT count(*) FROM interactions i
              WHERE i.user_id = u.id AND i.kind <> 'system'
@@ -113,4 +114,75 @@ def activity_by_day(db: Session, actor: Actor, *, start: date, end: date) -> lis
         """,  # noqa: S608
         start=start,
         end=end,
+    )
+
+
+def totals(db: Session, actor: Actor, *, start: date, end: date) -> dict[str, Any]:
+    """Headline numbers for a date range. `new_donors` first ever gave inside the range."""
+    _require_reader(actor)
+    rows = _rows(
+        db,
+        f"""
+        SELECT COALESCE(sum(g.gross_cents), 0)::bigint AS gross_cents,
+               COALESCE(sum(g.net_cents), 0)::bigint AS net_cents,
+               count(*)::int AS gift_count,
+               count(DISTINCT g.donor_id) FILTER (WHERE NOT g.is_matching_gift)::int AS donor_count,
+               (SELECT count(*) FROM (
+                  SELECT f.donor_id FROM gifts f JOIN donors d ON d.id = f.donor_id
+                  WHERE f.attribution = 'linked' AND f.deleted_at IS NULL AND NOT f.is_matching_gift
+                    AND d.deleted_at IS NULL AND d.merged_into_id IS NULL
+                  GROUP BY f.donor_id HAVING min(f.gift_date) BETWEEN :start AND :end
+               ) first_gifts)::int AS new_donors
+        FROM gifts g WHERE {_COUNTED} AND g.gift_date BETWEEN :start AND :end
+        """,  # noqa: S608
+        start=start,
+        end=end,
+    )
+    row = rows[0]
+    count = row["gift_count"]
+    # Average gift in whole cents, half up.
+    row["avg_gift_cents"] = (2 * row["gross_cents"] + count) // (2 * count) if count else 0
+    return row
+
+
+def unattributed_count(db: Session, actor: Actor) -> int:
+    _require_reader(actor)
+    sql = (
+        "SELECT count(*) FROM gifts WHERE deleted_at IS NULL "
+        "AND attribution IN ('anonymous','pending_review')"
+    )
+    return int(db.execute(text(sql)).scalar_one())
+
+
+def retention_donors(
+    db: Session,
+    actor: Actor,
+    *,
+    cur: tuple[date, date],
+    prev: tuple[date, date],
+    before: date,
+) -> list[dict[str, Any]]:
+    """Per donor with linked gifts: cents in the current and previous window (inclusive dates),
+    and whether they gave on or before `before - 1 day` (DATA_MODEL 3.5)."""
+    _require_reader(actor)
+    return _rows(
+        db,
+        """
+        SELECT d.id AS donor_id, d.display_name,
+               COALESCE(sum(g.gross_cents) FILTER (
+                 WHERE g.gift_date BETWEEN :cur_start AND :cur_end), 0)::bigint AS cents_cur,
+               COALESCE(sum(g.gross_cents) FILTER (
+                 WHERE g.gift_date BETWEEN :prev_start AND :prev_end), 0)::bigint AS cents_prev,
+               COALESCE(bool_or(g.gift_date < :before), false) AS ever_before
+        FROM gifts g JOIN donors d ON d.id = g.donor_id
+        WHERE g.attribution = 'linked' AND g.deleted_at IS NULL AND NOT g.is_matching_gift
+          AND d.deleted_at IS NULL AND d.merged_into_id IS NULL
+        GROUP BY d.id, d.display_name
+        ORDER BY lower(d.display_name), d.id
+        """,
+        cur_start=cur[0],
+        cur_end=cur[1],
+        prev_start=prev[0],
+        prev_end=prev[1],
+        before=before,
     )

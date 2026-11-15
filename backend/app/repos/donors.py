@@ -47,7 +47,7 @@ LEFT JOIN LATERAL (
            sum(gross_cents) FILTER (WHERE gift_date > :t730 AND gift_date <= :t365) AS prev,
            max(gift_date) AS last_gift_date, min(gift_date) AS first_gift_date
     FROM gifts WHERE donor_id = d.id AND attribution = 'linked' AND deleted_at IS NULL
-      AND gift_date <= :today
+      AND NOT is_matching_gift AND gift_date <= :today
 ) g ON true
 LEFT JOIN LATERAL (
     SELECT max(occurred_on) AS last_contact_date
@@ -208,9 +208,6 @@ def timeline(db: Session, actor: Actor, donor_id: int, *, limit: int = 500) -> l
       SELECT 'next_step', n.created_at, 'Next step: ' || n.title,
              'Due ' || to_char(n.due_date, 'YYYY-MM-DD'), u.display_name, NULL, n.id
         FROM next_steps n LEFT JOIN users u ON u.id = n.created_by WHERE n.donor_id = :id
-      UNION ALL
-      SELECT 'next_step', n.done_at, 'Done: ' || n.title, NULL, NULL, NULL, n.id
-        FROM next_steps n WHERE n.donor_id = :id AND n.status = 'done' AND n.done_at IS NOT NULL
       UNION ALL
       SELECT 'owner_change', h.changed_at,
              CASE WHEN f.id IS NULL THEN 'Assigned to ' || t.display_name

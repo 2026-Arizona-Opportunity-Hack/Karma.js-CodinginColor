@@ -24,6 +24,7 @@ Built for CIC's [Donor & Funder Relationship Platform](https://www.ohack.dev/pro
 ## Design principles
 
 - **A human sends every donor message.** The app drafts; board members approve and send. Email runs in dry-run mode unless explicitly configured for live sending.
+- **Employee giving excludes employer matches.** Match gifts remain org revenue, while donor totals, lifetime giving, retention and pre-filled message amounts use only the employee's donation ([D-127](docs/DECISIONS.md)).
 - **Privacy by default.** Every board member sees gift history; contact details are visible only to a donor's owner. The public API returns aggregates only, never donor details.
 - **No secrets in the repository.** Configuration comes from environment variables; `.env` is git-ignored.
 - **Synthetic data only** in this repository.

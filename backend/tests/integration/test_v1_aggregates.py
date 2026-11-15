@@ -233,8 +233,12 @@ def _field_names(schema: dict, node: dict, seen: set[str]) -> set[str]:
         names |= _field_names(schema, sub, seen)
     if "items" in node:
         names |= _field_names(schema, node["items"], seen)
+    if isinstance(node.get("additionalProperties"), dict):
+        names |= _field_names(schema, node["additionalProperties"], seen)
     for name, prop in node.get("properties", {}).items():
-        names.add(name)
+        # `donors` as a plain count (retention classes) is fine; a list of donors is not.
+        if not (name == "donors" and _resolve(schema, prop).get("type") == "integer"):
+            names.add(name)
         names |= _field_names(schema, prop, seen)
     return names
 

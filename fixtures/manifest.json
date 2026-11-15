@@ -51,18 +51,29 @@
       "created_donors": 60,
       "valid_gifts": 403,
       "gross_cents": 3575000,
+      "donation_cents": 3575000,
+      "match_cents": 0,
       "by_attribution": {
         "linked": {
           "gifts": 395,
-          "cents": 3530000
+          "cents": 3530000,
+          "rows": 395,
+          "donation_cents": 3530000,
+          "match_cents": 0
         },
         "pending_review": {
           "gifts": 8,
-          "cents": 45000
+          "cents": 45000,
+          "rows": 8,
+          "donation_cents": 45000,
+          "match_cents": 0
         },
         "anonymous": {
           "gifts": 0,
-          "cents": 0
+          "cents": 0,
+          "rows": 0,
+          "donation_cents": 0,
+          "match_cents": 0
         }
       }
     },
@@ -90,18 +101,29 @@
       "created_donors": 26,
       "valid_gifts": 91,
       "gross_cents": 698750,
+      "donation_cents": 597500,
+      "match_cents": 101250,
       "by_attribution": {
         "linked": {
           "gifts": 70,
-          "cents": 565000
+          "cents": 565000,
+          "rows": 58,
+          "donation_cents": 472500,
+          "match_cents": 92500
         },
         "pending_review": {
           "gifts": 8,
-          "cents": 67500
+          "cents": 67500,
+          "rows": 8,
+          "donation_cents": 67500,
+          "match_cents": 0
         },
         "anonymous": {
           "gifts": 13,
-          "cents": 66250
+          "cents": 66250,
+          "rows": 10,
+          "donation_cents": 57500,
+          "match_cents": 8750
         }
       }
     },
@@ -125,25 +147,38 @@
       "created_donors": 13,
       "valid_gifts": 37,
       "gross_cents": 8670000,
+      "donation_cents": 8670000,
+      "match_cents": 0,
       "by_attribution": {
         "linked": {
           "gifts": 37,
-          "cents": 8670000
+          "cents": 8670000,
+          "rows": 37,
+          "donation_cents": 8670000,
+          "match_cents": 0
         },
         "pending_review": {
           "gifts": 0,
-          "cents": 0
+          "cents": 0,
+          "rows": 0,
+          "donation_cents": 0,
+          "match_cents": 0
         },
         "anonymous": {
           "gifts": 0,
-          "cents": 0
+          "cents": 0,
+          "rows": 0,
+          "donation_cents": 0,
+          "match_cents": 0
         }
       }
     }
   },
   "totals": {
     "valid_gifts": 531,
-    "gross_cents": 12943750
+    "gross_cents": 12943750,
+    "donation_cents": 12842500,
+    "match_cents": 101250
   },
   "donors_created_after_all_imports": 225,
   "review_items": [
@@ -259,23 +294,23 @@
       },
       "increased": {
         "donors": 25,
-        "cents_cur": 1812500,
-        "cents_prev": 1212500
+        "cents_cur": 1782500,
+        "cents_prev": 1202500
       },
       "same": {
         "donors": 18,
-        "cents_cur": 712500,
-        "cents_prev": 712500
+        "cents_cur": 707500,
+        "cents_prev": 707500
       },
       "decreased": {
         "donors": 31,
-        "cents_cur": 1082500,
-        "cents_prev": 2680000
+        "cents_cur": 1077500,
+        "cents_prev": 2665000
       },
       "lapsed": {
         "donors": 40,
         "cents_cur": 0,
-        "cents_prev": 3255000
+        "cents_prev": 3232500
       }
     }
   }

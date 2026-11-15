@@ -95,7 +95,7 @@ Column names are **documented** (Causes Portal Reporting glossary, see the table
 | `Transaction ID` | yes | `source_txn_id` for the donation gift; the match gift uses `<id>:match` so both keep a stable `row_key` |
 | `Donation Date` | yes | `gift_date` (the date the gift was processed or submitted for a match) |
 | `Donation Amount` | yes | `gross_cents`: the gross amount contributed by the donor |
-| `Match Amount` | no | when above zero, a **second gift** on the same row: `is_matching_gift = true`, same donor attribution as the donation, `payer_name` = company |
+| `Match Amount` | no | when above zero, a **second gift** on the same row: `is_matching_gift = true`, `payer_name` = company, source transaction ID suffixed `:match` before row-key hashing. Retain the donation's donor linkage for traceability; the match is org revenue, excluded from employee giving (D-127) |
 | `Donation Currency` | yes | must be `USD`; anything else is `invalid` ("not USD"). `Foreign Exchange Rate` is ignored |
 | `Cause Support Fee`, `Merchant Fee` | no | summed into `fee_cents` of the donation gift (`net = gross - fees`); `Disbursement Check Fee` is per disbursement and not stored |
 | `Company Name` | no | `payer_name` and the employer used for name-and-employer matching. A code of the form `A1234` means the company is anonymous: kept as the payer text, not used for matching |
@@ -108,7 +108,8 @@ Column names are **documented** (Causes Portal Reporting glossary, see the table
 Rules that follow from the glossary:
 
 - **There is no donor id** in the report, so Benevity donors are recognised by email (DED-3), then by name plus employer (a review item). The `benevity_donor` identity kind in the schema stays unused until a real file shows an id.
-- A **match** is employer money. It is credited to the same donor as the donation but flagged `is_matching_gift`, so reports can separate it. If the donor is hidden, both gifts are unattributed.
+- A **match** is employer money. Per CIC's decision D-127 (superseding employee credit in D-125), the employee is credited only for `Donation Amount`. Keep the separate match gift and donor relationship for traceability, but exclude it from donor totals, lifetime giving, retention classes and every amount pre-filled in message templates. Include it in org revenue. If the donor is hidden, both gifts are unattributed. Board members use donation-only data on the dashboard or reminders and edit message amounts by hand; no automatic donor send is introduced.
+- **Preview accounting:** classification counts are physical source rows. Each class reports `donation_cents`, `match_cents`, combined `cents`, and a separate `gift_count`. `anonymous` is a subset of new rows. Reconcile source rows across new/already-imported/review/invalid, and reconcile donation plus match cents across those same classes. Invalid rows contribute no accepted gifts or cents. The Benevity fixture remains 80 source rows and 91 valid gifts, including matches. Fees affect net revenue, not this gross-cents reconciliation.
 - **Negative amounts** (the glossary links an article about them, which we could not read) are probably reversals. The importer lists them as `invalid` ("non-positive amount") so a person can look; reversal handling is not built.
 - `Donation Currency` can differ from the disbursement currency; only USD rows are imported.
 

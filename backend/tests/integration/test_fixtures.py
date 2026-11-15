@@ -194,13 +194,24 @@ class Resolver:
         return did
 
 
+def add_attribution(f: dict, attribution: str, cents: int, match: int) -> None:
+    bucket = f["attr"][attribution]
+    bucket["gifts"] += 1 + (match > 0)
+    bucket["cents"] += cents + match
+    bucket["rows"] += 1
+    bucket["donation_cents"] += cents
+    bucket["match_cents"] += match
+
+
 def run_imports() -> dict:
     res, out = Resolver(), {"files": {}, "review": [], "gifts": {}}
     for source, name in zip(
         ["sheet", "zeffy", "benevity", "generic"], M["import_order"], strict=True
     ):
         f = {"rows": 0, "invalid": [], "created": 0, "gifts": 0, "cents": 0,
-             "attr": {k: [0, 0] for k in ("linked", "pending_review", "anonymous")}}  # fmt: skip
+             "attr": {k: {"gifts": 0, "cents": 0, "rows": 0,
+                          "donation_cents": 0, "match_cents": 0}
+                      for k in ("linked", "pending_review", "anonymous")}}  # fmt: skip
         for n, r in enumerate(read_rows(name), start=1):
             f["rows"] += 1
             if source == "sheet":
@@ -218,8 +229,7 @@ def run_imports() -> dict:
             if rec["anon"]:
                 f["gifts"] += n_gifts
                 f["cents"] += cents + match
-                f["attr"]["anonymous"][0] += n_gifts
-                f["attr"]["anonymous"][1] += cents + match
+                add_attribution(f, "anonymous", cents, match)
                 continue
             verdict, did, why = res.decide(rec)
             if verdict == "review":
@@ -229,8 +239,7 @@ def run_imports() -> dict:
                 if source != "sheet":
                     f["gifts"] += n_gifts
                     f["cents"] += cents + match
-                    f["attr"]["pending_review"][0] += n_gifts
-                    f["attr"]["pending_review"][1] += cents + match
+                    add_attribution(f, "pending_review", cents, match)
                 continue
             if verdict == "new":
                 did = res.create(rec)
@@ -241,11 +250,9 @@ def run_imports() -> dict:
             if source != "sheet":
                 f["gifts"] += n_gifts
                 f["cents"] += cents + match
-                f["attr"]["linked"][0] += n_gifts
-                f["attr"]["linked"][1] += cents + match
+                add_attribution(f, "linked", cents, match)
                 out["gifts"].setdefault(did, []).append((when, cents))
-                if match:  # the employer's match is credited to the same donor, flagged separately
-                    out["gifts"][did].append((when, match))
+                # D-127: matches stay in org revenue above, not donor retention gifts.
         out["files"][name] = f
     out["donors"] = len(res.donors)
     return out
@@ -293,11 +300,11 @@ def test_manifest_matches_files_per_file(result: dict) -> None:
         if "valid_gifts" in f:
             assert got["gifts"] == f["valid_gifts"], name
             assert got["cents"] == f["gross_cents"], name
-            for attr, (count, cents) in got["attr"].items():
-                assert [count, cents] == [
-                    f["by_attribution"][attr]["gifts"],
-                    f["by_attribution"][attr]["cents"],
-                ], (name, attr)
+            assert got["attr"] == f["by_attribution"], name
+            assert sum(a["rows"] for a in got["attr"].values()) + len(got["invalid"]) == got["rows"]
+            for component in ("donation_cents", "match_cents"):
+                assert sum(a[component] for a in got["attr"].values()) == f[component], name
+            assert f["gross_cents"] == f["donation_cents"] + f["match_cents"]
 
 
 def test_manifest_totals_donors_and_review_items(result: dict) -> None:
@@ -306,6 +313,33 @@ def test_manifest_totals_donors_and_review_items(result: dict) -> None:
     assert sum(f["cents"] for f in result["files"].values()) == M["totals"]["gross_cents"]
     key = lambda x: (x["file"], x["row"])  # noqa: E731
     assert sorted(result["review"], key=key) == sorted(M["review_items"], key=key)
+
+
+def test_benevity_row_and_gift_counts_and_revenue_are_independent() -> None:
+    f = M["files"][BENEVITY]
+    assert (f["rows"], f["valid_gifts"]) == (80, 91)
+    assert f["donation_cents"] == 597500 and f["match_cents"] == 101250
+    assert f["gross_cents"] == 698750
+    assert f["by_attribution"]["anonymous"]["gifts"] == 13
+    assert M["totals"]["valid_gifts"] == 531
+    assert M["totals"]["gross_cents"] == 12943750
+    assert M["donors_created_after_all_imports"] == 225
+    assert len(M["review_items"]) == 19
+    assert sum(len(f["invalid"]) for f in M["files"].values()) == 14
+
+
+def test_retention_counts_only_employee_donations(result: dict) -> None:
+    linked_revenue = sum(
+        f["by_attribution"]["linked"]["cents"] for f in M["files"].values() if "by_attribution" in f
+    )
+    donor_giving = sum(cents for gifts in result["gifts"].values() for _, cents in gifts)
+    linked_match = sum(
+        f["by_attribution"]["linked"]["match_cents"]
+        for f in M["files"].values()
+        if "by_attribution" in f
+    )
+    assert linked_match == 92500
+    assert donor_giving == linked_revenue - linked_match
 
 
 def test_retention_classes_match_manifest(result: dict) -> None:
