@@ -3,6 +3,7 @@
 from functools import lru_cache
 from typing import Literal
 
+from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -16,6 +17,9 @@ class Settings(BaseSettings):
     session_idle_hours: int = 12
     session_absolute_days: int = 7
     messaging_mode: Literal["dry_run", "live"] = "dry_run"
+    # Resend, used only when messaging_mode is "live". Never logged or stored.
+    resend_api_key: SecretStr = SecretStr("")
+    mail_from: str = ""
     demo_mode: bool = False
     # Directory with the built SPA (frontend/dist). Served by FastAPI when present.
     static_dir: str = "../frontend/dist"
