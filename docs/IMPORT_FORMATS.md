@@ -1,6 +1,6 @@
 # Import formats (assumed)
 
-**Every column layout below is assumed.** No real Coding in Color export was available this weekend, and neither Zeffy nor Benevity publishes a complete column list that we could read. The layouts are our best reading of what the vendors document; they are the contract between the fixture generator and the import adapters. When CIC sends real header rows, only the adapters and this file change (D-111). Fixtures in `fixtures/` are synthetic and never claim to be a real platform format.
+**The CSV and XLSX column layouts below are assumed.** No real Coding in Color export was available this weekend. Zeffy's **API** is fully documented (see section 2b), but neither Zeffy's dashboard export nor Benevity's report publishes a column list we could read. The layouts are our best reading of what the vendors document; they are the contract between the fixture generator and the import adapters. When CIC sends real header rows, only the adapters and this file change (D-111). Fixtures in `fixtures/` are synthetic and never claim to be a real platform format.
 
 ## How sure are we?
 
@@ -8,9 +8,10 @@
 |---|---|---|
 | Zeffy has a dashboard export of **Payments** and **Itemized Payments**; column order described in prose: Amount, Payment method, Payment status, Payout date, Donation, Refunded amount, Discount, then buyer details | **Documented** (no literal headers) | [Zeffy: export payments](https://support.zeffy.com/export-or-download-all-payments-or-tickets-associated-with-a-specific-form-u0tyj) |
 | Zeffy also exports Contacts, Payouts, Tax receipts and Transactions | Documented | [Zeffy: reports and exporting data](https://support.zeffy.com/reports-and-exporting-data-k15ip) |
-| Zeffy API payments carry `currency` (`cad`/`usd`), `status` (`succeeded`/`failed`/`pending`), `type` (`online`/`manual`/`imported`), a contact and a campaign; a payment includes line items, refund details, buyer info and a tax receipt link | **Documented** (names of filters, not of every field) | [Zeffy: API](https://support.zeffy.com/get-started-with-the-zeffy-api-yourg) |
-| Payment properties `id`, `currency`, `status`, `type`, a date-time, `lineItems`, `refund`, `taxReceiptUrl`; Contact properties `id`, `firstName`, `lastName`, `email`, `address`, `totalContributions`, `communicationPreferences` | **Third-party, unverified** (Zeffy's interactive reference at zeffy.com/api/docs did not render for us) | [apis.io: Zeffy Payments](https://apis.io/apis/zeffy/zeffy-payments-api/), [Contacts](https://apis.io/apis/zeffy/zeffy-contacts-api/) |
-| Zeffy amount units (cents or dollars), date format, recurring flag, fees | **Not documented** | n/a |
+| **Zeffy API v1** objects and fields: Payment, Contact, Campaign, User, error format, cursor pagination (`has_more`, `next_cursor`, `limit` up to 100), rate limits (100 per minute, 20 per second per organization), webhooks. Amounts are **integer cents**, dates are **Unix timestamps**, `currency` is `cad` or `usd` | **Documented**: Zeffy's own OpenAPI 3.1 document, copied from the interactive reference by a team member on 2026-11-14. We do not store the vendor's file in the repo | [Zeffy API reference](https://www.zeffy.com/api/docs) |
+| Zeffy API payments carry `currency` (`cad`/`usd`), `status` (`succeeded`/`failed`/`pending`), `type` (`online`/`manual`/`imported`), `refund_status` (`none`/`partial`/`full`), a contact and a campaign | **Documented** | [Zeffy API reference](https://www.zeffy.com/api/docs), [Zeffy: API](https://support.zeffy.com/get-started-with-the-zeffy-api-yourg) |
+| Zeffy dashboard CSV/XLSX column headers, amount units and date format in the file export | **Not documented** (only the prose order above) | n/a |
+| Zeffy fees and tips as fields | **Not documented** in the Payment object (tips are mentioned for webhooks only) | n/a |
 | Benevity donation reports have a **Company** column (the corporate client the gift came from) and donation types **User Portfolio Donation**, **Match** and **Anonymous Donation**; Reporting Studio fields include `DR Code`, `DR Created Date`, `DR Payment Status` (for example Paid, Partial), `DR_Amount`, `DR_Amount_(With_Fees)`; Causes Portal disbursement reports give payment information for the transfer to the nonprofit's bank | **Secondary**: read from search-result summaries of Benevity's help articles; the articles themselves returned HTTP 403 to automated fetching, so the exact headers are unverified | [Understanding donor reports](https://causeshelp.benevity.org/hc/articles/360056082831-Understanding-donor-reports), [Reporting glossary](https://b-hive.benevity.com/hc/articles/360025663972-Benevity-Reporting-glossary), [Donation Explore glossary](https://b-hive.benevity.com/hc/en-us/articles/52828853696020-Reporting-Studio-Donation-Explore-glossary), [Causes Portal reporting](https://causeshelp.benevity.org/hc/en-ca/categories/35338784218260-Reporting) |
 | Benevity literal column headers, donor opt-in fields, file type | **Not verified** | n/a |
 | AZ Gives (runs on MightyCause) and United Way export formats | **Not documented** publicly; they use the generic template | [AZ Gives](https://azgives.org), [United Way](https://www.unitedway.org) |
@@ -58,6 +59,31 @@ One row per payment. Built from the documented export order (Amount, Payment met
 | `First name`, `Last name`, `Email`, `Phone` | no | donor fields; a row with no name and no email is an anonymous gift |
 
 Fee is 0 (Zeffy charges nonprofits no platform fee; optional donor tips are not modelled). Monthly recurring gifts are simply repeated payments with distinct `Payment ID`s.
+
+## 2b. Zeffy API payments (documented), for the later API pull job
+
+Not used by the MVP importer, which reads files. Recorded now because the field names are documented and the pull job (SRS 3.2, item 3) is the planned replacement for manual Zeffy uploads. Source: [Zeffy API reference](https://www.zeffy.com/api/docs). `GET https://api.zeffy.com/api/v1/payments` with `Authorization: Bearer <key>`; cursor pagination (`limit` 1 to 100, `starting_after` = previous `next_cursor`); `created[gte]`/`created[lte]` filter by Unix time.
+
+| Zeffy field | Type and units | Maps to |
+|---|---|---|
+| `id` | UUID | `source_txn_id` |
+| `created` | Unix seconds | `gift_date`, converted to a date in America/Phoenix |
+| `amount` | **integer cents** | `gross_cents` (no parsing needed) |
+| `eligible_amount` | integer cents | not stored |
+| `currency` | `cad` or `usd` | only `usd` becomes a gift; `cad` is `invalid` ("not USD") |
+| `status` | `succeeded`, `failed`, `pending` | only `succeeded`; others are `invalid` ("payment not succeeded") |
+| `refund_status`, `refunds[]` | `none`, `partial`, `full` | anything other than `none` is `invalid` ("refunded") for the MVP |
+| `type` | `online`, `manual`, `imported` | kept as information; all three count as gifts |
+| `campaign_id`, `description` | UUID, campaign title | `campaign_name` = `description`, mapped to a program (ING-7) |
+| `contact` | UUID | `zeffy_contact` identity |
+| `buyer.first_name`, `buyer.last_name`, `buyer.email` | strings or null | donor fields; all three null means an anonymous gift |
+| `buyer.is_corporate`, `buyer.company_name` | boolean, string or null | `is_corporate` true makes the donor an organization named `company_name`; otherwise `company_name` is the employer for matching |
+| `recurring.is_recurring`, `recurring.interval` | boolean, string | informational |
+| `fund`, `receipt_url`, `items[]`, `buyer_questions[]` | various | not stored |
+
+Contacts (`GET /v1/contacts`) add `phone_number` (E.164 in their examples) and `address`, which we do not store (NFR-3). Not documented in the Payment object: platform fees and tips, so `fee_cents` stays 0.
+
+Operational notes from the reference: 100 requests per minute and 20 per second per organization (a pull job must back off on `429` using `Retry-After`); an API key is created by the organization owner under Settings → Integrations; the same key can also **write** (create and delete payments and contacts), so the pull job must only ever call `GET` endpoints and the key belongs in an environment variable, never in git (D-113, least privilege). The fixtures in `fixtures/` imitate the dashboard-style file in section 2, not this JSON; an API adapter needs its own fixtures.
 
 ## 3. Benevity donation report (`source = benevity`), assumed
 
