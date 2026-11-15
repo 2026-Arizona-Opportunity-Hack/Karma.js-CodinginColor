@@ -81,6 +81,8 @@ IMPLEMENTED = {
     ("DELETE", "/api/app/donors/{}"), ("POST", "/api/app/donors/{}/gifts"),
     ("POST", "/api/app/donors/{}/reassign"), ("GET", "/api/app/donors/{}/owner-history"),  # #29
     ("POST", "/api/app/members/{}/move-donors"),
+    ("GET", "/api/app/governance"), ("PUT", "/api/app/governance/scope"),  # lane A, #31
+    ("POST", "/api/app/governance/flatten"),
 }  # fmt: skip
 PUBLIC_STUBS = {("POST", "/api/app/auth/invite/{}/accept")}
 

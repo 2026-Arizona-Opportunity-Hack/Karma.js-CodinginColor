@@ -5956,6 +5956,7 @@
     },
     "/api/app/governance/scope": {
       "put": {
+        "description": "Active super admin only (GOV-4).",
         "operationId": "set_scope_api_app_governance_scope_put",
         "requestBody": {
           "content": {
