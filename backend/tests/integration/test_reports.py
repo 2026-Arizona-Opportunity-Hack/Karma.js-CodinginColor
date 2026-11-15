@@ -226,4 +226,9 @@ def test_app_summary(db: Session, money) -> None:
     assert boards["Diana"]["donors_owned"] == 1 and boards["Diana"]["gross_cents"] == 15_001
     assert boards["Sam"]["member"]["is_active"] is False and boards["Sam"]["gross_cents"] == 5_000
     assert s["open_reminders"] == 0 and s["unattributed_gifts"] == 2
+    assert [(d["display_name"], d["gross_cents"], d["gift_count"]) for d in s["top_donors"]] == [
+        ("Ann", 15_001, 2), ("Bob", 5_000, 2),
+    ]  # fmt: skip
+    gifts = [(g["display_name"], g["gross_cents"]) for g in s["top_gifts"]]
+    assert gifts == [("Ann", 10_000), ("Ann", 5_001), ("Bob", 2_500), ("Bob", 2_500), (None, 1_000)]
     assert TestClient(create_app()).get("/api/app/reports/summary").status_code == 401

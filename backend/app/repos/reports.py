@@ -94,6 +94,53 @@ def by_board_member(db: Session, actor: Actor, *, start: date, end: date) -> lis
     )
 
 
+def top_donors(
+    db: Session, actor: Actor, *, start: date, end: date, limit: int = 5
+) -> list[dict[str, Any]]:
+    """Largest givers in the range by their own (non-matching) linked gifts."""
+    _require_reader(actor)
+    return _rows(
+        db,
+        """
+        SELECT d.id AS donor_id, d.display_name,
+               sum(g.gross_cents)::bigint AS gross_cents, count(*)::int AS gift_count
+        FROM gifts g JOIN donors d ON d.id = g.donor_id
+        WHERE g.attribution = 'linked' AND g.deleted_at IS NULL AND NOT g.is_matching_gift
+          AND d.deleted_at IS NULL AND d.merged_into_id IS NULL
+          AND g.gift_date BETWEEN :start AND :end
+        GROUP BY d.id, d.display_name
+        ORDER BY gross_cents DESC, lower(d.display_name), d.id
+        LIMIT :limit
+        """,
+        start=start,
+        end=end,
+        limit=limit,
+    )
+
+
+def top_gifts(
+    db: Session, actor: Actor, *, start: date, end: date, limit: int = 5
+) -> list[dict[str, Any]]:
+    """Largest single counted gifts in the range; anonymous gifts have no donor."""
+    _require_reader(actor)
+    return _rows(
+        db,
+        f"""
+        SELECT g.id AS gift_id, g.gift_date, g.gross_cents::bigint AS gross_cents,
+               d.id AS donor_id, d.display_name, p.name AS program
+        FROM gifts g
+        LEFT JOIN donors d ON d.id = g.donor_id AND g.attribution = 'linked'
+        LEFT JOIN programs p ON p.id = g.program_id
+        WHERE {_COUNTED} AND g.gift_date BETWEEN :start AND :end
+        ORDER BY g.gross_cents DESC, g.gift_date DESC, g.id
+        LIMIT :limit
+        """,  # noqa: S608
+        start=start,
+        end=end,
+        limit=limit,
+    )
+
+
 def activity_by_day(db: Session, actor: Actor, *, start: date, end: date) -> list[dict[str, Any]]:
     """One row per calendar day from start to end, zeros included."""
     _require_reader(actor)

@@ -28,6 +28,22 @@ class BoardMemberTotal(BaseModel):
     open_reminders: int
 
 
+class TopDonor(BaseModel):
+    donor_id: int
+    display_name: str
+    gross_cents: int
+    gift_count: int
+
+
+class TopGift(BaseModel):
+    gift_id: int
+    gift_date: date
+    gross_cents: int
+    donor_id: int | None
+    display_name: str | None
+    program: str | None
+
+
 class ReportSummary(BaseModel):
     as_of: datetime
     this_month: PeriodTotals
@@ -35,6 +51,8 @@ class ReportSummary(BaseModel):
     last_12_months: PeriodTotals
     by_program: list[ProgramTotal]
     by_board_member: list[BoardMemberTotal]
+    top_donors: list[TopDonor]
+    top_gifts: list[TopGift]
     open_reminders: int
     unattributed_gifts: int
 

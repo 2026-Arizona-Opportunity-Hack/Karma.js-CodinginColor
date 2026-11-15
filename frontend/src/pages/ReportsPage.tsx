@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { Bars, ChartTile, type Datum, Donut, seriesColor, Toggle } from "../components/Charts";
+import { TopList } from "../components/TopList";
 import { ErrorState, LoadingLedger, PageMasthead } from "../components/Workspace";
 import { type Retention, type Summary, useReportSummary, useRetention } from "../hooks/useReports";
 import { calendarDate, dollars } from "../lib/format";
@@ -124,6 +125,59 @@ function SummaryCharts({
   );
 }
 
+function TopFive({ s }: { s: Summary }) {
+  const top = <T,>(rows: T[], value: (r: T) => number) =>
+    [...rows].sort((a, b) => value(b) - value(a)).slice(0, 5);
+  return (
+    <div className="top-grid" aria-label="Top five">
+      <TopList
+        title="Top 5 donors"
+        format={dollars}
+        empty="No donor gifts in the last 12 months."
+        items={s.top_donors.map((d) => ({
+          key: String(d.donor_id),
+          label: d.display_name,
+          sub: `${d.gift_count} ${d.gift_count === 1 ? "gift" : "gifts"}`,
+          value: d.gross_cents,
+          href: `/donors/${d.donor_id}`,
+        }))}
+      />
+      <TopList
+        title="Top 5 gifts"
+        format={dollars}
+        empty="No gifts in the last 12 months."
+        items={s.top_gifts.map((g) => ({
+          key: String(g.gift_id),
+          label: g.display_name ?? "Anonymous gift",
+          sub: [calendarDate(g.gift_date), g.program].filter(Boolean).join(" · "),
+          value: g.gross_cents,
+          href: g.donor_id ? `/donors/${g.donor_id}` : undefined,
+        }))}
+      />
+      <TopList
+        title="Top 5 programs"
+        format={dollars}
+        items={top(s.by_program, (p) => p.gross_cents).map((p) => ({
+          key: p.program,
+          label: p.program,
+          sub: `${p.gift_count} gifts · ${p.donor_count} donors`,
+          value: p.gross_cents,
+        }))}
+      />
+      <TopList
+        title="Top 5 board members"
+        format={dollars}
+        items={top(s.by_board_member, (b) => b.gross_cents).map((b) => ({
+          key: String(b.member.id),
+          label: b.member.display_name,
+          sub: `${b.donors_owned} donors stewarded`,
+          value: b.gross_cents,
+        }))}
+      />
+    </div>
+  );
+}
+
 function SummarySection({ s }: { s: Summary }) {
   const [program, setProgram] = useState<string | null>(null);
   const [member, setMember] = useState<string | null>(null);
@@ -165,6 +219,7 @@ function SummarySection({ s }: { s: Summary }) {
           <ArrowUpRight size={14} aria-hidden="true" />
         </Link>
       </p>
+      <TopFive s={s} />
       <SummaryCharts
         s={s}
         program={program}

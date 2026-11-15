@@ -3047,6 +3047,10 @@ export interface components {
             open_reminders: number;
             this_month: components["schemas"]["PeriodTotals"];
             this_quarter: components["schemas"]["PeriodTotals"];
+            /** Top Donors */
+            top_donors: components["schemas"]["TopDonor"][];
+            /** Top Gifts */
+            top_gifts: components["schemas"]["TopGift"][];
             /** Unattributed Gifts */
             unattributed_gifts: number;
         };
@@ -3351,6 +3355,35 @@ export interface components {
         TimelineOut: {
             /** Items */
             items: components["schemas"]["TimelineEntry"][];
+        };
+        /** TopDonor */
+        TopDonor: {
+            /** Display Name */
+            display_name: string;
+            /** Donor Id */
+            donor_id: number;
+            /** Gift Count */
+            gift_count: number;
+            /** Gross Cents */
+            gross_cents: number;
+        };
+        /** TopGift */
+        TopGift: {
+            /** Display Name */
+            display_name: string | null;
+            /** Donor Id */
+            donor_id: number | null;
+            /**
+             * Gift Date
+             * Format: date
+             */
+            gift_date: string;
+            /** Gift Id */
+            gift_id: number;
+            /** Gross Cents */
+            gross_cents: number;
+            /** Program */
+            program: string | null;
         };
     };
     responses: never;

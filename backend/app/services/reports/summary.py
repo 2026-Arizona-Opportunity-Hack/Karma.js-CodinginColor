@@ -8,7 +8,14 @@ from app.authz.actor import Actor
 from app.clock import Clock, today
 from app.repos import reports as repo
 from app.schemas.common import MemberRef
-from app.schemas.reports import BoardMemberTotal, PeriodTotals, ProgramTotal, ReportSummary
+from app.schemas.reports import (
+    BoardMemberTotal,
+    PeriodTotals,
+    ProgramTotal,
+    ReportSummary,
+    TopDonor,
+    TopGift,
+)
 
 
 def _period(db: Session, actor: Actor, start: date, end: date) -> PeriodTotals:
@@ -42,6 +49,8 @@ def build(db: Session, clock: Clock, actor: Actor) -> ReportSummary:
             )
             for r in repo.by_board_member(db, actor, start=year_start, end=end)
         ],
+        top_donors=[TopDonor(**r) for r in repo.top_donors(db, actor, start=year_start, end=end)],
+        top_gifts=[TopGift(**r) for r in repo.top_gifts(db, actor, start=year_start, end=end)],
         open_reminders=0,
         unattributed_gifts=repo.unattributed_count(db, actor),
     )
