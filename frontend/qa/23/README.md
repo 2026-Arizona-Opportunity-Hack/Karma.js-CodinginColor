@@ -44,4 +44,4 @@ Inspected actual screenshots at 390×844, 768×1024, 1440×900 and 720×450. The
 - [Validation error](mobile-validation.png), [connection error](mobile-error.png), [saved state](mobile-success.png)
 - [Long donor name](mobile-long-name.png), [restricted donor](mobile-restricted.png), [small-height / zoom-equivalent layout](zoom-contact.png)
 
-This cohesive issue implementation plus browser coverage exceeds the repository's approximate 400-line PR preference. Size-exception approval is still needed before preparing a PR. ENGINEERING §7 also requires human approval before pushing or creating a PR. Neither action has been taken.
+This cohesive issue implementation plus browser coverage exceeds the repository's approximate 400-line PR preference. The human approved the size exception, pushing, and PR creation after reviewing commit `4682975`, the checks, and screenshots, and requested no repetitive tests. This approval satisfies ENGINEERING §7 and the Stewardship Ledger skill §0.3.
