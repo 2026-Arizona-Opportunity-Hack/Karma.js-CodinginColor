@@ -4,7 +4,7 @@ from typing import Annotated
 
 from fastapi import Query, Response
 
-from app.routes.deps import DB, CurrentDep
+from app.routes.deps import DB, ClockDep, CurrentDep
 from app.routes.stubs import session_router, todo
 from app.schemas.common import ErrorOut, MessageStatus
 from app.schemas.messages import (
@@ -16,6 +16,7 @@ from app.schemas.messages import (
     MessageUpdate,
 )
 from app.services.messaging import service as messaging
+from app.services.messaging import workflow
 
 router = session_router("messages")
 CONFLICT: dict[int | str, dict[str, object]] = {
@@ -47,13 +48,15 @@ def list_messages(
 
 
 @router.patch("/messages/{message_id}", responses=CONFLICT)
-def edit_message(message_id: int, body: MessageUpdate) -> MessageOut:
-    todo("lane C, phase 3")
+def edit_message(message_id: int, body: MessageUpdate, cur: CurrentDep, db: DB) -> MessageOut:
+    """An edit returns an approved message to draft and clears the approval (MSG-3)."""
+    return workflow.edit(db, cur.actor, message_id, body)
 
 
 @router.post("/messages/{message_id}/approve", responses=CONFLICT)
-def approve_message(message_id: int) -> MessageOut:
-    todo("lane C, phase 3")
+def approve_message(message_id: int, cur: CurrentDep, db: DB, clock: ClockDep) -> MessageOut:
+    """Only a draft; records who and when and fixes the hash of the words (MSG-4)."""
+    return workflow.approve(db, cur.actor, message_id, at=clock.now())
 
 
 @router.post("/messages/{message_id}/send", responses=CONFLICT)
@@ -69,8 +72,8 @@ def mark_sent(message_id: int) -> MessageOut:
 
 
 @router.post("/messages/{message_id}/cancel", responses=CONFLICT)
-def cancel_message(message_id: int) -> MessageOut:
-    todo("lane C, phase 3")
+def cancel_message(message_id: int, cur: CurrentDep, db: DB) -> MessageOut:
+    return workflow.cancel(db, cur.actor, message_id)
 
 
 @router.post("/digest/send")

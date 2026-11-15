@@ -100,3 +100,16 @@ def list_for(db: Session, actor: Actor, status: str | None, limit: int = 200) ->
 
 def donor_name(db: Session, donor_id: int) -> str:
     return db.execute(select(Donor.display_name).where(Donor.id == donor_id)).scalar_one()
+
+
+def message_to_act_on(db: Session, actor: Actor, message_id: int) -> tuple[Message, Donor]:
+    """Lock the message row, so two clicks on it cannot both move it (MSG-3)."""
+    msg = db.execute(
+        select(Message).where(Message.id == message_id).with_for_update()
+    ).scalar_one_or_none()
+    donor = db.get(Donor, msg.donor_id) if msg else None
+    if msg is None or donor is None or donor.deleted_at is not None:
+        raise NotFound("Message not found.")
+    if not can(actor, Action.DONOR_ACT, donor):
+        raise Forbidden("Only the donor's owner can do this.")
+    return msg, donor
