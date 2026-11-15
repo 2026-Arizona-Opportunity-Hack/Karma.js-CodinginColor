@@ -16,6 +16,7 @@ import { Link, NavLink, Navigate, Outlet, useLocation } from "react-router-dom";
 
 import { useLogout, useMe } from "../hooks/useAuth";
 import { initials } from "../lib/format";
+import { Assistant } from "./Assistant";
 import { ErrorState } from "./Workspace";
 
 export const NAV = [
@@ -119,6 +120,7 @@ export function Layout() {
       <main id="main" tabIndex={-1} className="app-workspace">
         <Outlet />
       </main>
+      <Assistant />
     </div>
   );
 }
