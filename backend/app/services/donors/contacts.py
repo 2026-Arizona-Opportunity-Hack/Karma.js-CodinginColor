@@ -6,8 +6,8 @@ from app.authz.actor import Actor
 from app.clock import Clock, today
 from app.db.models import Interaction, NextStep
 from app.errors import Invalid
+from app.repos import audit, users
 from app.repos import relationship as repo
-from app.repos import users
 from app.schemas.common import MemberRef
 from app.schemas.donors import InteractionCreate, InteractionOut, NextStepIn, NextStepOut
 
@@ -47,13 +47,27 @@ def log_interaction(
     row = repo.add_interaction(
         db, actor, donor_id, kind=body.kind, summary=body.summary, occurred_on=occurred_on
     )
+    # Ids and kind only: summaries are free text and may hold personal details.
+    audit.write(
+        db, actor, "interaction.create", entity="interaction", entity_id=row.id,
+        data={"donor_id": donor_id, "kind": row.kind},
+    )  # fmt: skip
     return _interaction(db, row)
 
 
 def set_next_step(db: Session, actor: Actor, donor_id: int, body: NextStepIn) -> NextStepOut:
-    return _step(repo.set_next_step(db, actor, donor_id, title=body.title, due_date=body.due_date))
+    step = repo.set_next_step(db, actor, donor_id, title=body.title, due_date=body.due_date)
+    audit.write(
+        db, actor, "next_step.set", entity="next_step", entity_id=step.id,
+        data={"donor_id": donor_id},
+    )  # fmt: skip
+    return _step(step)
 
 
 def complete_next_step(db: Session, clock: Clock, actor: Actor, step_id: int) -> NextStepOut:
     step, _ = repo.complete_next_step(db, actor, step_id, today=today(clock), at=clock.now())
+    audit.write(
+        db, actor, "next_step.done", entity="next_step", entity_id=step.id,
+        data={"donor_id": step.donor_id},
+    )  # fmt: skip
     return _step(step)

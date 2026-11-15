@@ -29,7 +29,9 @@ def new_key() -> str:
     return KEY_PREFIX + secrets.token_urlsafe(32)
 
 
-def create(db: Session, actor: Actor, *, name: str, scopes: list[str]) -> CreatedKey:
+def create(
+    db: Session, actor: Actor, *, name: str, scopes: list[str], created_by: int | None = None
+) -> CreatedKey:
     key = new_key()
     row = apikeys.create(
         db,
@@ -38,6 +40,7 @@ def create(db: Session, actor: Actor, *, name: str, scopes: list[str]) -> Create
         prefix=key[:PREFIX_SHOWN],
         key_hash=sha256_hex(key),
         scopes=sorted(set(scopes)),
+        created_by=created_by,
     )
     audit.write(db, actor, "apikey.create", entity="api_key", entity_id=row.id, data={"name": name})
     return CreatedKey(row=row, key=key)
