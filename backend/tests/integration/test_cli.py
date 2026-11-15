@@ -105,5 +105,6 @@ def test_reset_demo_wipes_and_seeds(db: Session, members_file, monkeypatch) -> N
     finally:
         get_settings.cache_clear()
     emails = set(db.execute(select(User.email)).scalars())
+    assert "demo.reset" in actions(db)
     assert emails == {"diana@demo.cic.test", "marcus@demo.cic.test", "priya@demo.cic.test"}
     assert gov(db) == (None, "none", "anyone")
