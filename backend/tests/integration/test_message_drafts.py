@@ -148,7 +148,7 @@ def test_no_thank_you_draft_for_an_employer_match(db: Session, w) -> None:
         {"kind": "thank_you", "channel": "email"},  # no gift
         {"kind": "thank_you", "channel": "email", "gift_id": 999999},
         {"kind": "quarterly_update", "channel": "email", "gift_id": 1},
-        {"kind": "lapsed_nudge", "channel": "email"},
+        {"kind": "event_invite", "channel": "email"},
     ],
 )
 def test_bad_draft_requests_are_400(db: Session, w, body) -> None:
@@ -240,11 +240,12 @@ def test_drafting_writes_an_audit_entry_without_the_body(db: Session, w) -> None
 
 
 # --- templates --------------------------------------------------------------------------------
-def test_templates_list_the_four_built_in_ones_in_flat_mode(w) -> None:
+def test_templates_list_the_six_built_in_ones_in_flat_mode(w) -> None:
     r = login("sam.other@example.org").get("/api/app/templates")
     assert r.status_code == 200
     items = r.json()["items"]
     assert sorted((t["kind"], t["channel"]) for t in items) == [
+        ("lapsed_nudge", "email"), ("lapsed_nudge", "sms"),
         ("quarterly_update", "email"), ("quarterly_update", "sms"),
         ("thank_you", "email"), ("thank_you", "sms"),
     ]  # fmt: skip

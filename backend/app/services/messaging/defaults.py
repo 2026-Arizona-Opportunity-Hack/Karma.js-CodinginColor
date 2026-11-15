@@ -12,7 +12,7 @@ ORG_NAME = "Coding in Color"
 EDIT_MARKER = "[EDIT:"
 
 MERGE_FIELDS = ("first_name", "gift_amount", "gift_date", "program", "owner_name", "org_name")
-TEMPLATE_KINDS = ("thank_you", "quarterly_update")  # P0; lapsed_nudge and event_invite are later
+TEMPLATE_KINDS = ("thank_you", "quarterly_update", "lapsed_nudge")  # event_invite is later
 
 _FIELD = re.compile(r"\{(\w+)\}")
 
@@ -43,6 +43,20 @@ DEFAULTS: dict[tuple[str, str], tuple[str | None, str]] = {
         None,
         "Hi {first_name}, it's {owner_name} from {org_name}. "
         "[EDIT: one sentence of news] Thank you for being part of it.",
+    ),
+    ("lapsed_nudge", "email"): (
+        "We would love to see you again at {org_name}",
+        "Hi {first_name},\n\n"
+        "It has been a while since we last connected, and I wanted to say hello. Your past "
+        "support helped {org_name} open doors in tech for people who are too often left out "
+        "of it, and I would love to tell you what is happening now.\n\n"
+        "If you would like to catch up or visit, just reply to this email.\n\n"
+        "Warmly,\n{owner_name}\n{org_name}",
+    ),
+    ("lapsed_nudge", "sms"): (
+        None,
+        "Hi {first_name}, it's {owner_name} from {org_name}. We have missed you and would "
+        "love to share what your past support made possible. Free to catch up?",
     ),
 }
 

@@ -8,8 +8,9 @@ from fastapi import Query, Response
 from app.clock import today
 from app.routes.deps import DB, ClockDep, CurrentDep
 from app.routes.stubs import session_router, todo
+from app.schemas.messages import DraftBatchOut
 from app.schemas.reports import ReportSummary, RetentionReport
-from app.services.reports import retention, summary
+from app.services.reports import lapsed, retention, summary
 
 router = session_router("reports")
 
@@ -45,3 +46,17 @@ def funder_export(
     donor_id: int, format: Annotated[Literal["html", "csv"], Query()] = "html"
 ) -> Response:
     todo("lane A, phase 4")
+
+
+@router.get("/reports/lapsed")
+def report_lapsed(
+    cur: CurrentDep, db: DB, clock: ClockDep, as_of: Annotated[date | None, Query()] = None
+) -> lapsed.LapsedReport:
+    """Lapsed donors (RPT-2) per owner, without do-not-contact donors (MSG-8)."""
+    return lapsed.build(db, cur.actor, as_of=as_of or today(clock))
+
+
+@router.post("/reports/lapsed/draft")
+def draft_lapsed(cur: CurrentDep, db: DB, clock: ClockDep) -> DraftBatchOut:
+    """Draft a lapsed nudge for each of my lapsed donors. Idempotent (MSG-2); a human approves."""
+    return lapsed.draft_mine(db, clock, cur.actor)

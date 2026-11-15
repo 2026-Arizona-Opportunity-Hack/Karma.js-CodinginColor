@@ -70,7 +70,7 @@ def create_draft(
 ) -> tuple[MessageOut, bool]:
     """Returns the message and whether it is new. A second request returns the open draft."""
     if body.kind not in defaults.TEMPLATE_KINDS:
-        raise Invalid("Only thank-you and quarterly update messages exist so far.")
+        raise Invalid("Only thank-you, quarterly update and lapsed nudge messages exist so far.")
     donor = messages.donor_to_act_on(db, actor, donor_id)
     if donor.do_not_contact:
         raise Conflict("This donor is marked do not contact, so no message can be drafted.")
@@ -120,7 +120,9 @@ def list_templates(db: Session, actor: Actor) -> TemplateListOut:
 
 def put_template(db: Session, actor: Actor, body: TemplateIn) -> TemplateOut:
     if body.kind not in defaults.TEMPLATE_KINDS:
-        raise Invalid("Only thank-you and quarterly update templates can be edited so far.")
+        raise Invalid(
+            "Only thank-you, quarterly update and lapsed nudge templates can be edited so far."
+        )
     bad = defaults.unknown_fields(body.body + " " + (body.subject or ""))
     if bad:
         names = ", ".join("{" + b + "}" for b in bad)
