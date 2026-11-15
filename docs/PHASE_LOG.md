@@ -46,7 +46,7 @@
 **Known gaps:**
 - Stubs return 501 only, no fake data (the cut-list option); lane B builds against the generated types.
 - PR sizes over ~400 lines: #10 (686, ~200 generated migration), #64 (690, ~190 generated migration), #13 (1,852, mostly the four fixture files, the generator and its test), #14 (generated `types.ts` is 5,846 lines; handwritten about 1,100). Generated and data files are marked in `.gitattributes`.
-- File layouts for Zeffy's dashboard export and Benevity's report remain assumed. Zeffy's **API** is now documented from the OpenAPI document a teammate supplied (`docs/IMPORT_FORMATS.md` section 2b); the Benevity help pages refused automated reads (HTTP 403). Ask CIC for one real header row from the Zeffy dashboard export, Benevity and their donor spreadsheet.
+- Zeffy's **API** and Benevity's **disbursement report column names** are now documented from material a teammate supplied (`docs/IMPORT_FORMATS.md` sections 2b and 3). Still assumed: Zeffy's dashboard export layout, the exact header text, file type and date format of Benevity's export, and CIC's donor spreadsheet. Ask CIC for one real header row from each.
 - `/api/v1` (public read API) is not stubbed; lane C builds it from `docs/API.md` section 1.
 - Lane ownership of stub files: A has `app_donors.py`, `app_imports.py`, `app_members.py`, funder export and settings/programs; C has `app_messages.py`, templates, API keys, reports queries. Donor CRUD was not assigned in `PLAN.md`; the stubs assign it to lane A.
 - `GET /api/app/donors/{id}` and friends need `Owned` resources; the policy is in place, repositories that call it arrive with lane A.
