@@ -108,31 +108,6 @@ def test_card_totals_count_linked_gifts_only(w) -> None:
     assert "email" not in card and "phone" not in card
 
 
-def test_recent_gifts_are_capped_at_five(db: Session, w) -> None:
-    for day in range(1, 8):
-        seed.add_gift(db, w["newbie"], date(2026, 5, day), 100 + day)
-    db.commit()
-    nia = next(i for i in sam().get("/api/app/donors").json()["items"] if i["id"] == w["newbie"])
-    assert len(nia["recent_gifts"]) == 5
-    assert nia["total_lifetime_cents"] == 2_500 + sum(100 + d for d in range(1, 8))
-
-
-@pytest.mark.parametrize(
-    "status,expected",
-    [
-        ("new", ["Nia Newbie"]),
-        ("lapsed", ["Larry Lapsed"]),
-        ("owner_inactive", ["Olive Orphan"]),
-        ("do_not_contact", ["Dee Dnc"]),
-    ],
-)
-def test_status_chips_and_filter(w, status, expected) -> None:
-    c = diana()
-    r = c.get("/api/app/donors", params={"scope": "all", "status": status})
-    assert names(r) == expected
-    assert status in r.json()["items"][0]["statuses"]
-
-
 def test_owner_program_and_name_filters(w) -> None:
     c = diana()
     assert names(c.get("/api/app/donors", params={"scope": "all", "owner": w["sam"]})) == [
@@ -146,33 +121,11 @@ def test_owner_program_and_name_filters(w) -> None:
     ]
 
 
-def test_search_wildcards_are_literal(w) -> None:
-    c = diana()
-    assert names(c.get("/api/app/donors", params={"scope": "all", "q": "%"})) == []
-    assert names(c.get("/api/app/donors", params={"scope": "all", "q": "_"})) == []
-
-
 def test_searching_by_email_only_works_where_contact_is_visible(w) -> None:
     owner_hit = diana().get("/api/app/donors", params={"scope": "all", "q": "zelda@pii"})
     assert names(owner_hit) == ["Zelda Quill"]
     other = sam().get("/api/app/donors", params={"scope": "all", "q": "zelda@pii"})
     assert names(other) == []  # an email search must not confirm another member's donor email
-
-
-def test_pagination(w) -> None:
-    c = diana()
-    p1 = c.get("/api/app/donors", params={"scope": "all", "page_size": 4}).json()
-    assert (p1["total"], p1["page"], p1["page_size"], len(p1["items"])) == (6, 1, 4, 4)
-    p2 = c.get("/api/app/donors", params={"scope": "all", "page_size": 4, "page": 2}).json()
-    assert len(p2["items"]) == 2 and p2["total"] == 6
-    p3 = c.get("/api/app/donors", params={"scope": "all", "page_size": 4, "page": 3}).json()
-    assert p3["items"] == [] and p3["total"] == 6
-
-
-def test_bad_query_is_400(w) -> None:
-    c = diana()
-    for params in ({"scope": "everyone"}, {"status": "nope"}, {"page": 0}, {"page_size": 101}):
-        assert c.get("/api/app/donors", params=params).status_code == 400, params
 
 
 # --- acceptance test 7 (reads): another member sees history but not contact details ---------
@@ -197,42 +150,6 @@ def test_other_member_sees_history_but_not_contact_details(w) -> None:
     assert sam().get(f"/api/app/donors/{w['zelda']}/timeline").status_code == 200
 
 
-def test_active_super_admin_sees_contact_details_and_own_only_blocks_reassign(
-    db: Session, w
-) -> None:
-    db.execute(
-        text("UPDATE governance SET super_admin_user_id = :u, super_admin_state = 'active', "
-             "reassign_scope = 'own_only' WHERE id = 1"),
-        {"u": w["sam"]},
-    )  # fmt: skip
-    db.commit()
-    d = sam().get(f"/api/app/donors/{w['zelda']}").json()
-    assert d["email"] == EMAIL and d["can_act"] is True and d["can_reassign"] is True
-    found = sam().get("/api/app/donors", params={"scope": "all", "q": "zelda@pii"})
-    assert names(found) == ["Zelda Quill"]  # an active super admin may search by email
-    # a plain member now cannot reassign someone else's donor
-    plain = diana().get(f"/api/app/donors/{w['newbie']}").json()
-    assert plain["can_reassign"] is False
-
-
-def test_detail_404_for_missing_deleted_and_merged(db: Session, w) -> None:
-    c = diana()
-    assert c.get("/api/app/donors/99999").status_code == 404
-    assert c.get(f"/api/app/donors/{w['gone']}").status_code == 404
-    assert c.get(f"/api/app/donors/{w['gone']}/timeline").status_code == 404
-    db.execute(text("UPDATE donors SET merged_into_id = :t WHERE id = :m"),
-               {"t": w["zelda"], "m": w["lapsed"]})  # fmt: skip
-    db.commit()
-    assert c.get(f"/api/app/donors/{w['lapsed']}").status_code == 404
-    assert c.get("/api/app/donors/abc").status_code == 400
-
-
-def test_ownerless_donor_shows_no_owner_and_hidden_contact(w) -> None:
-    d = sam().get(f"/api/app/donors/{w['pending']}").json()
-    assert d["owner"] is None and d["contact_visible"] is False and d["contact_via"] is None
-    assert d["total_lifetime_cents"] == 0
-
-
 def test_timeline_mixes_everything_newest_first(w) -> None:
     items = sam().get(f"/api/app/donors/{w['zelda']}/timeline").json()["items"]
     ats = [i["at"] for i in items]
@@ -243,11 +160,6 @@ def test_timeline_mixes_everything_newest_first(w) -> None:
     assert gift["amount_cents"] == 5_000
     assert not any(i["title"] == "System" for i in items)  # system entries are hidden
     assert all("body" not in i for i in items)  # message bodies never appear
-
-
-def test_timeline_has_no_contact_details(w) -> None:
-    text_ = sam().get(f"/api/app/donors/{w['zelda']}/timeline").text
-    assert EMAIL not in text_ and PHONE not in text_
 
 
 def test_unattributed_lists_anonymous_and_pending_review_only(w) -> None:

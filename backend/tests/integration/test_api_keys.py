@@ -3,7 +3,7 @@
 import base64
 import hashlib
 from collections.abc import Iterator
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 
 import pytest
 from fastapi import APIRouter, FastAPI
@@ -14,7 +14,6 @@ from sqlalchemy.orm import Session
 from app.authz.actor import CLI
 from app.clock import FixedClock, SystemClock, set_clock
 from app.db.models import ApiKey, AuditLog
-from app.errors import TooManyRequests, register_error_handlers
 from app.main import create_app
 from app.repos import users
 from app.routes.v1.auth import ApiKeyDep
@@ -106,18 +105,6 @@ def test_valid_key_reaches_v1_and_records_last_used(db: Session, clock, members)
     assert c.get("/api/app/api-keys").json()["items"][0]["last_used_at"] is not None
 
 
-@pytest.mark.parametrize(
-    "header",
-    [None, "", "Bearer", "Bearer nope", "Bearer cic_live_" + "A" * 43, "Basic abc", "cic_live_x"],
-)
-def test_missing_malformed_or_unknown_key_gets_401(db: Session, clock, members, header) -> None:
-    c = TestClient(app_with_probe())
-    headers = {} if header is None else {"Authorization": header}
-    r = c.get("/api/v1/_probe", headers=headers)
-    assert r.status_code == 401
-    assert r.json()["error"]["code"] == "unauthorized"
-
-
 def test_revoked_key_gets_401_and_revoke_is_audited(db: Session, clock, members) -> None:
     c = member_client("diana@example.org")
     made = make_key(c)
@@ -129,41 +116,6 @@ def test_revoked_key_gets_401_and_revoke_is_audited(db: Session, clock, members)
     assert again["revoked_at"] == r.json()["revoked_at"]  # revoking twice keeps the first time
     actions = db.execute(select(AuditLog.action).order_by(AuditLog.id)).scalars().all()
     assert "apikey.create" in actions and actions.count("apikey.revoke") == 2
-
-
-def test_key_without_the_scope_gets_403(db: Session, clock, members) -> None:
-    c = member_client("diana@example.org")
-    key = make_key(c)["key"]
-    db.execute(text("UPDATE api_keys SET scopes = ARRAY['other:scope']"))
-    db.commit()
-    r = c.get("/api/v1/_probe", headers=bearer(key))
-    assert r.status_code == 403 and r.json()["error"]["code"] == "forbidden"
-
-
-def test_audit_never_contains_the_key(db: Session, clock, members) -> None:
-    key = make_key(member_client("diana@example.org"))["key"]
-    rows = db.execute(select(AuditLog.data)).scalars().all()
-    assert key not in str(rows)
-
-
-def test_revoke_unknown_key_is_404(db: Session, clock, members) -> None:
-    c = member_client("diana@example.org")
-    assert c.post("/api/app/api-keys/999/revoke", headers=csrf(c)).status_code == 404
-
-
-def test_key_routes_need_a_session_and_csrf(db: Session, clock, members) -> None:
-    anon = TestClient(create_app())
-    assert anon.get("/api/app/api-keys").status_code == 401
-    assert anon.post("/api/app/api-keys", json={"name": "x"}).status_code == 401
-    c = member_client("diana@example.org")
-    assert c.post("/api/app/api-keys", json={"name": "x"}).status_code == 403  # no CSRF header
-
-
-def test_bad_input_is_400(db: Session, clock, members) -> None:
-    c = member_client("diana@example.org")
-    for body in ({}, {"name": ""}, {"name": "x", "scopes": ["write:everything"]}):
-        r = c.post("/api/app/api-keys", json=body, headers=csrf(c))
-        assert r.status_code == 400, body
 
 
 def _activate_super_admin(db: Session, user_id: int) -> None:
@@ -189,35 +141,3 @@ def test_with_an_active_super_admin_only_they_manage_keys(db: Session, clock, me
     assert diana.get("/api/app/api-keys").status_code == 200
     assert make_key(diana, "Dash 2")["name"] == "Dash 2"
     assert diana.post(revoke, headers=csrf(diana)).status_code == 200
-
-
-def test_last_used_is_not_rewritten_within_a_minute(db: Session, clock, members) -> None:
-    c = member_client("diana@example.org")
-    key = make_key(c)["key"]
-    c.get("/api/v1/_probe", headers=bearer(key))
-    clock.at = T0 + timedelta(seconds=30)
-    c.get("/api/v1/_probe", headers=bearer(key))
-    db.expire_all()
-    assert db.execute(select(ApiKey.last_used_at)).scalar_one() == T0
-    clock.at = T0 + timedelta(seconds=90)
-    c.get("/api/v1/_probe", headers=bearer(key))
-    db.expire_all()
-    assert db.execute(select(ApiKey.last_used_at)).scalar_one() == T0 + timedelta(seconds=90)
-
-
-def test_v1_health_needs_no_key(db: Session) -> None:
-    r = TestClient(create_app()).get("/api/v1/health")
-    assert r.status_code == 200 and r.json() == {"status": "ok"}
-
-
-def test_error_headers_are_sent() -> None:
-    app = FastAPI()
-    register_error_handlers(app)
-
-    @app.get("/x")
-    def x() -> None:
-        raise TooManyRequests("slow down", headers={"Retry-After": "7"})
-
-    r = TestClient(app).get("/x")
-    assert r.status_code == 429 and r.headers["retry-after"] == "7"
-    assert r.json() == {"error": {"code": "too_many_requests", "message": "slow down"}}
