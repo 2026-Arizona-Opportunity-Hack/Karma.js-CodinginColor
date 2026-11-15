@@ -104,6 +104,7 @@ def _truncate_all(conn: Connection) -> None:
             "('Day of Compute','day-of-compute'),('General','general')"
         )
     )
+    _reseed_fields(conn)
 
 
 @pytest.fixture
@@ -119,3 +120,26 @@ def db(migrated: None) -> Iterator[Session]:
         yield session
     finally:
         session.close()
+
+
+def _reseed_fields(conn: Connection) -> None:
+    """The built-in field definitions come from migration 0006 and return after every wipe."""
+    import importlib.util
+
+    path = BACKEND / "alembic" / "versions" / "0006_field_definitions.py"
+    spec = importlib.util.spec_from_file_location("migration_0006", path)
+    assert spec and spec.loader
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    order: dict[str, int] = {}
+    for entity, key, label, ftype, choices, required, contact, listed in mod.BUILTINS:
+        order[entity] = order.get(entity, 0) + 10
+        conn.execute(
+            text(
+                "INSERT INTO field_definitions (entity, key, label, type, choices, is_builtin,"
+                " is_required, is_contact, show_in_list, position) VALUES (:e, :k, :l, :t, :c,"
+                " true, :r, :ct, :s, :p)"
+            ),
+            dict(e=entity, k=key, l=label, t=ftype, c=choices, r=required, ct=contact,
+                 s=listed, p=order[entity]),
+        )  # fmt: skip

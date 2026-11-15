@@ -1,6 +1,7 @@
 """Import every model module here so Alembic and tests see all tables."""
 
 from app.db.models.donors import Donor, DonorIdentity, OwnerHistory
+from app.db.models.fields import FieldDefinition
 from app.db.models.gifts import Gift, ImportBatch, Program, ProgramOutcome, SourceProgramMap
 from app.db.models.imports import ImportRow, MatchReview
 from app.db.models.people import (
@@ -28,6 +29,7 @@ __all__ = [
     "DigestRun",
     "Donor",
     "DonorIdentity",
+    "FieldDefinition",
     "Gift",
     "Governance",
     "ImportBatch",
