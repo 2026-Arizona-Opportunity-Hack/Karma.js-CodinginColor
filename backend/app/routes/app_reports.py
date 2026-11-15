@@ -5,23 +5,30 @@ from typing import Annotated, Literal
 
 from fastapi import Query, Response
 
+from app.clock import today
+from app.routes.deps import DB, ClockDep, CurrentDep
 from app.routes.stubs import session_router, todo
 from app.schemas.reports import ReportSummary, RetentionReport
+from app.services.reports import retention, summary
 
 router = session_router("reports")
 
 
 @router.get("/reports/summary")
-def report_summary() -> ReportSummary:
-    todo("lane C, phase 2")
+def report_summary(cur: CurrentDep, db: DB, clock: ClockDep) -> ReportSummary:
+    return summary.build(db, clock, cur.actor)
 
 
 @router.get("/reports/retention")
 def report_retention(
+    cur: CurrentDep,
+    db: DB,
+    clock: ClockDep,
     as_of: Annotated[date | None, Query()] = None,
     basis: Annotated[Literal["rolling", "calendar"], Query()] = "rolling",
 ) -> RetentionReport:
-    todo("lane C, phase 2")
+    result = retention.build(db, cur.actor, as_of=as_of or today(clock), basis=basis)
+    return retention.to_app_report(result)
 
 
 @router.get(
