@@ -21,12 +21,13 @@ from app.db.models import (
 )
 from app.errors import Conflict, Forbidden, Invalid, NotFound
 from app.repos import audit
+from app.repos.ownership import AssignmentAction
 from app.services.dedupe.resolver import fingerprint, fingerprints, identity_keys
 from app.services.ingest.adapters import IncomingDonor
 
 
-def require(actor: Actor) -> None:
-    if not policy.can(actor, "review.decide"):
+def require(actor: Actor, action: AssignmentAction = "review.decide") -> None:
+    if not policy.can(actor, action):
         raise Forbidden("You cannot decide donor identity reviews.")
 
 
@@ -44,8 +45,10 @@ def get_review(db: Session, actor: Actor, review_id: int) -> MatchReview:
     return review
 
 
-def active_donor(db: Session, actor: Actor, donor_id: int) -> Donor:
-    require(actor)
+def active_donor(
+    db: Session, actor: Actor, donor_id: int, *, action: AssignmentAction = "review.decide"
+) -> Donor:
+    require(actor, action)
     donor = db.scalar(
         select(Donor)
         .where(Donor.id == donor_id, Donor.deleted_at.is_(None), Donor.merged_into_id.is_(None))
@@ -56,8 +59,15 @@ def active_donor(db: Session, actor: Actor, donor_id: int) -> Donor:
     return donor
 
 
-def create_donor(db: Session, actor: Actor, incoming: IncomingDonor, at: datetime) -> Donor:
-    require(actor)
+def create_donor(
+    db: Session,
+    actor: Actor,
+    incoming: IncomingDonor,
+    at: datetime,
+    *,
+    action: AssignmentAction = "review.decide",
+) -> Donor:
+    require(actor, action)
     if not (incoming.display_name or incoming.email):
         raise Invalid("A donor name or email is required to create a donor.")
     donor = Donor(
@@ -79,9 +89,16 @@ def create_donor(db: Session, actor: Actor, incoming: IncomingDonor, at: datetim
 
 
 def learn(
-    db: Session, actor: Actor, donor: Donor, incoming: IncomingDonor, source: str, *, at: datetime
+    db: Session,
+    actor: Actor,
+    donor: Donor,
+    incoming: IncomingDonor,
+    source: str,
+    *,
+    at: datetime,
+    action: AssignmentAction = "review.decide",
 ) -> None:
-    require(actor)
+    require(actor, action)
     for kind, value in identity_keys(incoming):
         target = donor.id
         if kind in ("email", "phone"):
@@ -224,6 +241,8 @@ def apply_decision(
         gift.assumed_thanked = gift.assumed_thanked or gift.gift_date < cutoff
     if row:
         row.donor_id = donor.id if donor else None
+        if decision == "create_new" and donor:
+            row.normalized = (row.normalized or {}) | {"_created_donor_id": donor.id}
     if donor:
         learn(db, actor, donor, incoming, batch.source if batch else "review", at=at)
     review.incoming = review.incoming | {

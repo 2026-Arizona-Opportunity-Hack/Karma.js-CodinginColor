@@ -58,6 +58,8 @@ EXPECTED = {
     ("POST", "/api/app/demo/reset"),
 }  # fmt: skip
 IMPLEMENTED = {
+    ("GET", "/api/app/imports"), ("GET", "/api/app/imports/{}"),
+    ("POST", "/api/app/imports/{}/commit"), ("POST", "/api/app/imports/{}/reverse"),  # lane A, #18
     ("GET", "/api/app/reviews"), ("POST", "/api/app/reviews/{}/decide"),  # lane A, issue #17
     ("POST", "/api/app/imports/preview"),  # lane A, issue #16
     ("POST", "/api/app/auth/login"), ("POST", "/api/app/auth/logout"),
