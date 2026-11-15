@@ -2,8 +2,9 @@
 
 from typing import Annotated
 
-from fastapi import Query
+from fastapi import Query, Response
 
+from app.routes.deps import DB, CurrentDep
 from app.routes.stubs import session_router, todo
 from app.schemas.common import ErrorOut, MessageStatus
 from app.schemas.messages import (
@@ -14,6 +15,7 @@ from app.schemas.messages import (
     MessageOut,
     MessageUpdate,
 )
+from app.services.messaging import service as messaging
 
 router = session_router("messages")
 CONFLICT: dict[int | str, dict[str, object]] = {
@@ -22,8 +24,13 @@ CONFLICT: dict[int | str, dict[str, object]] = {
 
 
 @router.post("/donors/{donor_id}/messages", status_code=201)
-def create_draft(donor_id: int, body: MessageCreate) -> MessageOut:
-    todo("lane C, phase 3")
+def create_draft(
+    donor_id: int, body: MessageCreate, cur: CurrentDep, db: DB, response: Response
+) -> MessageOut:
+    """Idempotent: asking again returns the open draft with 200 instead of 201 (MSG-2)."""
+    out, created = messaging.create_draft(db, cur.actor, donor_id, body)
+    response.status_code = 201 if created else 200
+    return out
 
 
 @router.post("/messages/draft-quarterly")
@@ -33,8 +40,10 @@ def draft_quarterly() -> DraftBatchOut:
 
 
 @router.get("/messages")
-def list_messages(status: Annotated[MessageStatus | None, Query()] = None) -> MessageListOut:
-    todo("lane C, phase 3")
+def list_messages(
+    cur: CurrentDep, db: DB, status: Annotated[MessageStatus | None, Query()] = None
+) -> MessageListOut:
+    return messaging.list_messages(db, cur.actor, status)
 
 
 @router.patch("/messages/{message_id}", responses=CONFLICT)

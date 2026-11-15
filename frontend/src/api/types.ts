@@ -262,7 +262,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Create Draft */
+        /**
+         * Create Draft
+         * @description Idempotent: asking again returns the open draft with 200 instead of 201 (MSG-2).
+         */
         post: operations["create_draft_api_app_donors__donor_id__messages_post"];
         delete?: never;
         options?: never;
