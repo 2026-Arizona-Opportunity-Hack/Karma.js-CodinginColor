@@ -2,6 +2,7 @@ import { ArrowUpRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
+import { Bars, ChartTile, type Datum, Donut, seriesColor, Toggle } from "../components/Charts";
 import { ErrorState, LoadingLedger, PageMasthead } from "../components/Workspace";
 import { type Retention, type Summary, useReportSummary, useRetention } from "../hooks/useReports";
 import { calendarDate, dollars } from "../lib/format";
@@ -24,7 +25,108 @@ function movement(cents: number) {
   return `${cents > 0 ? "+" : "−"}${dollars(Math.abs(cents))}`;
 }
 
+const count = (n: number) => n.toLocaleString();
+
+// Keep at most eight colors; anything past seven programs folds into "Other".
+function programData(s: Summary, metric: "gross_cents" | "gift_count"): Datum[] {
+  const rows = s.by_program.map((p, i) => ({
+    key: p.program,
+    label: p.program,
+    value: p[metric],
+    color: seriesColor(i),
+    detail: `${p.gift_count} gifts · ${dollars(p.gross_cents)}`,
+  }));
+  if (rows.length <= 8) return rows;
+  const rest = rows.slice(7);
+  return [
+    ...rows.slice(0, 7),
+    {
+      key: "__other",
+      label: `Other (${rest.length})`,
+      value: rest.reduce((t, d) => t + d.value, 0),
+      color: seriesColor(7),
+    },
+  ];
+}
+
+type MemberMetric = "gross_cents" | "donors_owned" | "open_reminders";
+
+function SummaryCharts({
+  s,
+  program,
+  setProgram,
+  member,
+  setMember,
+}: {
+  s: Summary;
+  program: string | null;
+  setProgram: (k: string | null) => void;
+  member: string | null;
+  setMember: (k: string | null) => void;
+}) {
+  const [pMetric, setPMetric] = useState<"gross_cents" | "gift_count">("gross_cents");
+  const [mMetric, setMMetric] = useState<MemberMetric>("gross_cents");
+  const members: Datum[] = s.by_board_member.map((b) => ({
+    key: String(b.member.id),
+    label: b.member.display_name + (b.member.is_active ? "" : " (inactive)"),
+    value: b[mMetric],
+    color: "var(--color-forest)",
+    detail: `${b.donors_owned} donors · ${dollars(b.gross_cents)} · ${b.open_reminders} reminders`,
+  }));
+  return (
+    <div className="dash-grid">
+      <ChartTile
+        title="Giving by program"
+        note="Last 12 months · click a slice to highlight"
+        controls={
+          <Toggle
+            label="Program measure"
+            value={pMetric}
+            onChange={setPMetric}
+            options={[
+              ["gross_cents", "Total"],
+              ["gift_count", "Gifts"],
+            ]}
+          />
+        }
+      >
+        <Donut
+          data={programData(s, pMetric)}
+          format={pMetric === "gross_cents" ? dollars : count}
+          selected={program}
+          onSelect={setProgram}
+        />
+      </ChartTile>
+      <ChartTile
+        title="Board members"
+        note="Donors they steward · click a bar to highlight"
+        controls={
+          <Toggle
+            label="Board member measure"
+            value={mMetric}
+            onChange={setMMetric}
+            options={[
+              ["gross_cents", "Giving"],
+              ["donors_owned", "Donors"],
+              ["open_reminders", "Reminders"],
+            ]}
+          />
+        }
+      >
+        <Bars
+          data={members}
+          format={mMetric === "gross_cents" ? dollars : count}
+          selected={member}
+          onSelect={setMember}
+        />
+      </ChartTile>
+    </div>
+  );
+}
+
 function SummarySection({ s }: { s: Summary }) {
+  const [program, setProgram] = useState<string | null>(null);
+  const [member, setMember] = useState<string | null>(null);
   const periods = [
     ["This month", s.this_month],
     ["This quarter", s.this_quarter],
@@ -63,6 +165,13 @@ function SummarySection({ s }: { s: Summary }) {
           <ArrowUpRight size={14} aria-hidden="true" />
         </Link>
       </p>
+      <SummaryCharts
+        s={s}
+        program={program}
+        setProgram={setProgram}
+        member={member}
+        setMember={setMember}
+      />
       <div className="report-tables">
         <table className="report-table">
           <caption>By program, last 12 months</caption>
@@ -76,7 +185,7 @@ function SummarySection({ s }: { s: Summary }) {
           <tbody>
             {s.by_program.length ? (
               s.by_program.map((p) => (
-                <tr key={p.program}>
+                <tr key={p.program} className={program === p.program ? "is-selected" : undefined}>
                   <th scope="row">{p.program}</th>
                   <td className="numeric">{p.gift_count}</td>
                   <td className="numeric">{dollars(p.gross_cents)}</td>
@@ -101,7 +210,10 @@ function SummarySection({ s }: { s: Summary }) {
           </thead>
           <tbody>
             {s.by_board_member.map((b) => (
-              <tr key={b.member.id}>
+              <tr
+                key={b.member.id}
+                className={member === String(b.member.id) ? "is-selected" : undefined}
+              >
                 <th scope="row">
                   {b.member.display_name}
                   {!b.member.is_active && <small> · inactive</small>}
@@ -121,8 +233,18 @@ function SummarySection({ s }: { s: Summary }) {
 function RetentionSection() {
   const [basis, setBasis] = useState<Retention["basis"]>("rolling");
   const [asOf, setAsOf] = useState("");
+  const [picked, setPicked] = useState<string | null>(null);
   const query = useRetention(basis, asOf);
   const r = query.data;
+  const classData = (field: "donors" | "cents_cur"): Datum[] =>
+    CLASSES.map(([c, label, help], i) => ({
+      key: String(c),
+      label,
+      value: (r?.classes[c] ?? NONE)[field],
+      color: seriesColor(i),
+      detail: help,
+    }));
+  const pick = setPicked;
   const most = r ? Math.max(1, ...CLASSES.map(([c]) => (r.classes[c] ?? NONE).donors)) : 1;
   return (
     <section
@@ -157,13 +279,36 @@ function RetentionSection() {
         <ErrorState error={query.error} retry={() => void query.refetch()} />
       ) : (
         <>
+          <div className="dash-grid retention-charts">
+            <ChartTile title="Donors by group" note="Click a slice to open that group below">
+              <Donut data={classData("donors")} format={count} selected={picked} onSelect={pick} />
+            </ChartTile>
+            <ChartTile
+              title="Giving this period by group"
+              note="Shares the selection with the donut"
+            >
+              <Bars
+                data={classData("cents_cur")}
+                format={dollars}
+                selected={picked}
+                onSelect={pick}
+              />
+            </ChartTile>
+          </div>
           <ol className="retention-ledger">
             {CLASSES.map(([c, label, help]) => {
               const k = r!.classes[c] ?? NONE;
               const donors = r!.donors[c] ?? [];
               return (
-                <li key={c}>
-                  <details>
+                <li key={c} className={picked === String(c) ? "is-selected" : undefined}>
+                  <details
+                    open={picked === String(c)}
+                    onToggle={(e) => {
+                      const open = e.currentTarget.open;
+                      if (open && picked !== String(c)) setPicked(String(c));
+                      if (!open && picked === String(c)) setPicked(null);
+                    }}
+                  >
                     <summary>
                       <span className="retention-name">
                         <strong>{label}</strong>
