@@ -81,9 +81,9 @@ demo link. The README is part of the submission.
 
 Everything above this section is the organizers' agreement and wins on any conflict.
 
-We are building **CIC Compass**, a donor stewardship app for Coding in Color (Problem 2). Before any work, read in order: `docs/ENGINEERING.md` (agent rules and code standards), `docs/SRS.md`, `docs/DATA_MODEL.md`, `docs/API.md`, `docs/PLAN.md`, `docs/DECISIONS.md`, `docs/PHASE_LOG.md`.
+We are building **CIC Compass**, a donor stewardship app for Coding in Color (Problem 2). Before any work, read in order: `docs/ENGINEERING.md` (agent rules and code standards), `docs/SRS.md`, `docs/DATA_MODEL.md`, `docs/API.md`, `docs/PLAN.md`, `docs/DECISIONS.md`, `docs/PHASE_LOG.md`, and for any UI or copy `docs/BRAND.md` and `docs/CIC_CONTEXT.md`.
 
 - Work is driven by phases: the human says `Run Phase N` (optionally `lane A|B|C`), you follow `.claude/skills/phase-runner/SKILL.md`, then stop. `Review Phase N` follows `.claude/skills/phase-review/SKILL.md` and changes no code.
-- Stack: FastAPI + PostgreSQL + React/Vite. Synthetic data only. The system drafts donor messages; a human approves and sends every one.
+- Stack: FastAPI + PostgreSQL + React/Vite. Synthetic data only. The system drafts donor messages; a human approves and sends every one, unless CIC turns on the auto thank-you setting (MSG-9, off by default).
 - Each task is a GitHub Issue; each PR closes one issue and stays under ~400 changed lines.
 

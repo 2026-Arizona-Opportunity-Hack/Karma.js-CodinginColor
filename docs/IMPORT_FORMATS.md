@@ -21,6 +21,10 @@
 
 ## Shared rules for every adapter
 
+- **Duplicate headers** are numbered left to right (`Notes`, `Notes 2`) instead of rejecting the file. Fully blank rows and blank header columns are skipped.
+- **Dates with a time part** (`MM/DD/YYYY, h:mm AM`, `YYYY-MM-DD HH:MM`) keep only the date.
+- **Optional columns on every source:** assigned board member (`Board member`, `Contact person`, `Assigned to`; ING-13) and any active custom field label (ING-14).
+
 - Files: `.csv` (UTF-8, with or without BOM; comma delimited) or `.xlsx` (first sheet). Maximum 5 MB, checked by extension and content (ING-1).
 - Header matching: case-insensitive, trimmed, spaces, underscores and hyphens treated alike (`Donation Date` = `donation_date`). Extra columns are ignored; a missing **required** column rejects the file with a message naming it.
 - Normalization (DATA_MODEL 3.2): money to integer cents, rounded half up, `$1,234.50` and `1234.5` accepted, negatives rejected; dates ISO, `MM/DD/YYYY`, `M/D/YY` or Excel serial; emails lower-cased; phones to E.164 when parseable.
@@ -72,6 +76,26 @@ One row per payment. Built from the documented export order (Amount, Payment met
 | `First name`, `Last name`, `Email`, `Phone` | no | donor fields; a row with no name and no email is an anonymous gift |
 
 Fee is 0 (Zeffy charges nonprofits no platform fee; optional donor tips are not modelled). Monthly recurring gifts are simply repeated payments with distinct `Payment ID`s.
+
+## 2c. Zeffy contacts export: reference layout only (not an adapter, D-136)
+
+CIC shared a sanitized sample on Nov 15 as an example of what an upload *may* look like. It is kept here as a test case for AI-assisted mapping (ING-12); none of its data is used anywhere. One row per donor. Fixture: `fixtures/synthetic_zeffy_contacts.xlsx` (synthetic values, same headers and order, styled header row).
+
+| # | Header (exact) | Use |
+|---|---|---|
+| 1-3 | `First name`, `Last name`, `Email` | donor name and primary email; required: First name or Email |
+| 4 | `Secondary email` | extra `email` identity, never primary |
+| 5 | `Amount` | probably the donor's Zeffy total, not one gift (unconfirmed) |
+| 6-7 | `First payment date (America/Phoenix)`, `Last payment date (America/Phoenix)` | `MM/DD/YYYY, h:mm AM`; date part only; last date → `zeffy_total_as_of` |
+| 8 | `Language` | ignored |
+| 9-13 | `Address`, `City`, `Postal code`, `Country`, `Region` | **ignored** (NFR-3, no addresses) |
+| 14 | `Phone` | phone |
+| 15 | `Company name` | organization |
+| 16, 20 | `Notes` (appears **twice**) | duplicate headers are numbered `Notes`, `Notes 2`; both non-empty values join into donor notes |
+| 17 | `Manual lists` | ignored unless a custom field has that name (ING-14) |
+| 18 | `Unsubscribed` | `yes`/`true`/`1` → `do_not_contact = true` |
+| 19 | `Interested in volunteering?` | ignored unless a custom field has that name |
+
 
 ## 2b. Zeffy API payments (documented), for the later API pull job
 
