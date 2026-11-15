@@ -7066,7 +7066,7 @@
     },
     "/api/app/messages/{message_id}/send": {
       "post": {
-        "description": "Only from `approved`, and only if the body hash still matches (MSG-3, MSG-4).",
+        "description": "Email only, from `approved`, and only if the hash still matches (MSG-3, MSG-4).\n\nIn dry_run mode nothing is delivered. A provider failure returns 200 with status `failed`.",
         "operationId": "send_message_api_app_messages__message_id__send_post",
         "parameters": [
           {

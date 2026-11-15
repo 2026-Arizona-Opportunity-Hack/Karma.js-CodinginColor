@@ -32,15 +32,18 @@ def w(db: Session, clock: FixedClock) -> dict[str, int]:
         db, "Zelda Quill", owner=diana, email="zelda@pii.test", phone="+15550100"
     )
     gift = seed.add_gift(db, zelda, date(2026, 11, 3), 5000, program="AI Academy")
+    gift2 = seed.add_gift(db, zelda, date(2026, 11, 10), 2500)
     match = seed.add_gift(db, zelda, date(2026, 11, 3), 5000)
     db.execute(text("UPDATE gifts SET is_matching_gift = true WHERE id = :g"), {"g": match})
     nia = seed.add_donor(db, "Nia Newbie", owner=sam)
     db.commit()
-    return dict(diana=diana, sam=sam, zelda=zelda, gift=gift, match=match, nia=nia)
+    return dict(diana=diana, sam=sam, zelda=zelda, gift=gift, gift2=gift2, match=match, nia=nia)
 
 
-def login(email: str) -> TestClient:
-    c = TestClient(create_app(), client=("203.0.113.5", 50000))
+def login(email: str, overrides: dict | None = None) -> TestClient:
+    app = create_app()
+    app.dependency_overrides.update(overrides or {})
+    c = TestClient(app, client=("203.0.113.5", 50000))
     assert c.post("/api/app/auth/login", json={"email": email, "password": PW}).status_code == 200
     return c
 
@@ -66,12 +69,17 @@ def make_super_admin(db: Session, user: int, state: str = "active") -> None:
 
 
 def draft(
-    c: TestClient, w: dict, *, channel: str = "email", text_body: str | None = "Hello Zelda"
+    c: TestClient,
+    w: dict,
+    *,
+    channel: str = "email",
+    text_body: str | None = "Hello Zelda",
+    gift: str = "gift",
 ) -> dict:
     """A thank-you draft for Zelda's gift, with its words replaced so it can be approved."""
     r = post(
         c, f"/donors/{w['zelda']}/messages",
-        {"kind": "thank_you", "channel": channel, "gift_id": w["gift"]},
+        {"kind": "thank_you", "channel": channel, "gift_id": w[gift]},
     )  # fmt: skip
     assert r.status_code == 201, r.text
     m = r.json()
