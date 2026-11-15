@@ -15,7 +15,9 @@ import { useRef, useState } from "react";
 import { Link, NavLink, Navigate, Outlet, useLocation } from "react-router-dom";
 
 import { useLogout, useMe } from "../hooks/useAuth";
+import { BRAND_LOGO } from "../lib/brand";
 import { initials } from "../lib/format";
+import { Assistant } from "./Assistant";
 import { ErrorState } from "./Workspace";
 
 export const NAV = [
@@ -61,7 +63,14 @@ export function Layout() {
       >
         <div className="rail-brand">
           <Link to="/donors" className="brand" onClick={() => setMenuOpen(false)}>
-            <Compass size={30} strokeWidth={1.25} aria-hidden="true" />
+            {BRAND_LOGO ? (
+              // White plate: the logo must sit on white or dark green, never recolored.
+              <span className="brand-logo">
+                <img src={BRAND_LOGO} alt="Coding in Color" height={32} />
+              </span>
+            ) : (
+              <Compass size={30} strokeWidth={1.25} aria-hidden="true" />
+            )}
             <span>
               CIC Compass<small>CODING IN COLOR</small>
             </span>
@@ -119,6 +128,7 @@ export function Layout() {
       <main id="main" tabIndex={-1} className="app-workspace">
         <Outlet />
       </main>
+      <Assistant />
     </div>
   );
 }

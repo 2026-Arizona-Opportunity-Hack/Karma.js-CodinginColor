@@ -9,6 +9,7 @@ from app.errors import NotFound, register_error_handlers
 from app.middleware import AppCORS, SecurityMiddleware
 from app.openapi import install as install_openapi
 from app.routes import (
+    app_assistant,
     app_auth,
     app_donors,
     app_fields,
@@ -46,6 +47,7 @@ def create_app() -> FastAPI:
     # Contract stubs (docs/API.md section 3): real schemas, 501 until each lane builds them.
     app.include_router(app_members.public_router)
     for module in (
+        app_assistant,
         app_members,
         app_imports,
         app_donors,

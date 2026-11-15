@@ -6,9 +6,8 @@
 }
 .report-section h2 {
   font-family: var(--font-editorial);
-  font-weight: 400;
+  font-weight: 700;
   font-size: 28px;
-  letter-spacing: -0.5px;
   margin: 0;
 }
 .period-ledger {
@@ -40,8 +39,7 @@
   color: var(--color-ink);
   font-family: var(--font-editorial);
   font-size: 30px;
-  font-weight: 400;
-  letter-spacing: -0.5px;
+  font-weight: 700;
 }
 .report-footnote {
   margin: 12px 0 0;
@@ -150,7 +148,7 @@
   display: block;
   font-family: var(--font-editorial);
   font-size: 19px;
-  font-weight: 400;
+  font-weight: 700;
 }
 .retention-name strong::before {
   content: "▸ ";

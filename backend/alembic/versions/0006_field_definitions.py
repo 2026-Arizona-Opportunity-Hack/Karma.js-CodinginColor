@@ -1,4 +1,4 @@
-"""field_definitions and custom values on donors and gifts (CUS-1, D-141, D-145)
+"""field_definitions and custom values on donors and gifts (CUS-1, D-141, D-146)
 
 Revision ID: 0006
 Revises: 0005
