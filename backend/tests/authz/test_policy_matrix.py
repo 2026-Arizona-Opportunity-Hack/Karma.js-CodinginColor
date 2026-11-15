@@ -33,7 +33,11 @@ def actor(role: str, state: str) -> Actor:
     gov = STATES[state]
     uid = {"owner": OWNER_ID, "other": OTHER_ID, "sa": SA_ID}[role]
     is_active_sa = role == "sa" and state.startswith("sa_active")
-    return Actor(kind="user", id=uid, is_active_super_admin=is_active_sa, **gov)  # type: ignore[arg-type]
+    holds_role = role == "sa" and state.startswith("sa_")  # active or dormant
+    return Actor(  # type: ignore[arg-type]
+        kind="user", id=uid, is_active_super_admin=is_active_sa,
+        holds_super_admin_role=holds_role, **gov,
+    )  # fmt: skip
 
 
 T, F = True, False
@@ -82,6 +86,15 @@ SA_ONLY = {
     "other": NO_STATES,
     "sa": {"flat": F, "sa_active_anyone": T, "sa_active_own_only": T, "sa_dormant": F},
 }
+FLAT_ONLY = {
+    role: {"flat": T, "sa_active_anyone": F, "sa_active_own_only": F, "sa_dormant": T}
+    for role in ("owner", "other", "sa")
+}
+HOLDER_ONLY = {
+    "owner": NO_STATES,
+    "other": NO_STATES,
+    "sa": {"flat": F, "sa_active_anyone": T, "sa_active_own_only": T, "sa_dormant": T},
+}
 ORG_MATRIX: dict[Action, dict[str, dict[str, bool]]] = {
     Action.IMPORT_RUN: ANY_MEMBER,
     Action.REVIEW_DECIDE: ANY_MEMBER,
@@ -93,6 +106,11 @@ ORG_MATRIX: dict[Action, dict[str, dict[str, bool]]] = {
     Action.DIGEST_SEND: ADMIN_GATED,
     Action.GOV_FLATTEN: SA_ONLY,
     Action.GOV_SET_SCOPE: SA_ONLY,
+    # Nominating and confirming: any member while flat (a dormant super admin counts as flat).
+    Action.GOV_NOMINATE: FLAT_ONLY,
+    Action.GOV_CONFIRM_NOMINATION: FLAT_ONLY,
+    # Removing the role: only its holder, active or dormant.
+    Action.GOV_REMOVE_SUPER_ADMIN: HOLDER_ONLY,
 }
 
 
@@ -115,7 +133,7 @@ def test_every_action_is_covered_by_the_matrix() -> None:
 
 def test_matrix_size_for_the_trust_report() -> None:
     n = len(list(donor_cases())) + len(list(org_cases()))
-    assert n == 5 * 3 * 4 + 10 * 3 * 4  # 180 rows
+    assert n == 5 * 3 * 4 + 13 * 3 * 4  # 216 rows
 
 
 # --- ownership edge cases ---
@@ -183,5 +201,6 @@ def test_action_names_are_stable() -> None:
         "donor.view", "donor.view_contact", "donor.act", "donor.edit", "donor.reassign",
         "import.run", "review.decide", "settings.manage", "templates.manage",
         "programs.manage", "invite.create", "apikey.manage", "digest.send",
-        "gov.flatten", "gov.set_scope",
+        "gov.flatten", "gov.set_scope", "gov.nominate", "gov.confirm_nomination",
+        "gov.remove_super_admin",
     }  # fmt: skip

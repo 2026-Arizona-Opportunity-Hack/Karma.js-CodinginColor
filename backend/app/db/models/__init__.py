@@ -3,7 +3,15 @@
 from app.db.models.donors import Donor, DonorIdentity, OwnerHistory
 from app.db.models.gifts import Gift, ImportBatch, Program, ProgramOutcome, SourceProgramMap
 from app.db.models.imports import ImportRow, MatchReview
-from app.db.models.people import ApiKey, AuditLog, Governance, Invite, SessionRow, User
+from app.db.models.people import (
+    ApiKey,
+    AuditLog,
+    Governance,
+    Invite,
+    SessionRow,
+    SuperAdminNomination,
+    User,
+)
 from app.db.models.relationship import (
     AppSetting,
     DigestRun,
@@ -35,5 +43,6 @@ __all__ = [
     "ProgramOutcome",
     "SessionRow",
     "SourceProgramMap",
+    "SuperAdminNomination",
     "User",
 ]

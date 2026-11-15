@@ -57,3 +57,22 @@ class GovernanceDetail(BaseModel):
 
 class ScopeIn(BaseModel):
     reassign_scope: ReassignScope
+
+
+class NominationIn(BaseModel):
+    nominee_user_id: int
+
+
+class NominationOut(BaseModel):
+    """A super admin nomination (GOV-2). `expires_at` is 72 hours after `created_at`."""
+
+    id: int
+    nominee: MemberRef
+    nominated_by: MemberRef
+    status: Literal["pending", "confirmed", "cancelled", "expired"]
+    created_at: datetime
+    expires_at: datetime
+
+
+class RemoveSuperAdminIn(BaseModel):
+    confirm: Literal["REMOVE"]

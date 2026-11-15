@@ -30,6 +30,10 @@ class Action(StrEnum):
     # Super admin only.
     GOV_FLATTEN = "gov.flatten"
     GOV_SET_SCOPE = "gov.set_scope"
+    # In-app super admin lifecycle (GOV-2, GOV-3, D-144). Never grantable to an API key.
+    GOV_NOMINATE = "gov.nominate"  # any member, only while the org is flat
+    GOV_CONFIRM_NOMINATION = "gov.confirm_nomination"  # any member, only while flat
+    GOV_REMOVE_SUPER_ADMIN = "gov.remove_super_admin"  # the role holder, active or dormant
 
 
 DONOR_ACTIONS = frozenset(
@@ -53,6 +57,9 @@ ADMIN_GATED = frozenset(
     }
 )
 SUPER_ADMIN_ONLY = frozenset({Action.GOV_FLATTEN, Action.GOV_SET_SCOPE})
+FLAT_ONLY = frozenset({Action.GOV_NOMINATE, Action.GOV_CONFIRM_NOMINATION})
+# Governance actions an API key can never perform, even a full-access one.
+NOT_FOR_KEYS = SUPER_ADMIN_ONLY | FLAT_ONLY | {Action.GOV_REMOVE_SUPER_ADMIN}
 
 
 class Owned(Protocol):
@@ -75,7 +82,7 @@ def can(actor: Actor, action: Action | str, resource: Owned | None = None) -> bo
     # A full-access key acts as its member with every permission except governance, and a key
     # can never create, list or revoke keys.
     if actor.full_access:
-        return action not in SUPER_ADMIN_ONLY and action is not Action.APIKEY_MANAGE
+        return action not in NOT_FOR_KEYS and action is not Action.APIKEY_MANAGE
 
     if action in ANY_MEMBER:
         return True
@@ -83,6 +90,10 @@ def can(actor: Actor, action: Action | str, resource: Owned | None = None) -> bo
         return actor.is_active_super_admin or not actor.super_admin_active
     if action in SUPER_ADMIN_ONLY:
         return actor.is_active_super_admin
+    if action in FLAT_ONLY:
+        return not actor.super_admin_active  # flat includes a dormant super admin
+    if action is Action.GOV_REMOVE_SUPER_ADMIN:
+        return actor.holds_super_admin_role
     if action in DONOR_ACTIONS:
         return _donor(actor, action, resource)
     return False

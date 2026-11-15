@@ -79,7 +79,7 @@ All non-GET calls need header `X-CSRF-Token`. Authorization is decided in `authz
 |---|---|
 | Auth | `POST /auth/login`, `POST /auth/logout`, `GET /auth/me`, `POST /auth/invite/{token}/accept` |
 | Members | `GET /members`, `POST /members/invite`, `POST /members/{id}/deactivate` |
-| Governance | `GET /governance`, `PUT /governance/scope`, `POST /governance/flatten` |
+| Governance | `GET /governance`, `PUT /governance/scope`, `POST /governance/flatten`, `GET /governance/nominations`, `POST /governance/nominations`, `POST /governance/nominations/{id}/confirm`, `POST /governance/nominations/{id}/cancel`, `DELETE /governance/super-admin` (body `{"confirm": "REMOVE"}`). Nomination and removal routes are session-only: API keys get 403 (GOV-2, GOV-3, D-144). |
 | Imports | `POST /imports/preview` (multipart: `source`, `file`), `GET /imports/{id}`, `POST /imports/{id}/commit`, `POST /imports/{id}/reverse`, `GET /imports` |
 | Review | `GET /reviews?status=open`, `POST /reviews/{id}/decide` (`link` + donor_id, `create_new`, `anonymous`) |
 | Donors | `GET /donors?scope=mine\|all&q=&owner=&status=&program=&page=`, `POST /donors` (returns `409` with candidates when DED-6 finds a likely duplicate unless `confirm_new=true`), `GET /donors/{id}`, `PATCH /donors/{id}`, `DELETE /donors/{id}` (soft), `POST /donors/{id}/merge` |
