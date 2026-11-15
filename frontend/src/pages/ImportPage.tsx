@@ -5,7 +5,12 @@ import { Link } from "react-router-dom";
 import { api, ApiError } from "../api/client";
 import type { components } from "../api/types";
 import { DonorUpdateReview } from "../components/DonorUpdateReview";
-import { ImportError, ReconciliationSummary, SOURCES } from "../components/ImportWorkspace";
+import {
+  IgnoredColumns,
+  ImportError,
+  ReconciliationSummary,
+  SOURCES,
+} from "../components/ImportWorkspace";
 import { QuickNoteSheet } from "../components/QuickNoteSheet";
 import { PageMasthead } from "../components/Workspace";
 import { useMe } from "../hooks/useAuth";
@@ -289,6 +294,7 @@ export function ImportPage() {
             <span className="import-label">Not yet imported</span>
           </header>
           <ReconciliationSummary summary={preview.summary} />
+          <IgnoredColumns columns={preview.ignored_columns ?? []} />
           {!!preview.invalid_rows.length && (
             <section className="import-panel">
               <div className="import-section-heading">
