@@ -79,6 +79,8 @@ IMPLEMENTED = {
     ("POST", "/api/app/messages/{}/send"), ("POST", "/api/app/messages/{}/mark-sent"),  # #38
     ("POST", "/api/app/donors"), ("PATCH", "/api/app/donors/{}"),  # lane C, issue #73
     ("DELETE", "/api/app/donors/{}"), ("POST", "/api/app/donors/{}/gifts"),
+    ("POST", "/api/app/donors/{}/reassign"), ("GET", "/api/app/donors/{}/owner-history"),  # #29
+    ("POST", "/api/app/members/{}/move-donors"),
     ("GET", "/api/app/reminders"), ("GET", "/api/app/reminders/needs-reassignment"),  # #32
     ("GET", "/api/app/members"), ("POST", "/api/app/members/invite"),  # lane A, #30
     ("POST", "/api/app/members/{}/deactivate"), ("POST", "/api/app/auth/invite/{}/accept"),

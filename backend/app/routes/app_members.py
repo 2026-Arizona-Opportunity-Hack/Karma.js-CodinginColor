@@ -17,6 +17,7 @@ from app.schemas.members import (
     ScopeIn,
 )
 from app.services.members import service as members
+from app.services.ownership import reassign
 
 router = session_router("members")
 public_router = APIRouter(prefix="/api/app", tags=["app:members"])
@@ -48,9 +49,11 @@ def deactivate_member(member_id: int, cur: CurrentDep, db: DB, clock: ClockDep) 
 
 
 @router.post("/members/{member_id}/move-donors")
-def move_donors(member_id: int, body: MoveDonorsIn) -> MoveDonorsOut:
+def move_donors(
+    member_id: int, body: MoveDonorsIn, cur: CurrentDep, db: DB, clock: ClockDep
+) -> MoveDonorsOut:
     """Bulk move all donors from one member to another. Super admin only (OWN-3)."""
-    todo("lane A, phase 3")
+    return reassign.move_donors(db, clock, cur.actor, member_id, body.to_user_id)
 
 
 @router.get("/governance")
