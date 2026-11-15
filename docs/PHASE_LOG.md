@@ -11,7 +11,7 @@
 | 2C read API + donor API | ready-for-review | Sat 23:00 | #24–#28, #72–#74, #87, #88 | #77–#81 merged, #83, #85, #90, #91 open | #73 built in two PRs after lane A's #17 and #18 merged; donor API moved here (D-126) |
 | 3A ownership/reminders | ready-for-review | Sun 01:30 | #29–#32 | #118, #119, #121, #122 | merge in that order |
 | 3B dashboard/people | todo | Sun 01:30 | | | |
-| 3C messaging backend | todo | Sun 01:30 | | | |
+| 3C messaging backend | ready-for-review | Sun 01:30 | #36–#39, #100, #113, #126 | #108–#111, #114 merged; PR_DIGEST, PR_BULK open | no messaging UI until lane B Phase 4 |
 | 4A reports/P1 | todo | Sun 09:00 | | | |
 | 4B messaging/reports UI | todo | Sun 09:00 | | | |
 | 4C hardening | todo | Sun 09:00 | | | |
@@ -93,6 +93,31 @@ green until it is addressed separately.
 - Change-password page in Settings.
 
 ## Reports
+
+### Phase 3 lane C: messaging backend  (Sun 2026-11-15, MST)
+**Issues / PRs (merge in this order, with "Create a merge commit"):** #100 mail settings and reminders handoff note `shared` → PR #108 (merged) · #36 templates and drafts → PR #109 (merged) · #37 approval state machine → PR #110 (merged) · #38 email dry-run sender, SMS mark-sent, send history → PR #111 (merged) · #113 next-step timestamps use the app clock (CI fix on main) → PR #114 (merged) · #39 reminder digest → PR_DIGEST · #126 bulk quarterly drafts → PR_BULK (stacked on PR_DIGEST: both edit `app_messages.py` and the contract test).
+**What changed:** Templates (thank-you, quarterly update, email and text) with built-in text stored on first use, `GET/PUT /templates` under `templates.manage`. Drafts are idempotent, never for do-not-contact donors, and never for employer-match gifts (D-127). Approve, edit (voids approval), cancel; approval stores who, when and a SHA-256 of subject and body. Send for email only, from `approved`, row-locked, hash re-checked; `dry_run` (default) records the send and makes no network call; `live` posts to Resend with the key from env; a provider failure sets `failed` with a short fixed error and is never retried. Texts expose a pre-filled `sms:` link; the owner clicks Mark sent. Every send writes the message record, a timeline interaction (`thank_you`/`update`, with `message_id` and `gift_id`) and a `message.send` audit entry without the words. Digest: board members only, counts only, one `digest_runs` row per click. Bulk quarterly drafts use lane A's `quarterly_due_for`.
+**Gate** (acceptance tests 9 and 10, plus the extras you listed):
+- [x] **Test 9**: `test_message_send.py::test_dry_run_thank_you_draft_approve_send_and_it_makes_no_network_call` (draft, approve, send; transport that fails if used saw 0 requests); editing after approval returns it to draft: `test_message_approval.py::test_editing_an_approved_message_returns_it_to_draft_and_clears_approval`; sending a draft is 409: `test_sending_a_draft_is_409_and_records_nothing`; the reminder clears: `test_sending_a_thank_you_clears_its_reminder` (only the thanked gift leaves the list).
+- [x] **Test 10**: `test_digest.py::test_digest_dry_run_records_one_run_with_each_members_own_counts_only` (one run, Diana 2 and Sam 1 next steps, no donor names, no network call).
+- [x] Double-send race: `test_two_simultaneous_sends_produce_one_send` (two threads, one send, one 409, one interaction, one audit row). Hash mismatch: `test_a_changed_body_is_refused_at_send_even_if_the_status_says_approved`. Do-not-contact, idempotent drafts, 403 for non-owners: `test_message_drafts.py`, `test_message_send.py::test_a_non_owner_cannot_send_or_mark_sent`. Database checks refuse an unapproved send: `test_the_database_refuses_sent_or_approved_without_an_approval`.
+- [x] Lint, types, tests on the last branch: `uv run ruff format --check .` → "156 files already formatted"; `uv run ruff check .` clean; `uv run mypy app` → "no issues found in 110 source files"; `uv run pytest` → 622 passed. `npm run gen:api && npm run typecheck` clean after each route change.
+- [ ] Not run: GitHub CI for the two open PRs, anything against Render or Neon, a real email (tests inject a transport; no real key is used).
+**How to verify (exact steps):**
+1. Merge PR_DIGEST, then PR_BULK, with merge commits. Render redeploys; no migrations in this lane.
+2. **Render is in `live` mode with a real Resend key.** Only use donors whose email you own, or set `MESSAGING_MODE=dry_run` first.
+3. Post-deployment test, on `https://cic-compass.onrender.com/api/docs` after logging in (or with curl and the session cookie and `X-CSRF-Token`): `GET /api/app/templates` shows four templates. Pick a donor you own, set their email to your own address, `POST /api/app/donors/{id}/messages` with `{"kind":"thank_you","channel":"email","gift_id":<gift>}` → 201 draft with a filled body; repeat the call → 200, same id. `PATCH /api/app/messages/{id}` with your own words, `POST .../approve` → `approved`; `PATCH` again → back to `draft`; approve again. `POST .../send` → `sent`, `provider_ref` starts with `re_` (live) or `dry-run-` (dry run); the email arrives only in live mode. `POST .../send` again → 409. `GET /api/app/donors/{id}/timeline` shows the message once; `GET /api/app/reminders` no longer lists that gift. `POST /api/app/messages/draft-quarterly` → drafts for your due donors; call twice, second says `skipped_existing`. `POST /api/app/digest/send` → one run; in live mode it emails board members counts only.
+**Decisions made:** D-133, D-134 (below, also in DECISIONS.md). Also: a repeat draft request returns the open draft with 200 (201 only when created); a provider failure returns 200 with `status: failed` so the failed state is saved; approval is refused while `[EDIT: ...]` text from the default templates remains; drafting uses the donor's first name, else the display name.
+**Known gaps:**
+- No screens yet: drafts, approval and the digest button are API only until lane B's Phase 4 messaging UI.
+- The digest email has no link to the app and no Reply-To; replies go to `MAIL_FROM`. The mail sender must be on a domain verified in Resend.
+- Digest and send hit Resend one request at a time with a 10 second timeout, no queue.
+- `GET /templates` creates the missing default rows on first view (a write in a GET, once).
+- The first full-suite run on the CI-fix branch had two failures and one error in `test_message_approval.py` that did not repeat (re-run clean, file passes alone); cause not found.
+- PR sizes over about 400 lines: #111 (about 580 including tests and generated files).
+- Lapsed nudge and event invite templates are not built (later list).
+**Questions for the human:** Should the digest mail include a link to the app (needs an `APP_BASE_URL` setting) and should messages carry a Reply-To?
+**Shared-file changes requested:** none open. Merged with PR #108: `backend/app/settings.py` (`resend_api_key`, `mail_from`) and `docs/PLAN.md` (handoff note to lane A, also posted on #32). Touched outside lane C paths: next-step and interaction timestamps in `backend/app/repos/relationship.py`, `app/services/donors/contacts.py`, `app/routes/app_donors.py` and the timeline query in `app/repos/donors.py` (PR #114, lane C's own Phase 2 code).
 
 ### Phase 3 lane A: ownership, governance, reminders  (Sun 2026-11-15, morning MST)
 **Issues / PRs (merge in this order, with "Create a merge commit"):** #32 derived reminders → PR #118 · #29 manual and bulk reassignment → PR #119 · #30 member invites and deactivation → PR #121 (stacked on #118: its test reads Needs reassignment) · #31 governance scope and flatten → PR #122 (stacked on #119: its test reassigns after Flatten). No migrations and no shared-file changes.
