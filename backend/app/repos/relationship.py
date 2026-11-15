@@ -35,6 +35,7 @@ def add_interaction(
     kind: str,
     summary: str | None,
     occurred_on: date,
+    at: datetime,
 ) -> Interaction:
     donor = _donor_to_act_on(db, actor, donor_id)
     row = Interaction(
@@ -43,6 +44,7 @@ def add_interaction(
         kind=kind,
         occurred_on=occurred_on,
         summary=summary or None,
+        created_at=at,
     )
     db.add(row)
     db.flush()
@@ -50,7 +52,7 @@ def add_interaction(
 
 
 def set_next_step(
-    db: Session, actor: Actor, donor_id: int, *, title: str, due_date: date
+    db: Session, actor: Actor, donor_id: int, *, title: str, due_date: date, at: datetime
 ) -> NextStep:
     """One open step per donor: the current one is cancelled and kept as history."""
     donor = _donor_to_act_on(db, actor, donor_id)
@@ -59,7 +61,9 @@ def set_next_step(
     ).scalars():
         old.status = "cancelled"
     db.flush()  # free the one-open-step index before inserting
-    step = NextStep(donor_id=donor.id, title=title, due_date=due_date, created_by=actor.user_id)
+    step = NextStep(
+        donor_id=donor.id, title=title, due_date=due_date, created_by=actor.user_id, created_at=at
+    )
     db.add(step)
     db.flush()
     return step
@@ -84,6 +88,7 @@ def complete_next_step(
         kind="note",
         occurred_on=today,
         summary=f"Completed next step: {step.title}",
+        created_at=at,
     )
     db.add(log)
     db.flush()

@@ -5737,7 +5737,7 @@
     },
     "/api/app/gifts/{gift_id}/attribute": {
       "post": {
-        "description": "Only anonymous gifts; pending-review gifts use the review flow (DED-8, issue #71).",
+        "description": "Only anonymous gifts; pending-review gifts use the review flow (DED-8, issue #71).\n\nA Benevity gift that is anonymous is refused with 409 (\"This donor chose to stay anonymous;\nthe gift stays unattributed.\"): the donor opted out, so it never gets a donor (D-131). It\nstill counts in org revenue and reports. Anonymous gifts from other sources stay attributable.",
         "operationId": "attribute_gift_api_app_gifts__gift_id__attribute_post",
         "parameters": [
           {

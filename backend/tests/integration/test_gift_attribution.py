@@ -135,3 +135,53 @@ def test_attribution_uses_review_permission_rather_than_owner_or_import_permissi
         policy, "can", lambda actor, action, resource=None: action == "review.decide"
     )
     assert attribute(world).status_code == 200
+
+
+# --- D-131: a Benevity donor who chose to stay anonymous is never attached to a donor -----------
+OPT_OUT = "This donor chose to stay anonymous; the gift stays unattributed."
+
+
+def test_anonymous_benevity_gift_is_refused_and_stays_in_org_revenue(world, db):
+    benevity = seed.add_gift(db, None, date(2026, 11, 13), 7000, source="benevity")
+    db.commit()
+    actor = Actor(kind="user", id=world["actor"])
+    period = dict(start=date(2020, 1, 1), end=date(2026, 11, 15))
+    before = reports.totals(db, actor, **period)
+    assert before["gross_cents"] == 1000 + 5000 + 2000 + 7000  # pending-review is not counted
+
+    response = attribute(world, benevity)
+    assert response.status_code == 409
+    assert response.json() == {"error": {"code": "conflict", "message": OPT_OUT}}
+
+    db.expire_all()
+    gift = db.get(Gift, benevity)
+    assert gift.attribution == "anonymous" and gift.donor_id is None
+    assert list(db.scalars(select(AuditLog).where(AuditLog.action == "gift.attribute"))) == []
+    unattributed = world["client"].get("/api/app/gifts/unattributed").json()["items"]
+    assert benevity in {g["id"] for g in unattributed}
+    assert reports.totals(db, actor, **period) == before  # reports unchanged
+    assert (
+        world["client"].get(f"/api/app/donors/{world['donor']}").json()["total_lifetime_cents"]
+        == 2000
+    )
+
+
+@pytest.mark.parametrize("source", ["zeffy", "generic", "manual"])
+def test_anonymous_gifts_from_other_sources_stay_attributable(world, db, source):
+    gift = seed.add_gift(db, None, date(2026, 11, 12), 3000, source=source)
+    db.commit()
+    response = attribute(world, gift)
+    assert response.status_code == 200, response.text
+    assert response.json()["donor_id"] == world["donor"]
+
+
+@pytest.mark.parametrize("attribution", ["pending_review", "linked"])
+def test_other_benevity_gifts_keep_the_original_conflict_message(world, db, attribution):
+    donor = world["donor"] if attribution == "linked" else None
+    gift = seed.add_gift(
+        db, donor, date(2026, 11, 12), 900, source="benevity", attribution=attribution
+    )
+    db.commit()
+    response = attribute(world, gift)
+    assert response.status_code == 409
+    assert response.json()["error"]["message"].startswith("Only anonymous gifts")

@@ -26,6 +26,8 @@ from app.repos.ownership import AssignmentAction
 from app.services.dedupe.resolver import fingerprint, fingerprints, identity_keys
 from app.services.ingest.adapters import IncomingDonor
 
+BENEVITY_ANONYMOUS = "This donor chose to stay anonymous; the gift stays unattributed."
+
 
 def require(actor: Actor, action: AssignmentAction = "review.decide") -> None:
     if not policy.can(actor, action):
@@ -98,6 +100,10 @@ def anonymous_gift(db: Session, actor: Actor, gift_id: int) -> Gift:
         raise NotFound("Gift not found.")
     if gift.attribution != "anonymous":
         raise Conflict("Only anonymous gifts can be attributed. Use review for pending gifts.")
+    if gift.source == "benevity":
+        # Benevity hides name and email only when the donor opts out (D-131). The gift still
+        # counts in org revenue and reports; it just never gets a donor record.
+        raise Conflict(BENEVITY_ANONYMOUS)
     return gift
 
 

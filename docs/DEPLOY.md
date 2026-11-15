@@ -4,6 +4,8 @@ One Docker web service on Render and a Neon Postgres database. **$0/month** on R
 
 `render.yaml` defines the service. The container runs `alembic upgrade head` on start, then the app, so a deploy migrates the database by itself.
 
+Run a single uvicorn process. Import previews are kept in memory between Preview and Commit, so multiple workers or instances break commit. A restart or redeploy clears open previews and the uploader must upload again.
+
 ## First deploy
 
 1. **Neon:** in the project, click **Connect**, turn **Connection pooling off**, copy the connection string (`postgresql://...?sslmode=require...`). The app accepts `postgres://` and `postgresql://` URLs.

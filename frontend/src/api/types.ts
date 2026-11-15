@@ -376,6 +376,10 @@ export interface paths {
         /**
          * Attribute Gift
          * @description Only anonymous gifts; pending-review gifts use the review flow (DED-8, issue #71).
+         *
+         *     A Benevity gift that is anonymous is refused with 409 ("This donor chose to stay anonymous;
+         *     the gift stays unattributed."): the donor opted out, so it never gets a donor (D-131). It
+         *     still counts in org revenue and reports. Anonymous gifts from other sources stay attributable.
          */
         post: operations["attribute_gift_api_app_gifts__gift_id__attribute_post"];
         delete?: never;

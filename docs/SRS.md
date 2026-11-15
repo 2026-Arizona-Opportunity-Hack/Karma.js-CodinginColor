@@ -119,7 +119,7 @@ Priority: **M** = must (P0), **S** = should (P0 thin version acceptable), **C** 
 | DED-5 | Gifts waiting for review are saved but not counted in donor totals, and their donor is not assigned an owner until resolved. | M |
 | DED-6 | **Manual entry**: creating a donor runs DED-3 first and warns "possible existing donor" with a link before allowing create. | M |
 | DED-7 | **Merge** two donors: gifts, interactions, messages and identities move to the surviving record; the owner of the **older** record is kept; audited. | S |
-| DED-8 | Anonymous gifts (for example Benevity rows without donor details) are kept, attributed to no donor, and shown on an "Unattributed gifts" list. They count in org totals. | M |
+| DED-8 | Anonymous gifts (for example Benevity rows without donor details) are kept, attributed to no donor, and shown on an "Unattributed gifts" list. They count in org totals. A Benevity gift whose donor chose to stay anonymous is never attached to a donor (D-131); anonymous gifts from other sources can still be attributed. | M |
 
 ### 4.5 OWN: ownership and reassignment
 

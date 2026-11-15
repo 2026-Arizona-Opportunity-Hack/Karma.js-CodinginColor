@@ -2,7 +2,7 @@
 Includes the 403 half of acceptance test 7: acting on another member's donor is refused."""
 
 from collections.abc import Iterator
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
@@ -193,11 +193,14 @@ def test_bad_next_step_input_is_400(w, body) -> None:
     )
 
 
-def test_completing_a_step_logs_an_interaction_and_clears_the_card(db: Session, w) -> None:
+def test_completing_a_step_logs_an_interaction_and_clears_the_card(
+    db: Session, w, clock: FixedClock
+) -> None:
     c = login("diana@example.org")
     step = put(
         c, f"/donors/{w['zelda']}/next-step", {"title": "Send update", "due_date": "2026-11-20"}
     ).json()
+    clock.at += timedelta(hours=1)  # completing happens after creating, on the app clock
     r = post(c, f"/next-steps/{step['id']}/done")
     assert r.status_code == 200, r.text
     assert r.json()["status"] == "done" and r.json()["done_at"] is not None
