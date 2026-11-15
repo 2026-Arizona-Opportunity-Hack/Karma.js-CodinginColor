@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "test:contact": "node tests/contact.browser.mjs",
     "test:detail": "node tests/detail.browser.mjs",
     "test:directory": "node tests/directory.browser.mjs",
     "test:ledger": "node --test tests/ledger-accessibility.test.mjs",

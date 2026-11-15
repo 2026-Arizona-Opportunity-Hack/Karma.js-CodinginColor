@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { ApiError } from "../api/client";
+import { LogContact, NextStep } from "../components/DonorStewardship";
 import {
   EmptyState,
   ErrorState,
@@ -79,6 +80,7 @@ function Dossier({ id, actorId }: { id: number; actorId: number }) {
                 <StatusPill key={status} status={status} />
               ))}
             </div>
+            <LogContact donor={d} actorId={actorId} />
             <a className="button button-secondary" href="#relationship-timeline">
               Read the timeline <ArrowDown size={16} aria-hidden="true" />
             </a>
@@ -154,13 +156,12 @@ function Dossier({ id, actorId }: { id: number; actorId: number }) {
                   </p>
                 )}
               </section>
-              <section>
-                <h2>Next step</h2>
-                <p>{d.next_step_title ?? "No next step set"}</p>
-                {d.next_step_due && (
-                  <p className="secondary-text">Due {calendarDate(d.next_step_due)}</p>
-                )}
-              </section>
+              <NextStep
+                donor={d}
+                actorId={actorId}
+                timeline={timeline.data}
+                timelineReady={timeline.isSuccess && !timeline.isFetching && !donor.isFetching}
+              />
               <a className="dossier-back" href="#gift-history">
                 View recent gifts <ArrowDown size={16} aria-hidden="true" />
               </a>
