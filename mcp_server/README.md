@@ -25,8 +25,8 @@ Dates are `YYYY-MM-DD`. Money is integer US cents. The API's `from` and `to` par
 
 ## Set up
 
-1. **Get an API key.** In the app: Settings → API keys → create a key. Copy it now; it is shown
-   once. Keys can be revoked from the same page.
+1. **Get an API key.** Follow step 1 of the [API guide](../docs/API_GUIDE.md#1-get-a-key). Copy the
+   key now; it is shown once. Keys can be revoked the same way.
 2. **Install [uv](https://docs.astral.sh/uv/)** (the only prerequisite) and clone this repository.
 3. **Add the server to Claude Desktop.** Open Settings → Developer → Edit Config, and add:
 
