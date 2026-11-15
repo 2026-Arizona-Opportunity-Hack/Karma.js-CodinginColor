@@ -1,128 +1,161 @@
 # CIC Compass
 
-A donor stewardship app for [Coding in Color](https://www.ohack.dev/nonprofit/YIXYdYCoxIZC08uQ5DL3) (CIC). It keeps donors and funders in one place so nobody has to hunt through exports from several giving platforms to see who gave, when, and who last got in touch.
+**Every donor relationship, carried forward.** A donor and funder stewardship app for [Coding in Color](https://codingincolor.net), built by team Karma.js at Opportunity Hack's ASU Fall Hackathon 2026.
 
-Built for CIC's [Donor & Funder Relationship Platform](https://www.ohack.dev/project/e26932c0df1b11f189a8dead68f07eb5) problem statement at the ASU Fall Hackathon 2026 by team Karma.js. Open source under the MIT license.
+[![CI](https://github.com/2026-Arizona-Opportunity-Hack/Karma.js-CodinginColor/actions/workflows/ci.yml/badge.svg)](https://github.com/2026-Arizona-Opportunity-Hack/Karma.js-CodinginColor/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-007A3D.svg)](LICENSE)
+[![Opportunity Hack 2026](https://img.shields.io/badge/Opportunity%20Hack-ASU%20Fall%202026-00A850.svg)](https://www.ohack.dev/hack/fall-2026)
+[![Problem](https://img.shields.io/badge/Coding%20in%20Color-Donor%20%26%20Funder%20Platform-007A3D.svg)](https://www.ohack.dev/project/e26932c0df1b11f189a8dead68f07eb5)
 
-**Current version:** 0.1.0. Backend implementation and verification status: [phase log](docs/PHASE_LOG.md). See the [changelog](docs/CHANGELOG.md).
+![CIC Compass sign-in page: green hero with the headline "Every donor relationship, carried forward.", an animated compass and the sign-in card](docs/images/landing-hero.png)
+
+**Live app:** <https://cic-compass.onrender.com> (free hosting; the first visit can take about a minute to wake up)
+**Demo video:** added with the hackathon submission
+
+## Contents
+
+- [The problem](#the-problem) · [What it does](#what-it-does) · [How it works](#how-it-works) · [Quick start](#quick-start) · [Test data](#test-data)
+- [Tech stack](#tech-stack) · [Status and next steps](#status-and-next-steps) · [Assumptions](#assumptions) · [Security and privacy](#security-and-privacy)
+- [Documentation](#documentation) · [Team](#team) · [License](#license)
+
+## The problem
+
+Coding in Color is an Arizona nonprofit that teaches computer science and AI to students, most from historically disadvantaged backgrounds. Its board members are volunteers who raise the money for those programs. Gifts arrive through several platforms (Zeffy, Benevity employer giving, AZ Gives) plus CIC's own donor spreadsheet, so nobody can easily see who gave, who has been thanked, and who has not heard from CIC in months.
+
+CIC Compass pulls those exports into **one de-duplicated donor ledger**, gives each donor an owning board member, and tells each board member **who to thank or contact next**. The app drafts messages, but a person approves and sends every one.
 
 ## What it does
 
-**Available now**
-- Individual board-member accounts with secure login, sessions and CSRF protection.
-- Custom fields: add, rename, reorder, hide and deactivate fields on donors and gifts from Settings > Fields, with type validation, contact-aware visibility, import column mapping and no data loss (deactivate, not delete).
-- A flat hierarchy by default, with an optional single super admin created and removed in the app (see Governance).
-- An audit log of logins and governance changes.
-- CSV/XLSX import preview and commit, with a field-by-field confirmation dialog for spreadsheet donor updates; backend batch history, soft reversal, file/gift deduplication and balanced donor ownership.
-- Backend donor identity reviews and anonymous-gift attribution, with authorization and audit records.
-- A text assistant API (`POST /api/app/assistant/interpret`): one sentence becomes proposed "log a contact", "add a follow-up" or "draft a thank-you" actions that a person confirms; it writes nothing itself and is off unless the `assistant_enabled` setting is true (AST-1 to AST-3, D-145).
-- A web app shell with navigation for Dashboard, Donors, Import, Review, Messages, Reports and Settings.
+| | Feature | Where |
+|---|---|---|
+| **Import** | Upload Zeffy, Benevity, generic (AZ Gives style) CSV or XLSX files and CIC's donor spreadsheet. Preview counts before committing; the same file or overlapping exports never add a gift twice. | Import |
+| **De-duplicate** | Matches donors across sources by email and stored identities. Uncertain matches (shared household email, phone-only match) wait in a review queue for a person to decide. Anonymous employer gifts can be attributed later. | Review |
+| **Share the work** | New donors are assigned round-robin across active board members. Reassignment is recorded in an owner history; donors of a deactivated member surface as "Needs reassignment". | Relationships, Dashboard |
+| **Know who's next** | A to-do list per board member: thank-yous due, quarterly contacts, next steps, most urgent first. | Dashboard |
+| **Approve every message** | Drafts thank-yous and quarterly updates from editable templates. A member edits, approves, then sends (email, dry run by default) or texts from their own phone. | Messages, Settings |
+| **Report** | Giving this month, quarter and 12 months; by program and by board member; donor retention (new, reactivated, increased, same, decreased, lapsed) with drill-down. | Reports |
+| **Fit CIC's data** | Custom donor and gift fields that can be added, renamed and deactivated without losing values; matching import columns fill them. | Settings → Fields |
+| **Govern** | Flat board by default; an optional single super admin is nominated by one member and confirmed by another. Everything important is audit-logged. | Settings |
+| **Connect** | An aggregate-only read API with API keys, and a read-only MCP server so a desktop AI assistant can answer "how much did we raise for Summer Camp?". | `/api/v1`, `mcp_server/` |
+| **Ask in plain words** | An optional assistant turns one sentence ("Called Maria, follow up in March") into proposed actions that the member confirms. Off unless enabled. | Every page |
 
-Imports use assumed source layouts documented in [IMPORT_FORMATS.md](docs/IMPORT_FORMATS.md).
-Preview state lasts 20 minutes in one backend process; expiration or a restart requires re-upload.
-Committed batches and their history are stored in PostgreSQL. Employer matches remain org revenue;
-employee totals and retention count only employee donations (D-127). The Import screen supports
-upload, preview and commit; every proposed donor field starts unchecked. The identity Review
-screen remains lane B's work. Backend endpoints also appear in the app's API documentation.
+| To-do dashboard | Approve and send | Reports and retention |
+|---|---|---|
+| ![Dashboard listing thank-you and quarterly reminders with Draft buttons](docs/images/dashboard.png) | ![Messages page with an editable draft and approval stages](docs/images/messages.png) | ![Reports page with giving summary and retention table](docs/images/reports.png) |
 
-**Designed scope** (full requirements in [docs/SRS.md](docs/SRS.md))
-- Import gifts from CSV/XLSX exports (Zeffy, Benevity, a generic template, and CIC's donor spreadsheet) into one de-duplicated donor ledger.
-- Share donors across board members round-robin, with manual reassignment and a visible ownership history.
-- Donor timeline, follow-up reminders and a quarterly touch for every donor.
-- Thank-you and update messages drafted by the system; a person approves and sends every one.
-- Retention view, one-click funder export, and a key-authenticated, aggregate-only read API with a read-only MCP server.
+## How it works
 
-## Design principles
+One Docker image runs a FastAPI backend that serves both the JSON API and the built React app; PostgreSQL holds everything. External services are optional and off by default.
 
-- **A human sends every donor message.** The app drafts; board members approve and send. Email runs in dry-run mode unless explicitly configured for live sending.
-- **Employee giving excludes employer matches.** Match gifts remain org revenue, while donor totals, lifetime giving, retention and pre-filled message amounts use only the employee's donation ([D-127](docs/DECISIONS.md)).
-- **Privacy by default.** Every board member sees gift history; contact details are visible only to a donor's owner. The public API returns aggregates only, never donor details.
-- **No secrets in the repository.** Configuration comes from environment variables; `.env` is git-ignored.
-- **Synthetic data only** in this repository.
+```mermaid
+flowchart LR
+    member([Board member<br/>browser or phone]) -->|HTTPS, session cookie + CSRF| app
+    subgraph app [One Docker service on Render]
+        spa[React web app<br/>Vite build] --- api[FastAPI<br/>/api/app and /api/v1]
+        api --> svc[Services<br/>ingest, dedupe, ownership,<br/>reminders, messaging, reports]
+        svc --> repos[Repositories<br/>every query checks policy]
+    end
+    repos --> db[(PostgreSQL<br/>Neon in production)]
+    files[/Zeffy, Benevity, generic,<br/>CIC spreadsheet files/] -->|upload| api
+    svc -.->|live email, off by default| resend[Resend]
+    svc -.->|assistant, off by default| gateway[OHack AI gateway]
+    mcp[MCP server<br/>read-only] -->|API key| api
+```
+
+*The backend is the only thing that touches the database, and every repository call checks the authorization policy first.* Details, data flow, sequence and data-model diagrams: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
+## Quick start
+
+You need [Docker Desktop](https://www.docker.com/products/docker-desktop/), [uv](https://docs.astral.sh/uv/) (installs Python 3.12 for you) and Node.js 22 or newer.
+
+```bash
+git clone https://github.com/2026-Arizona-Opportunity-Hack/Karma.js-CodinginColor.git
+cd Karma.js-CodinginColor
+cp .env.example .env               # local defaults work as-is; never commit .env
+docker compose up -d db            # PostgreSQL 16 on localhost:5432
+
+cd backend
+uv sync
+uv run alembic upgrade head
+DEMO_MODE=true uv run python -m app.cli seed-demo   # 3 demo members + all synthetic files; prints passwords once
+uv run uvicorn app.main:app --reload                # API on http://localhost:8000
+```
+
+In a second terminal:
+
+```bash
+cd frontend
+npm ci
+npm run dev                        # open http://localhost:5173 and sign in as diana@demo.cic.test
+```
+
+Full walkthrough, environment variables, tests and troubleshooting: [docs/SETUP.md](docs/SETUP.md).
+
+## Test data
+
+Everything in this repository is **synthetic**. [`fixtures/`](fixtures/) holds four made-up export files (a CIC-style donor spreadsheet, a Zeffy-like, a Benevity-like and an AZ Gives-like file) generated deterministically by [`fixtures/generate.py`](fixtures/generate.py), plus `manifest.json` with the exact expected results: 225 donors, 531 valid gifts, 19 review items and 14 invalid rows across 659 source rows. The test suite checks the importer against that manifest. Details, schema and how to swap in CIC's real exports: [docs/DATA.md](docs/DATA.md).
 
 ## Tech stack
 
 | Layer | Technology |
 |---|---|
-| Backend | Python 3.12, FastAPI, SQLAlchemy 2, Alembic, Argon2id |
-| Frontend | React, Vite, TypeScript, Tailwind CSS, TanStack Query |
-| Database | PostgreSQL 16 (Docker locally, [Neon](https://neon.com) hosted) |
-| Hosting | One Docker image on [Render](https://render.com) serving the API and the web app |
-| Email | [Resend](https://resend.com) (optional, off by default) |
-| CI | GitHub Actions: ruff, mypy, pytest, TypeScript, eslint, build, gitleaks |
+| Web app | React 19, TypeScript 5.9, Vite, Tailwind CSS 4, TanStack Query, React Router, lucide icons |
+| Backend | Python 3.12, FastAPI, Pydantic 2, SQLAlchemy 2, Alembic, Argon2id, openpyxl |
+| Database | PostgreSQL 16 (Docker locally, [Neon](https://neon.com) in production) |
+| Integrations | Resend email (optional), OHack AI gateway (optional), MCP Python SDK |
+| Hosting | One Docker image on [Render](https://render.com); `$0/month` on free tiers ([costs](docs/COSTS.md)) |
+| Quality | GitHub Actions: ruff, mypy, pytest on Postgres, tsc, eslint, prettier, build, Docker build, gitleaks |
 
-## Run it locally
+## Status and next steps
 
-Needs [Docker Desktop](https://www.docker.com/products/docker-desktop/) and [uv](https://docs.astral.sh/uv/) (it installs Python 3.12), plus Node 22+.
+The core loop works end to end on the live app: import → review → assign → remind → draft, approve, send → report. About 400 backend test functions (authorization matrix, importer-versus-manifest and acceptance tests) run on every push, alongside type checks, lint and a container build.
 
-```bash
-git clone https://github.com/2026-Arizona-Opportunity-Hack/Karma.js-CodinginColor.git
-cd Karma.js-CodinginColor
-cp .env.example .env              # fill in your own values; never commit .env
-docker compose up -d db           # local Postgres on :5432
+Not finished yet: screens for the funder export, lapsed-donor radar and reminder digest (their APIs exist); program and program-map management (seeded programs are used); donor merge; live email needs CIC's sending domain. The prioritized plan and the handoff to CIC are in [docs/ROADMAP.md](docs/ROADMAP.md).
 
-cd backend
-uv sync                           # install pinned dependencies
-uv run alembic upgrade head       # create tables
-uv run python -m app.cli setup    # add board members; prints each initial password once
-uv run uvicorn app.main:app --reload   # API on http://localhost:8000
-```
+## Assumptions
 
-In a second terminal, the web app (proxies `/api` to the backend):
+- Import layouts are modelled on Zeffy's and Benevity's public documentation, not real CIC files ([sources and confidence](docs/IMPORT_FORMATS.md)).
+- CIC's spreadsheet has one row per donor; the program list is a seeded guess; reports use a rolling 12 months.
+- Contact details are visible only to the donor's owner (and an active super admin); every member sees gift history.
+- Employer matches count as organization revenue but not as the employee's own giving.
 
-```bash
-cd frontend
-npm ci
-npm run dev                       # http://localhost:5173
-```
+All assumptions with their impact and how to confirm them: [docs/DATA.md#assumptions](docs/DATA.md#assumptions).
 
-`setup` asks for members interactively, or reads `--file members.local.json` (git-ignored):
-`{"members": [{"email": "...", "display_name": "..."}], "super_admin": "optional email"}`.
+## Security and privacy
 
-### Governance: the optional super admin
-
-The board starts **flat**: every active member has equal permissions. On the Members page:
-
-- **Nominate.** While flat, any active member can click *Nominate super admin* and pick an active member (themselves included). A **different** member must confirm within 72 hours; the nominator cannot. Either the nominator or the nominee can cancel. Unconfirmed nominations expire.
-- **Remove.** Only the super admin can click *Remove my super admin role* and type `REMOVE`. The org becomes flat, the reassignment scope returns to `anyone`, and the person stays a member and keeps their donors. A dormant super admin can remove the role too.
-- API keys, including full-access keys, can never nominate, confirm, cancel or remove (403). Every step is written to the audit log.
-
-**Break-glass:** the setup command still works when nobody can use the app, and can create, activate, transfer, flatten or deactivate the role:
-`uv run python -m app.cli superadmin {create,activate,flatten,transfer,deactivate} [--email X]`.
-
-## Checks
-
-```bash
-cd backend && uv run ruff check . && uv run mypy app && uv run pytest
-cd frontend && npm run typecheck && npm run lint && npm run build
-```
-
-Backend tests use a separate `cic_test` database on the local Postgres.
-
-## Deployment
-
-The app ships as one Docker image (`Dockerfile`) with a Render blueprint (`render.yaml`) and a Neon Postgres database. Migrations run when the container starts. Steps, environment variables and costs: [docs/DEPLOY.md](docs/DEPLOY.md) and [docs/COSTS.md](docs/COSTS.md).
-
-## Security
-
-- Passwords are Argon2id hashed; sessions use `HttpOnly` cookies with CSRF protection on every write.
-- **API keys.** `cic_live_` keys on `/api/v1` are read-only and aggregate-only: totals and counts, never donor names, emails or phones.
-- **Full-access keys exist.** A `cic_full_` key grants full read and write access to every `/api/app` route as the member who created it, including donor contact details. Governance and key management stay off limits. Keys are shown once, stored only as a hash, expire after 90 days, are rate limited, and every change they make is audited with the key's id. Treat one like a password: share it only with apps you trust and revoke it when done. See [API guide](docs/API_GUIDE.md#10-full-access-keys).
-- No secrets in git: real values live in `.env`, and a pre-commit guard and CI secret scan enforce it.
+- Argon2id password hashes, hashed session tokens in `HttpOnly` cookies, CSRF checks on every write, login and API rate limits, and security headers with a strict Content Security Policy.
+- Authorization lives in one policy module, tested as a matrix of every action × role × ownership × governance state; hiding a button is never the only protection.
+- The public API (`/api/v1`) and MCP server return aggregates only; a test fails the build if a donor name, email or phone appears in their schema.
+- No secrets in git: configuration comes from environment variables, and CI runs a secret scan.
+- Messaging runs in dry-run mode until CIC configures a provider; no message ever goes to a donor without a person's click.
 
 ## Documentation
 
-| Document | Contents |
+| Document | For |
 |---|---|
-| [docs/SRS.md](docs/SRS.md) | Requirements |
-| [docs/DATA_MODEL.md](docs/DATA_MODEL.md) | Tables, rules and visibility policy |
-| [docs/API.md](docs/API.md) | Public read API and app API |
-| [docs/DECISIONS.md](docs/DECISIONS.md) | Design decisions and why |
-| [docs/DEPLOY.md](docs/DEPLOY.md), [docs/COSTS.md](docs/COSTS.md) | Deployment and hosting costs |
-| [docs/CHANGELOG.md](docs/CHANGELOG.md) | Version history |
+| [SETUP.md](docs/SETUP.md) | Running it locally, environment variables, tests, deployment, troubleshooting |
+| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | How each layer works, with diagrams and a repository map |
+| [DATA.md](docs/DATA.md) | Test data, assumptions, and migrating to CIC's real data |
+| [ROADMAP.md](docs/ROADMAP.md) | Status, limitations, next steps and the handoff plan |
+| [SRS.md](docs/SRS.md) | Requirements with IDs (ING-1, MSG-3, …) referenced throughout |
+| [DATA_MODEL.md](docs/DATA_MODEL.md), [API.md](docs/API.md), [API_GUIDE.md](docs/API_GUIDE.md) | Schema rules, API contract, API and MCP how-to with curl examples |
+| [IMPORT_FORMATS.md](docs/IMPORT_FORMATS.md) | Source file layouts, with sources and confidence |
+| [DECISIONS.md](docs/DECISIONS.md) | Every design decision (D-101 onward) and why |
+| [DEPLOY.md](docs/DEPLOY.md), [COSTS.md](docs/COSTS.md) | Render + Neon deployment and monthly costs |
+| [BRAND.md](docs/BRAND.md), [CIC_CONTEXT.md](docs/CIC_CONTEXT.md) | CIC brand rules and organizational context |
+| [CHANGELOG.md](docs/CHANGELOG.md) | Version history |
+| [archive/](docs/archive/) | The hackathon build plan, phase reports and engineering rules |
 
-Development process and team notes are in [docs/](docs/): [HACKATHON.md](docs/HACKATHON.md), [PLAN.md](docs/PLAN.md), [ENGINEERING.md](docs/ENGINEERING.md), [PHASE_LOG.md](docs/PHASE_LOG.md).
+## Team
+
+Built by **team Karma.js** for Coding in Color's [Donor & Funder Relationship Platform](https://www.ohack.dev/project/e26932c0df1b11f189a8dead68f07eb5) problem statement:
+
+- **Dhaval Tanna** ([@Devils-Ghost](https://github.com/Devils-Ghost))
+- **Parthiv Kumbhani** ([@ParthivKumbhanii](https://github.com/ParthivKumbhanii))
+- **Param Patel** ([@Param2k23](https://github.com/Param2k23))
+
+Thanks to Greg V and the [Opportunity Hack](https://www.ohack.dev) organizers, mentors, and Coding in Color for the problem and their feedback during the weekend.
 
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE). All data in this repository is synthetic; no real donor or payment information is stored here.
