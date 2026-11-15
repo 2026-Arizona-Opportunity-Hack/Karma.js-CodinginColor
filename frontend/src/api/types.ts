@@ -868,7 +868,7 @@ export interface paths {
         };
         /**
          * List Reminders
-         * @description The To-do list: my reminders plus Needs reassignment (REM-5).
+         * @description The To-do list: my reminders, most urgent first, then Needs reassignment (REM-5).
          */
         get: operations["list_reminders_api_app_reminders_get"];
         put?: never;
