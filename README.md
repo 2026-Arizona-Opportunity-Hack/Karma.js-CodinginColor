@@ -4,7 +4,7 @@ A donor stewardship app for [Coding in Color](https://www.ohack.dev/nonprofit/YI
 
 Built for CIC's [Donor & Funder Relationship Platform](https://www.ohack.dev/project/e26932c0df1b11f189a8dead68f07eb5) problem statement at the ASU Fall Hackathon 2026 by team Karma.js. Open source under the MIT license.
 
-**Current version:** 0.1.0 (foundation). See the [changelog](docs/CHANGELOG.md).
+**Current version:** 0.1.0. Backend implementation and verification status: [phase log](docs/PHASE_LOG.md). See the [changelog](docs/CHANGELOG.md).
 
 ## What it does
 
@@ -12,7 +12,15 @@ Built for CIC's [Donor & Funder Relationship Platform](https://www.ohack.dev/pro
 - Individual board-member accounts with secure login, sessions and CSRF protection.
 - A flat hierarchy by default, with an optional single super admin managed only from the command line.
 - An audit log of logins and governance changes.
+- Backend CSV/XLSX import preview, commit, batch history and soft reversal, with file/gift deduplication and balanced donor ownership.
+- Backend donor identity reviews and anonymous-gift attribution, with authorization and audit records.
 - A web app shell with navigation for Dashboard, Donors, Import, Review, Messages, Reports and Settings.
+
+Imports use assumed source layouts documented in [IMPORT_FORMATS.md](docs/IMPORT_FORMATS.md).
+Preview state lasts 20 minutes in one backend process; expiration or a restart requires re-upload.
+Committed batches and their history are stored in PostgreSQL. Employer matches remain org revenue;
+employee totals and retention count only employee donations (D-127). The Import and Review screens
+are lane B's work; these backend endpoints also appear in the app's API documentation.
 
 **Designed scope** (full requirements in [docs/SRS.md](docs/SRS.md))
 - Import gifts from CSV/XLSX exports (Zeffy, Benevity, a generic template, and CIC's donor spreadsheet) into one de-duplicated donor ledger.
