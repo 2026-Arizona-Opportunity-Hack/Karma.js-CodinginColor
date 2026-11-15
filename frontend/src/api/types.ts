@@ -912,7 +912,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Funder Export */
+        /**
+         * Funder Export
+         * @description Any member may export gift history; defaults to the last 12 months.
+         */
         get: operations["funder_export_api_app_reports_funder__donor_id__get"];
         put?: never;
         post?: never;
@@ -5892,6 +5895,8 @@ export interface operations {
         parameters: {
             query?: {
                 format?: "html" | "csv";
+                from?: string | null;
+                to?: string | null;
             };
             header?: never;
             path: {

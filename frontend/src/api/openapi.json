@@ -8059,6 +8059,7 @@
     },
     "/api/app/reports/funder/{donor_id}": {
       "get": {
+        "description": "Any member may export gift history; defaults to the last 12 months.",
         "operationId": "funder_export_api_app_reports_funder__donor_id__get",
         "parameters": [
           {
@@ -8082,6 +8083,40 @@
               ],
               "title": "Format",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "from",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "From"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "To"
             }
           }
         ],

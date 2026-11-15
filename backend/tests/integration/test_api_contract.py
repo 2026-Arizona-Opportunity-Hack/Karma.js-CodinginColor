@@ -59,6 +59,7 @@ EXPECTED = {
 }  # fmt: skip
 IMPLEMENTED = {
     ("GET", "/api/app/program-outcomes"), ("POST", "/api/app/program-outcomes"),  # lane A, #40
+    ("GET", "/api/app/reports/funder/{}"),  # lane A, #40
     ("POST", "/api/app/gifts/{}/attribute"),  # lane A, issue #71
     ("GET", "/api/app/imports"), ("GET", "/api/app/imports/{}"),
     ("POST", "/api/app/imports/{}/commit"), ("POST", "/api/app/imports/{}/reverse"),  # lane A, #18
