@@ -540,6 +540,7 @@ def write_xlsx(path: Path, headers: list[str], rows: list[Row]) -> None:
         for name in sorted(src.namelist()):
             info = zipfile.ZipInfo(name, date_time=(2026, 11, 14, 12, 0, 0))
             info.compress_type, info.external_attr = zipfile.ZIP_DEFLATED, 0o600 << 16
+            info.create_system = 3  # "Unix" everywhere; Windows would record 0 and change the bytes
             data = src.read(name)
             if name == "docProps/core.xml":  # openpyxl stamps "modified" with the current time
                 data = re.sub(
