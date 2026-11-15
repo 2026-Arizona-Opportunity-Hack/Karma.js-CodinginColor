@@ -1,6 +1,40 @@
 {
   "components": {
     "schemas": {
+      "ActivityDay": {
+        "properties": {
+          "contacts_logged": {
+            "title": "Contacts Logged",
+            "type": "integer"
+          },
+          "day": {
+            "format": "date",
+            "title": "Day",
+            "type": "string"
+          },
+          "gifts_received": {
+            "title": "Gifts Received",
+            "type": "integer"
+          },
+          "gross_cents": {
+            "title": "Gross Cents",
+            "type": "integer"
+          },
+          "messages_sent": {
+            "title": "Messages Sent",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "day",
+          "gifts_received",
+          "gross_cents",
+          "contacts_logged",
+          "messages_sent"
+        ],
+        "title": "ActivityDay",
+        "type": "object"
+      },
       "ApiKeyCreate": {
         "properties": {
           "name": {
@@ -173,6 +207,45 @@
         "title": "ApiKeyOut",
         "type": "object"
       },
+      "BoardMemberItem": {
+        "properties": {
+          "board_member": {
+            "title": "Board Member",
+            "type": "string"
+          },
+          "contacts_logged": {
+            "title": "Contacts Logged",
+            "type": "integer"
+          },
+          "donors_owned": {
+            "title": "Donors Owned",
+            "type": "integer"
+          },
+          "gross_cents": {
+            "title": "Gross Cents",
+            "type": "integer"
+          },
+          "messages_sent": {
+            "title": "Messages Sent",
+            "type": "integer"
+          },
+          "open_reminders": {
+            "description": "0 until the reminders service lands (Phase 3)",
+            "title": "Open Reminders",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "board_member",
+          "donors_owned",
+          "gross_cents",
+          "open_reminders",
+          "contacts_logged",
+          "messages_sent"
+        ],
+        "title": "BoardMemberItem",
+        "type": "object"
+      },
       "BoardMemberTotal": {
         "properties": {
           "donors_owned": {
@@ -223,6 +296,136 @@
           "file"
         ],
         "title": "Body_preview_import_api_app_imports_preview_post",
+        "type": "object"
+      },
+      "ByBoardMember": {
+        "properties": {
+          "as_of": {
+            "format": "date-time",
+            "title": "As Of",
+            "type": "string"
+          },
+          "currency": {
+            "const": "USD",
+            "default": "USD",
+            "title": "Currency",
+            "type": "string"
+          },
+          "from": {
+            "format": "date",
+            "title": "From",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/BoardMemberItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "to": {
+            "format": "date",
+            "title": "To",
+            "type": "string"
+          }
+        },
+        "required": [
+          "as_of",
+          "from",
+          "to",
+          "items"
+        ],
+        "title": "ByBoardMember",
+        "type": "object"
+      },
+      "ByPeriod": {
+        "properties": {
+          "as_of": {
+            "format": "date-time",
+            "title": "As Of",
+            "type": "string"
+          },
+          "currency": {
+            "const": "USD",
+            "default": "USD",
+            "title": "Currency",
+            "type": "string"
+          },
+          "from": {
+            "format": "date",
+            "title": "From",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PeriodItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "period": {
+            "enum": [
+              "month",
+              "quarter",
+              "year"
+            ],
+            "title": "Period",
+            "type": "string"
+          },
+          "to": {
+            "format": "date",
+            "title": "To",
+            "type": "string"
+          }
+        },
+        "required": [
+          "as_of",
+          "from",
+          "to",
+          "period",
+          "items"
+        ],
+        "title": "ByPeriod",
+        "type": "object"
+      },
+      "ByProgram": {
+        "properties": {
+          "as_of": {
+            "format": "date-time",
+            "title": "As Of",
+            "type": "string"
+          },
+          "currency": {
+            "const": "USD",
+            "default": "USD",
+            "title": "Currency",
+            "type": "string"
+          },
+          "from": {
+            "format": "date",
+            "title": "From",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ProgramItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "to": {
+            "format": "date",
+            "title": "To",
+            "type": "string"
+          }
+        },
+        "required": [
+          "as_of",
+          "from",
+          "to",
+          "items"
+        ],
+        "title": "ByProgram",
         "type": "object"
       },
       "CountCents": {
@@ -2440,6 +2643,40 @@
         "title": "OwnerHistoryOut",
         "type": "object"
       },
+      "PeriodItem": {
+        "properties": {
+          "donor_count": {
+            "title": "Donor Count",
+            "type": "integer"
+          },
+          "gift_count": {
+            "title": "Gift Count",
+            "type": "integer"
+          },
+          "gross_cents": {
+            "title": "Gross Cents",
+            "type": "integer"
+          },
+          "net_cents": {
+            "title": "Net Cents",
+            "type": "integer"
+          },
+          "period_start": {
+            "format": "date",
+            "title": "Period Start",
+            "type": "string"
+          }
+        },
+        "required": [
+          "period_start",
+          "gross_cents",
+          "net_cents",
+          "gift_count",
+          "donor_count"
+        ],
+        "title": "PeriodItem",
+        "type": "object"
+      },
       "PeriodTotals": {
         "properties": {
           "donor_count": {
@@ -2497,6 +2734,34 @@
           "name"
         ],
         "title": "ProgramCreate",
+        "type": "object"
+      },
+      "ProgramItem": {
+        "properties": {
+          "donor_count": {
+            "title": "Donor Count",
+            "type": "integer"
+          },
+          "gift_count": {
+            "title": "Gift Count",
+            "type": "integer"
+          },
+          "gross_cents": {
+            "title": "Gross Cents",
+            "type": "integer"
+          },
+          "program": {
+            "title": "Program",
+            "type": "string"
+          }
+        },
+        "required": [
+          "program",
+          "gross_cents",
+          "gift_count",
+          "donor_count"
+        ],
+        "title": "ProgramItem",
         "type": "object"
       },
       "ProgramListOut": {
@@ -2704,6 +2969,39 @@
           "to_user_id"
         ],
         "title": "ReassignIn",
+        "type": "object"
+      },
+      "RecentActivity": {
+        "properties": {
+          "as_of": {
+            "format": "date-time",
+            "title": "As Of",
+            "type": "string"
+          },
+          "currency": {
+            "const": "USD",
+            "default": "USD",
+            "title": "Currency",
+            "type": "string"
+          },
+          "days": {
+            "title": "Days",
+            "type": "integer"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ActivityDay"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "as_of",
+          "days",
+          "items"
+        ],
+        "title": "RecentActivity",
         "type": "object"
       },
       "ReminderListOut": {
@@ -8063,6 +8361,449 @@
         "summary": "Put Template",
         "tags": [
           "app:settings"
+        ]
+      }
+    },
+    "/api/v1/activity/recent": {
+      "get": {
+        "operationId": "recent_activity_api_v1_activity_recent_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "days",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "maximum": 90,
+              "minimum": 1,
+              "title": "Days",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecentActivity"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Missing, invalid or revoked API key"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Key lacks the read:aggregates scope"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Over 60 requests per minute; see Retry-After"
+          }
+        },
+        "summary": "Recent Activity",
+        "tags": [
+          "v1"
+        ]
+      }
+    },
+    "/api/v1/health": {
+      "get": {
+        "description": "No auth.",
+        "operationId": "health_api_v1_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Health Api V1 Health Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Health",
+        "tags": [
+          "v1"
+        ]
+      }
+    },
+    "/api/v1/totals/by-board-member": {
+      "get": {
+        "operationId": "totals_by_board_member_api_v1_totals_by_board_member_get",
+        "parameters": [
+          {
+            "description": "First day, default 12 months ago",
+            "in": "query",
+            "name": "from",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "First day, default 12 months ago",
+              "title": "From"
+            }
+          },
+          {
+            "description": "Last day, default today",
+            "in": "query",
+            "name": "to",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Last day, default today",
+              "title": "To"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ByBoardMember"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Missing, invalid or revoked API key"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Key lacks the read:aggregates scope"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Over 60 requests per minute; see Retry-After"
+          }
+        },
+        "summary": "Totals By Board Member",
+        "tags": [
+          "v1"
+        ]
+      }
+    },
+    "/api/v1/totals/by-period": {
+      "get": {
+        "operationId": "totals_by_period_api_v1_totals_by_period_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "period",
+            "required": false,
+            "schema": {
+              "default": "month",
+              "enum": [
+                "month",
+                "quarter",
+                "year"
+              ],
+              "title": "Period",
+              "type": "string"
+            }
+          },
+          {
+            "description": "First day, default 12 months ago",
+            "in": "query",
+            "name": "from",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "First day, default 12 months ago",
+              "title": "From"
+            }
+          },
+          {
+            "description": "Last day, default today",
+            "in": "query",
+            "name": "to",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Last day, default today",
+              "title": "To"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ByPeriod"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Missing, invalid or revoked API key"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Key lacks the read:aggregates scope"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Over 60 requests per minute; see Retry-After"
+          }
+        },
+        "summary": "Totals By Period",
+        "tags": [
+          "v1"
+        ]
+      }
+    },
+    "/api/v1/totals/by-program": {
+      "get": {
+        "operationId": "totals_by_program_api_v1_totals_by_program_get",
+        "parameters": [
+          {
+            "description": "First day, default 12 months ago",
+            "in": "query",
+            "name": "from",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "First day, default 12 months ago",
+              "title": "From"
+            }
+          },
+          {
+            "description": "Last day, default today",
+            "in": "query",
+            "name": "to",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Last day, default today",
+              "title": "To"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ByProgram"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Missing, invalid or revoked API key"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Key lacks the read:aggregates scope"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Over 60 requests per minute; see Retry-After"
+          }
+        },
+        "summary": "Totals By Program",
+        "tags": [
+          "v1"
         ]
       }
     },

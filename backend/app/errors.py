@@ -9,9 +9,10 @@ class AppError(Exception):
     status = 500
     code = "error"
 
-    def __init__(self, message: str = "") -> None:
+    def __init__(self, message: str = "", headers: dict[str, str] | None = None) -> None:
         super().__init__(message)
         self.message = message or self.code.replace("_", " ")
+        self.headers = headers  # for example Retry-After on a 429
 
 
 class Invalid(AppError):
@@ -50,6 +51,7 @@ def register_error_handlers(app: FastAPI) -> None:
         return JSONResponse(
             status_code=exc.status,
             content={"error": {"code": exc.code, "message": exc.message}},
+            headers=exc.headers,
         )
 
     @app.exception_handler(RequestValidationError)
