@@ -17,6 +17,7 @@ from app.db.models import (
     ImportBatch,
     ImportRow,
     MatchReview,
+    Program,
     User,
 )
 from app.errors import Conflict, Forbidden, Invalid, NotFound
@@ -24,6 +25,8 @@ from app.repos import audit
 from app.repos.ownership import AssignmentAction
 from app.services.dedupe.resolver import fingerprint, fingerprints, identity_keys
 from app.services.ingest.adapters import IncomingDonor
+
+BENEVITY_ANONYMOUS = "This donor chose to stay anonymous; the gift stays unattributed."
 
 
 def require(actor: Actor, action: AssignmentAction = "review.decide") -> None:
@@ -86,6 +89,63 @@ def create_donor(
     db.add(donor)
     db.flush()
     return donor
+
+
+def anonymous_gift(db: Session, actor: Actor, gift_id: int) -> Gift:
+    require(actor)
+    gift = db.scalar(
+        select(Gift).where(Gift.id == gift_id, Gift.deleted_at.is_(None)).with_for_update()
+    )
+    if gift is None:
+        raise NotFound("Gift not found.")
+    if gift.attribution != "anonymous":
+        raise Conflict("Only anonymous gifts can be attributed. Use review for pending gifts.")
+    if gift.source == "benevity":
+        # Benevity hides name and email only when the donor opts out (D-131). The gift still
+        # counts in org revenue and reports; it just never gets a donor record.
+        raise Conflict(BENEVITY_ANONYMOUS)
+    return gift
+
+
+def attribute_gift(
+    db: Session, actor: Actor, gift: Gift, donor: Donor, *, at: datetime, cutoff: date
+) -> None:
+    require(actor)
+    gift.donor_id, gift.attribution = donor.id, "linked"
+    gift.assumed_thanked = gift.assumed_thanked or gift.gift_date < cutoff
+    audit.write(
+        db,
+        actor,
+        "gift.attribute",
+        entity="gift",
+        entity_id=gift.id,
+        data={"donor_id": donor.id},
+        at=at,
+    )
+    db.flush()
+
+
+def gift_output(db: Session, actor: Actor, gift: Gift, donor: Donor) -> dict[str, Any]:
+    require(actor)
+    program = db.get(Program, gift.program_id)
+    if program is None:
+        raise NotFound("Gift program not found.")
+    return {
+        "id": gift.id,
+        "donor_id": gift.donor_id,
+        "donor_name": donor.display_name,
+        "attribution": gift.attribution,
+        "source": gift.source,
+        "gift_date": gift.gift_date,
+        "gross_cents": gift.gross_cents,
+        "fee_cents": gift.fee_cents,
+        "net_cents": gift.net_cents,
+        "program": program.name,
+        "campaign_name": gift.campaign_name,
+        "is_matching_gift": gift.is_matching_gift,
+        "payer_name": gift.payer_name,
+        "assumed_thanked": gift.assumed_thanked,
+    }
 
 
 def learn(
