@@ -47,7 +47,7 @@ LEFT JOIN LATERAL (
            sum(gross_cents) FILTER (WHERE gift_date > :t730 AND gift_date <= :t365) AS prev,
            max(gift_date) AS last_gift_date, min(gift_date) AS first_gift_date
     FROM gifts WHERE donor_id = d.id AND attribution = 'linked' AND deleted_at IS NULL
-      AND gift_date <= :today
+      AND NOT is_matching_gift AND gift_date <= :today
 ) g ON true
 LEFT JOIN LATERAL (
     SELECT max(occurred_on) AS last_contact_date

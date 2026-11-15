@@ -2,7 +2,8 @@
 
 Rolling basis, as of T: current = (T-365, T], previous = (T-730, T-365], and a donor "gave
 before" if they have a gift on or before T-730. Calendar basis uses the calendar year of T and the
-one before it. Only linked gifts count; deleted and merged donors are left out."""
+one before it. Only linked employee donations count (D-127); employer matches,
+deleted and merged donors are left out."""
 
 from dataclasses import dataclass, field
 from datetime import date, timedelta

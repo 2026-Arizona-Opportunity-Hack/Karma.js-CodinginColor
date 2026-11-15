@@ -6,7 +6,7 @@
 |---|---|---|---|---|---|
 | 0 | verified | Sat 17:15 | #2–#9 | #1, #55–#61 | deploy needs human (accounts); free tier for now |
 | 1 | verified | Sat 19:00 | #10–#14, #64 | #65–#70 merged | live deploy checked: 63 routes, 501 when logged in, 401 when logged out |
-| 2A ingest/dedupe | todo | Sat 23:00 | #15–#18, #71 | | |
+| 2A ingest/dedupe | running | Sat 23:00 | #15–#18, #71, #84 | #82 | #84 shared CIC decision/summary contract must merge before #16 |
 | 2B donor screens | todo | Sat 23:00 | #19–#23 | | build against mocks until lane C merges #72 |
 | 2C read API + donor API | ready-for-review, #73 blocked | Sat 23:00 | #24–#28, #72–#74, #87, #88 | #77–#81 merged, #83, #85, #90, #91 open | #73 waits for lane A #17 and #18; donor API moved here (D-126) |
 | 3A ownership/reminders | todo | Sun 01:30 | | | |
@@ -27,6 +27,16 @@
 
 ## Reports
 
+### Phase 2 lane A: CIC match-credit decision and summary contract (shared #84)
+**Issues / PRs:** #15 → PR #82 (CI green); #84 shared prerequisite → PR pending approval; #16 preview committed locally and awaiting adaptation to the new contract; #17, #18, #71 remain.
+**What changed:** CIC decision D-127 supersedes employee credit in D-125. Employer matches remain separate flagged gifts with company payer and `:match` transaction suffix, and remain org revenue. Employee totals, lifetime giving, retention and pre-filled message amounts exclude employer matches. Donor linkage remains for traceability. Preview classes count physical source rows and expose separate gift counts, donation cents and match cents; rows and total cents reconcile independently. Fixture generator, manifest and independent resolver test change together; fixture file bytes remain unchanged.
+**Gate:** Shared checks: backend `.venv/Scripts/ruff.exe check --no-cache .` clean; `.venv/Scripts/mypy.exe app` clean (70 files); with both database URLs explicitly set to local Docker `cic_test`, `.venv/Scripts/python.exe -m pytest -p no:cacheprovider` → 558 passed, 2 skipped. Includes deterministic fixture regeneration, independent manifest recomputation and match-credit regression tests. `python -m app.export_openapi ../frontend/src/api/openapi.json` and frontend `npm run gen:api`, `typecheck`, `lint`, `build` pass. Full Phase 2 acceptance tests 1–4 remain pending the importer.
+**How to verify:** On local Docker Postgres, run backend Ruff, mypy and pytest; regenerate OpenAPI and frontend types, then run frontend typecheck, lint and build. The Benevity manifest must retain 80 rows, 91 valid gifts, 597500 donation cents and 101250 match cents; org gross stays 698750 cents.
+**Decisions made:** D-127, explicitly requested by CIC through the lane A engineer.
+**Known gaps:** Message routes are still Phase 3 stubs; lane C must apply D-127 when filling message amounts. Board members review and edit drafts before approving and sending. Lane B must render the new summary fields in its import screen. Full importer/manifest integration and acceptance tests 1–4 await #17/#18.
+**Questions for the human:** Push/PR approval required by ENGINEERING section 7 once the shared commit is ready.
+**Shared-file changes requested:** #84: import-summary schema and generated OpenAPI/TS types; donor/report queries; SRS, data model, decisions, import formats and phase log; fixture generator/manifest and tests. No models or migrations change.
+
 ### Phase 2 lane C: read API, MCP, donor API  (Sat 2026-11-14, about 18:30–21:30 MST)
 **Issues / PRs (merge in this order, with "Create a merge commit"):** #24 API keys → PR #77 `shared` (merged) · #25 `/api/v1` endpoints → #78 (merged) · #72 donor list, detail, timeline, unattributed → #79 (merged) · #74 contact log and next step → #80 (merged) · #26 report queries → #81 (merged) · #27 MCP server → #83 · #28 API guide → #85 · #87 `apikey` CLI → PR #90 · #88 audit contact and next-step actions → PR #91. **#73 donor and gift create, edit, delete: not started, blocked on lane A #17 (identity resolution) and #18 (round-robin).**
 **What changed:** API keys (`cic_live_` + 32 random bytes, SHA-256 only, shown once, scope, last used, revoke) with the key-auth dependency and a 60 per minute per key limit. Six `/api/v1` read endpoints (`summary`, `retention`, `totals/by-period`, `totals/by-program`, `totals/by-board-member`, `activity/recent`) plus `health`, all aggregates in USD cents with `as_of`. The app's Reports page and `/api/v1` share one set of queries. Donor list (My/All, search, filters, pagination), detail, timeline, unattributed gifts; contact log and next step. A read-only stdio MCP server with six tools in `mcp_server/`, its own lockfile and CI job. `docs/API_GUIDE.md`. `python -m app.cli apikey {create,list,revoke}`.
@@ -46,11 +56,11 @@
 4. Log in as two different members (private window). The second opens `GET /api/app/donors?scope=all` and a donor owned by the first: gift history and timeline appear, email, phone and notes are null with `contact_via` set; `POST /api/app/donors/{id}/interactions` returns 403.
 5. Follow `docs/API_GUIDE.md` steps 1 and 2 on the deployed URL; for Claude Desktop follow `mcp_server/README.md`.
 6. After lane A's importer lands: import all fixtures, then `GET /api/v1/retention?as_of=2026-11-15` and compare with `fixtures/manifest.json`.
-**Decisions made:** D-127 (rate limit in memory), D-128 (notes are a contact detail). Also: the v1 retention response carries `retention_date` beside `as_of` because API.md used one name for two things; the stored key prefix is 13 characters (`cic_live_` + 4), not 8; `new` means first linked gift in the last 30 days; the CLI `apikey create` records the member it is for (`--email`).
+**Decisions made:** D-128 (rate limit in memory), D-129 (notes are a contact detail). Also: the v1 retention response carries `retention_date` beside `as_of` because API.md used one name for two things; the stored key prefix is 13 characters (`cic_live_` + 4), not 8; `new` means first linked gift in the last 30 days; the CLI `apikey create` records the member it is for (`--email`).
 **Known gaps:**
 - **#73 not built** (blocked on lane A #17 and #18). Until it lands there is no way to create or edit a donor or gift by hand; `POST /donors`, `PATCH /donors/{id}`, `DELETE /donors/{id}` and `POST /donors/{id}/gifts` still answer 501.
 - `thank_you_due` and `update_due` donor statuses and every `open_reminders` count are missing or 0 until the reminders service (lane A, Phase 3).
-- The rate limit is per process and in memory: exact on Render's single worker, reset by a restart, not shared across workers (D-127).
+- The rate limit is per process and in memory: exact on Render's single worker, reset by a restart, not shared across workers (D-128).
 - No Settings screen for API keys: issue #86 (lane B, Phase 4). Keys are made through the app API (guide step 1) or the CLI.
 - API.md says Swagger shows the public tag only in production; `/api/docs` currently lists every route (Phase 4 hardening).
 - Timeline and unattributed lists return at most 500 entries and are not paged.

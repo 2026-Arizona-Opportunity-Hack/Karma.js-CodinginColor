@@ -428,24 +428,6 @@
         "title": "ByProgram",
         "type": "object"
       },
-      "CountCents": {
-        "properties": {
-          "cents": {
-            "title": "Cents",
-            "type": "integer"
-          },
-          "count": {
-            "title": "Count",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "count",
-          "cents"
-        ],
-        "title": "CountCents",
-        "type": "object"
-      },
       "DigestMember": {
         "properties": {
           "member": {
@@ -1597,6 +1579,48 @@
         "title": "ImportBatchOut",
         "type": "object"
       },
+      "ImportClassSummary": {
+        "description": "Physical source rows, independently counted gifts, and gross USD cents.",
+        "properties": {
+          "cents": {
+            "description": "Donation cents plus employer-match cents",
+            "minimum": 0.0,
+            "title": "Cents",
+            "type": "integer"
+          },
+          "count": {
+            "description": "Physical source rows in this class",
+            "minimum": 0.0,
+            "title": "Count",
+            "type": "integer"
+          },
+          "donation_cents": {
+            "minimum": 0.0,
+            "title": "Donation Cents",
+            "type": "integer"
+          },
+          "gift_count": {
+            "description": "Gifts represented by these rows; donor-only rows add 0",
+            "minimum": 0.0,
+            "title": "Gift Count",
+            "type": "integer"
+          },
+          "match_cents": {
+            "minimum": 0.0,
+            "title": "Match Cents",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "count",
+          "cents",
+          "gift_count",
+          "donation_cents",
+          "match_cents"
+        ],
+        "title": "ImportClassSummary",
+        "type": "object"
+      },
       "ImportListOut": {
         "properties": {
           "items": {
@@ -1644,37 +1668,71 @@
         "type": "object"
       },
       "ImportSummary": {
-        "description": "rows_read = new + already_imported + needs_review + invalid; must reconcile (ING-5).",
+        "description": "Reconcile physical rows and gross cents independently (ING-5, D-127).\n\nAnonymous is a subset of new rows; it is excluded from the conservation sum.\nInvalid rows contribute no accepted gifts or cents. Counts include donor-only\nspreadsheet rows; gift_count never counts those as gifts.",
         "properties": {
           "already_imported": {
-            "$ref": "#/components/schemas/CountCents"
+            "$ref": "#/components/schemas/ImportClassSummary"
           },
           "anonymous": {
-            "$ref": "#/components/schemas/CountCents"
+            "$ref": "#/components/schemas/ImportClassSummary"
+          },
+          "cents_reconcile": {
+            "default": false,
+            "title": "Cents Reconcile",
+            "type": "boolean"
+          },
+          "donation_cents": {
+            "minimum": 0.0,
+            "title": "Donation Cents",
+            "type": "integer"
           },
           "donors_matched": {
             "title": "Donors Matched",
             "type": "integer"
           },
+          "gift_count": {
+            "description": "Parsed valid gifts, including matches and review gifts",
+            "minimum": 0.0,
+            "title": "Gift Count",
+            "type": "integer"
+          },
           "invalid": {
-            "$ref": "#/components/schemas/CountCents"
+            "$ref": "#/components/schemas/ImportClassSummary"
+          },
+          "match_cents": {
+            "minimum": 0.0,
+            "title": "Match Cents",
+            "type": "integer"
           },
           "needs_review": {
-            "$ref": "#/components/schemas/CountCents"
+            "$ref": "#/components/schemas/ImportClassSummary"
           },
           "new_donors": {
             "title": "New Donors",
             "type": "integer"
           },
           "new_gifts": {
-            "$ref": "#/components/schemas/CountCents"
+            "$ref": "#/components/schemas/ImportClassSummary"
           },
           "reconciles": {
+            "default": false,
             "title": "Reconciles",
             "type": "boolean"
           },
           "rows_read": {
+            "minimum": 0.0,
             "title": "Rows Read",
+            "type": "integer"
+          },
+          "rows_reconcile": {
+            "default": false,
+            "title": "Rows Reconcile",
+            "type": "boolean"
+          },
+          "total_cents": {
+            "description": "Gross donation plus match cents before fees",
+            "minimum": 0.0,
+            "title": "Total Cents",
             "type": "integer"
           },
           "unmapped_campaigns": {
@@ -1688,6 +1746,10 @@
         },
         "required": [
           "rows_read",
+          "gift_count",
+          "donation_cents",
+          "match_cents",
+          "total_cents",
           "new_gifts",
           "already_imported",
           "needs_review",
@@ -1695,8 +1757,7 @@
           "anonymous",
           "new_donors",
           "donors_matched",
-          "unmapped_campaigns",
-          "reconciles"
+          "unmapped_campaigns"
         ],
         "title": "ImportSummary",
         "type": "object"

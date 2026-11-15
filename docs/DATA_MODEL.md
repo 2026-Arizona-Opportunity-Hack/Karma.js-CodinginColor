@@ -221,7 +221,7 @@ Each reminder row: `type, donor_id, owner_user_id, due_date, gift_id null, next_
 
 ### 3.5 Retention (RPT-2)
 
-For as-of date `T`: current window `(T-365, T]`, previous `(T-730, T-365]`. Per donor (linked gifts only): `cur`, `prev`, and `ever_before = any gift <= T-730`.
+For as-of date `T`: current window `(T-365, T]`, previous `(T-730, T-365]`. Per donor (linked gifts only, excluding `is_matching_gift` per D-127): `cur`, `prev`, and `ever_before = any employee donation <= T-730`. Donor lifetime and 12-month giving use the same exclusion. Org gross/net revenue still includes employer matches; donor linkage on a match is traceability, not employee credit. Message merge amounts must use employee donations only; a match must never supply a pre-filled donor amount.
 - new: `cur > 0, prev = 0, not ever_before`
 - reactivated: `cur > 0, prev = 0, ever_before`
 - increased / same / decreased: `cur > 0, prev > 0`, compare cents
