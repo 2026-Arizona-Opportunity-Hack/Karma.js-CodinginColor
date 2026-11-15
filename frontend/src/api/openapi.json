@@ -6496,6 +6496,7 @@
     },
     "/api/app/members/invite": {
       "post": {
+        "description": "One-time link, valid 72 hours, shown once (AUTH-4).",
         "operationId": "invite_member_api_app_members_invite_post",
         "requestBody": {
           "content": {

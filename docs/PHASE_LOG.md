@@ -9,7 +9,7 @@
 | 2A ingest/dedupe | ready-for-review | Sat 23:00 | #15–#18, #71, #84, #102 | #82, #89, #98, #99, #101, #103 | local acceptance 1–4 pass; documentation publication and human merge/verification pending |
 | 2B donor screens | todo | Sat 23:00 | #19–#23 | | build against mocks until lane C merges #72 |
 | 2C read API + donor API | ready-for-review | Sat 23:00 | #24–#28, #72–#74, #87, #88 | #77–#81 merged, #83, #85, #90, #91 open | #73 built in two PRs after lane A's #17 and #18 merged; donor API moved here (D-126) |
-| 3A ownership/reminders | todo | Sun 01:30 | | | |
+| 3A ownership/reminders | ready-for-review | Sun 01:30 | #29–#32 | #118, #119, #121, #122 | merge in that order |
 | 3B dashboard/people | todo | Sun 01:30 | | | |
 | 3C messaging backend | todo | Sun 01:30 | | | |
 | 4A reports/P1 | todo | Sun 09:00 | | | |
@@ -93,6 +93,29 @@ green until it is addressed separately.
 - Change-password page in Settings.
 
 ## Reports
+
+### Phase 3 lane A: ownership, governance, reminders  (Sun 2026-11-15, morning MST)
+**Issues / PRs (merge in this order, with "Create a merge commit"):** #32 derived reminders → PR #118 · #29 manual and bulk reassignment → PR #119 · #30 member invites and deactivation → PR #121 (stacked on #118: its test reads Needs reassignment) · #31 governance scope and flatten → PR #122 (stacked on #119: its test reassigns after Flatten). No migrations and no shared-file changes.
+**What changed:** Reminders are derived by query with an injected `today` (thank-you, quarterly, next step, needs reassignment) and cleared by the `messages` and `interactions` rows lane C already writes. Reassignment follows `policy.can(donor.reassign)`, needs an active target, and writes `owner_history` and an audit entry under the round-robin lock; the super admin can bulk-move a member's donors. Invites are one-time, 72 h, stored hashed, returned once; deactivation revokes sessions, moves no donors and refuses the super admin and self. Scope and Flatten are super-admin-only and audited; `superadmin.flatten` now also accepts the active super admin through `policy.can`.
+**Gate:**
+- [x] Acceptance 5 (deactivate: no donors move, Needs reassignment for everyone, manual reassignment in owner history): `test_members.py::test_deactivating_a_member_moves_no_donors_and_shows_needs_reassignment`, `test_reassign.py::test_flat_mode_any_member_reassigns_and_history_records_it`.
+- [x] Acceptance 6 (own_only returns 403, after Flatten the member can): `test_reassign.py::test_own_only_blocks_other_members_donors_until_flattened`, `test_governance.py::test_scope_blocks_a_member_until_the_hierarchy_is_flattened`.
+- [x] Acceptance 8, reminders half (a logged contact clears the quarterly reminder): `test_reminders.py::test_a_logged_contact_clears_the_quarterly_reminder`.
+- [x] Lint and types on each PR branch: `ruff format --check .`, `ruff check .` and `mypy app` clean; full `uv run pytest` exits 0 on each branch (5 + 5 + 6 + 4 new tests); `npm run gen:api` and `npm run typecheck` clean after each route change.
+- [ ] Not run: CI results on GitHub, the frontend lint/build, and anything against Render or Neon.
+**Functions lane C can import** (`from app.services.reminders import ...`): `todo_for(db, actor, today, user_id)`, `counts_by_member(db, actor, today)` → `{user_id: ReminderCounts(thank_you_due, quarterly_due, next_step_due, needs_reassignment)}` for the digest, `quarterly_due_for(db, actor, today, user_id)` → `list[ReminderOut]` for draft-quarterly; also `needs_reassignment_list(db, actor, today)`.
+**How to verify (exact steps):**
+1. Merge #118, #119, #121, #122 in that order. #119, #121 and #122 each regenerate `openapi.json`, `types.ts` and the IMPLEMENTED set in `test_api_contract.py`, so expect small conflicts: take both sides, then run `cd backend && uv run python -m app.export_openapi ../frontend/src/api/openapi.json && cd ../frontend && npm run gen:api`.
+2. Post-deployment test (flat mode, two members A and B, log in with the API docs page or curl with the CSRF header): `POST /members/invite {"email": "c@example.org"}` as A and open the returned `invite_url` token in `POST /auth/invite/{token}/accept`; `POST /members/{B}/deactivate` as A, then `GET /reminders/needs-reassignment` as A shows B's donors and B's old session gets 401; `POST /donors/{id}/reassign {"to_user_id": A}` and `GET /donors/{id}/owner-history` shows it. With a super admin (CLI `superadmin create`), `PUT /governance/scope {"reassign_scope": "own_only"}`, a plain member's reassign of another's donor returns 403, `POST /governance/flatten` then the same call returns 200.
+**Decisions made:** D-132 (reassignment updates the target's `last_assigned_at`, as you asked). Also: do-not-contact donors get no thank-you reminder (MSG-8); quarterly ignores `system` interactions; `GET /reminders` lists the member's own reminders by urgency, then Needs reassignment; bulk move is guarded by `gov.set_scope` (active super admin) because the policy has no bulk action; invite and deactivate use `invite.create`; a member cannot deactivate themselves.
+**Known gaps:**
+- `invite_url` is `<request base URL>/invite/<token>`; lane B owns the accept page and may rename the path.
+- The thank-you and update donor status chips (lane C's card query) still do not read these reminders.
+- Open invites are not listed or revocable; a second invite for the same email just adds another one.
+- Reminder queries run over all donors and are not paged (fine at about 1,000 donors; not measured on Neon).
+- PRs #121 and #122 show their base PR's commits until it merges.
+**Questions for the human:** none blocking.
+**Shared-file changes requested:** none.
 
 ### Phase 2 lane A: ingest, dedupe, review and ownership (Sat 2026-11-14, report prepared 23:19 MST)
 **Issues / PRs (merge commits, in this order):** #15 → PR #82 (merged; blank-row/header fixes included), #84 `shared` → PR #89 (merged), #16 → PR #98, #17 → PR #99, #18 → PR #101, #71 → PR #103, #102 → this `shared` documentation PR. Every PR targets `main`; humans merge.
