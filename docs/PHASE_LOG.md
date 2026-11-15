@@ -8,7 +8,7 @@
 | 1 | verified | Sat 19:00 | #10–#14, #64 | #65–#70 merged | live deploy checked: 63 routes, 501 when logged in, 401 when logged out |
 | 2A ingest/dedupe | todo | Sat 23:00 | #15–#18, #71 | | |
 | 2B donor screens | todo | Sat 23:00 | #19–#23 | | build against mocks until lane C merges #72 |
-| 2C read API + donor API | ready-for-review, #73 blocked | Sat 23:00 | #24–#28, #72–#74, #87, #88 | #77–#81 merged, #83, #85 open, CLI and audit PRs | #73 waits for lane A #17 and #18; donor API moved here (D-126) |
+| 2C read API + donor API | ready-for-review, #73 blocked | Sat 23:00 | #24–#28, #72–#74, #87, #88 | #77–#81 merged, #83, #85, #90, #91 open | #73 waits for lane A #17 and #18; donor API moved here (D-126) |
 | 3A ownership/reminders | todo | Sun 01:30 | | | |
 | 3B dashboard/people | todo | Sun 01:30 | | | |
 | 3C messaging backend | todo | Sun 01:30 | | | |
@@ -28,7 +28,7 @@
 ## Reports
 
 ### Phase 2 lane C: read API, MCP, donor API  (Sat 2026-11-14, about 18:30–21:30 MST)
-**Issues / PRs (merge in this order, with "Create a merge commit"):** #24 API keys → PR #77 `shared` (merged) · #25 `/api/v1` endpoints → #78 (merged) · #72 donor list, detail, timeline, unattributed → #79 (merged) · #74 contact log and next step → #80 (merged) · #26 report queries → #81 (merged) · #27 MCP server → #83 · #28 API guide → #85 · #87 `apikey` CLI → PR (base `main`) · #88 audit contact and next-step actions → PR (base `main`). **#73 donor and gift create, edit, delete: not started, blocked on lane A #17 (identity resolution) and #18 (round-robin).**
+**Issues / PRs (merge in this order, with "Create a merge commit"):** #24 API keys → PR #77 `shared` (merged) · #25 `/api/v1` endpoints → #78 (merged) · #72 donor list, detail, timeline, unattributed → #79 (merged) · #74 contact log and next step → #80 (merged) · #26 report queries → #81 (merged) · #27 MCP server → #83 · #28 API guide → #85 · #87 `apikey` CLI → PR #90 · #88 audit contact and next-step actions → PR #91. **#73 donor and gift create, edit, delete: not started, blocked on lane A #17 (identity resolution) and #18 (round-robin).**
 **What changed:** API keys (`cic_live_` + 32 random bytes, SHA-256 only, shown once, scope, last used, revoke) with the key-auth dependency and a 60 per minute per key limit. Six `/api/v1` read endpoints (`summary`, `retention`, `totals/by-period`, `totals/by-program`, `totals/by-board-member`, `activity/recent`) plus `health`, all aggregates in USD cents with `as_of`. The app's Reports page and `/api/v1` share one set of queries. Donor list (My/All, search, filters, pagination), detail, timeline, unattributed gifts; contact log and next step. A read-only stdio MCP server with six tools in `mcp_server/`, its own lockfile and CI job. `docs/API_GUIDE.md`. `python -m app.cli apikey {create,list,revoke}`.
 **Gate** (Phase 2 gate for lane C: acceptance tests 7, 12, and 11 for retention; 1 to 4 belong to lane A):
 - [x] **Test 7**, another member sees history but not email, phone or notes: `tests/integration/test_donor_read_api.py::test_other_member_sees_history_but_not_contact_details` (also checks the timeline and email search); acting on that donor returns 403: `test_contact_and_next_step.py::test_other_member_cannot_act_on_a_donor_they_do_not_own` (nothing is written).
@@ -40,7 +40,7 @@
 - [x] Speed (NFR-7), local Docker database, 1,000 donors and 5,000 gifts, in-process test client: donor list median 146 ms (slowest run 387 ms, cold), search 69 ms, status filter 144 ms, donor detail 51 ms, timeline 46 ms, retention 164 ms, report summary 303 ms. Not measured against Neon over the network.
 - [ ] #73 manual donor and gift create, edit, delete: blocked (above).
 **How to verify (exact steps):**
-1. Merge the open PRs with merge commits: #83, #85, the CLI PR, the audit PR, this report.
+1. Merge the open PRs with merge commits, in this order: #83 (MCP), #85 (guide), #90 (CLI), #91 (audit), then this report.
 2. `docker compose up -d db`, `cd backend && uv run alembic upgrade head && uv run python -m app.cli setup`, `uv run uvicorn app.main:app`.
 3. Create a key: `uv run python -m app.cli apikey create --name Dashboard --email <member email>`. Then `curl -H "Authorization: Bearer <key>" localhost:8000/api/v1/totals/by-program` returns 200; without the header 401. `apikey revoke <id>` then the same call returns 401.
 4. Log in as two different members (private window). The second opens `GET /api/app/donors?scope=all` and a donor owned by the first: gift history and timeline appear, email, phone and notes are null with `contact_via` set; `POST /api/app/donors/{id}/interactions` returns 403.
