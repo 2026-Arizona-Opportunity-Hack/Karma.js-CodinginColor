@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 from app.errors import Invalid
 from app.schemas.common import DonorKind, ImportSource
 from app.services.ingest import normalizers as norm
-from app.services.ingest.uploads import read_table
+from app.services.ingest.uploads import has_value, read_table
 
 
 class IncomingDonor(BaseModel):
@@ -176,17 +176,25 @@ def parse_upload(source: ImportSource, filename: str, data: bytes) -> list[Incom
     table = read_table(filename, data)
     if not table:
         raise Invalid("File has no header row.")
-    headers = [header(h) for h in table[0]]
-    if len(headers) != len(set(headers)):
+    header_number, header_cells = table[0]
+    headers = [header(h) for h in header_cells]
+    named_headers = [h for h in headers if h]
+    if len(named_headers) != len(set(named_headers)):
         raise Invalid("File has duplicate column names.")
     missing = [h for h in REQUIRED[source] if header(h) not in headers]
     if missing:
         raise Invalid("Missing required columns: " + ", ".join(missing))
     result = []
-    for n, values in enumerate(table[1:], 1):
-        if any(v is not None and v != "" for v in values[len(headers) :]):
+    for source_number, values in table[1:]:
+        n = source_number - header_number
+        extras = (
+            value
+            for index, value in enumerate(values)
+            if index >= len(headers) or not headers[index]
+        )
+        if any(has_value(value) for value in extras):
             result.append(IncomingRow(row_number=n, reason="extra_cells"))
         else:
-            row = dict(zip(headers, values, strict=False))
+            row = {key: value for key, value in zip(headers, values, strict=False) if key}
             result.append(_record(source, n, row))
     return result
