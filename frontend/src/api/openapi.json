@@ -4209,6 +4209,20 @@
           "this_quarter": {
             "$ref": "#/components/schemas/PeriodTotals"
           },
+          "top_donors": {
+            "items": {
+              "$ref": "#/components/schemas/TopDonor"
+            },
+            "title": "Top Donors",
+            "type": "array"
+          },
+          "top_gifts": {
+            "items": {
+              "$ref": "#/components/schemas/TopGift"
+            },
+            "title": "Top Gifts",
+            "type": "array"
+          },
           "unattributed_gifts": {
             "title": "Unattributed Gifts",
             "type": "integer"
@@ -4221,6 +4235,8 @@
           "last_12_months",
           "by_program",
           "by_board_member",
+          "top_donors",
+          "top_gifts",
           "open_reminders",
           "unattributed_gifts"
         ],
@@ -5026,6 +5042,94 @@
           "items"
         ],
         "title": "TimelineOut",
+        "type": "object"
+      },
+      "TopDonor": {
+        "properties": {
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "donor_id": {
+            "title": "Donor Id",
+            "type": "integer"
+          },
+          "gift_count": {
+            "title": "Gift Count",
+            "type": "integer"
+          },
+          "gross_cents": {
+            "title": "Gross Cents",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "donor_id",
+          "display_name",
+          "gross_cents",
+          "gift_count"
+        ],
+        "title": "TopDonor",
+        "type": "object"
+      },
+      "TopGift": {
+        "properties": {
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "donor_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Donor Id"
+          },
+          "gift_date": {
+            "format": "date",
+            "title": "Gift Date",
+            "type": "string"
+          },
+          "gift_id": {
+            "title": "Gift Id",
+            "type": "integer"
+          },
+          "gross_cents": {
+            "title": "Gross Cents",
+            "type": "integer"
+          },
+          "program": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Program"
+          }
+        },
+        "required": [
+          "gift_id",
+          "gift_date",
+          "gross_cents",
+          "donor_id",
+          "display_name",
+          "program"
+        ],
+        "title": "TopGift",
         "type": "object"
       }
     }
