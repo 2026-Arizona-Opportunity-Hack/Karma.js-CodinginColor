@@ -1,0 +1,274 @@
+{
+  "note": "Synthetic data. Derived from designed row outcomes; see tests/integration/test_fixtures.py.",
+  "seed": 20261114,
+  "demo_now": "2026-11-15",
+  "import_order": [
+    "synthetic_cic_spreadsheet.xlsx",
+    "synthetic_zeffy_like.csv",
+    "synthetic_benevity_like.csv",
+    "synthetic_generic_azgives_like.csv"
+  ],
+  "files": {
+    "synthetic_cic_spreadsheet.xlsx": {
+      "sha256": "54bbe85b8179da6581636bc714f98e06f0db0eb5513858596aa202d7f97d8858",
+      "rows": 129,
+      "invalid": [],
+      "created_donors": 126
+    },
+    "synthetic_zeffy_like.csv": {
+      "sha256": "157ca23f78fe7bdb4430a9a8375dc618d0abe631a8c5ccb991f9ebda7d091dd1",
+      "rows": 410,
+      "invalid": [
+        {
+          "row": 183,
+          "code": "refunded"
+        },
+        {
+          "row": 295,
+          "code": "non_usd"
+        },
+        {
+          "row": 311,
+          "code": "not_succeeded"
+        },
+        {
+          "row": 370,
+          "code": "not_succeeded"
+        },
+        {
+          "row": 376,
+          "code": "bad_amount"
+        },
+        {
+          "row": 400,
+          "code": "not_succeeded"
+        },
+        {
+          "row": 410,
+          "code": "bad_date"
+        }
+      ],
+      "created_donors": 60,
+      "valid_gifts": 403,
+      "gross_cents": 3575000,
+      "by_attribution": {
+        "linked": {
+          "gifts": 395,
+          "cents": 3530000
+        },
+        "pending_review": {
+          "gifts": 8,
+          "cents": 45000
+        },
+        "anonymous": {
+          "gifts": 0,
+          "cents": 0
+        }
+      }
+    },
+    "synthetic_benevity_like.csv": {
+      "sha256": "1e2ef840eabfb5f606d5a484912026b8fe40ddd0077c71b898d1ba1d4c84477a",
+      "rows": 80,
+      "invalid": [
+        {
+          "row": 14,
+          "code": "bad_date"
+        },
+        {
+          "row": 15,
+          "code": "non_positive_amount"
+        }
+      ],
+      "created_donors": 26,
+      "valid_gifts": 78,
+      "gross_cents": 592500,
+      "by_attribution": {
+        "linked": {
+          "gifts": 58,
+          "cents": 460000
+        },
+        "pending_review": {
+          "gifts": 8,
+          "cents": 75000
+        },
+        "anonymous": {
+          "gifts": 12,
+          "cents": 57500
+        }
+      }
+    },
+    "synthetic_generic_azgives_like.csv": {
+      "sha256": "0cdc67eb2e0fe94cc8764c7bc442edf6f882b0b833c3acdf3858e940be72e82b",
+      "rows": 40,
+      "invalid": [
+        {
+          "row": 22,
+          "code": "bad_amount"
+        },
+        {
+          "row": 23,
+          "code": "non_positive_amount"
+        },
+        {
+          "row": 40,
+          "code": "bad_date"
+        }
+      ],
+      "created_donors": 13,
+      "valid_gifts": 37,
+      "gross_cents": 11435000,
+      "by_attribution": {
+        "linked": {
+          "gifts": 37,
+          "cents": 11435000
+        },
+        "pending_review": {
+          "gifts": 0,
+          "cents": 0
+        },
+        "anonymous": {
+          "gifts": 0,
+          "cents": 0
+        }
+      }
+    }
+  },
+  "totals": {
+    "valid_gifts": 518,
+    "gross_cents": 15602500
+  },
+  "donors_created_after_all_imports": 225,
+  "review_items": [
+    {
+      "file": "synthetic_cic_spreadsheet.xlsx",
+      "row": 25,
+      "reason": "household"
+    },
+    {
+      "file": "synthetic_cic_spreadsheet.xlsx",
+      "row": 113,
+      "reason": "household"
+    },
+    {
+      "file": "synthetic_cic_spreadsheet.xlsx",
+      "row": 127,
+      "reason": "household"
+    },
+    {
+      "file": "synthetic_zeffy_like.csv",
+      "row": 269,
+      "reason": "name_conflict"
+    },
+    {
+      "file": "synthetic_zeffy_like.csv",
+      "row": 324,
+      "reason": "phone"
+    },
+    {
+      "file": "synthetic_zeffy_like.csv",
+      "row": 325,
+      "reason": "phone"
+    },
+    {
+      "file": "synthetic_zeffy_like.csv",
+      "row": 349,
+      "reason": "phone"
+    },
+    {
+      "file": "synthetic_zeffy_like.csv",
+      "row": 391,
+      "reason": "phone"
+    },
+    {
+      "file": "synthetic_zeffy_like.csv",
+      "row": 393,
+      "reason": "phone"
+    },
+    {
+      "file": "synthetic_zeffy_like.csv",
+      "row": 398,
+      "reason": "name_conflict"
+    },
+    {
+      "file": "synthetic_zeffy_like.csv",
+      "row": 408,
+      "reason": "phone"
+    },
+    {
+      "file": "synthetic_benevity_like.csv",
+      "row": 1,
+      "reason": "name_employer"
+    },
+    {
+      "file": "synthetic_benevity_like.csv",
+      "row": 27,
+      "reason": "name_employer"
+    },
+    {
+      "file": "synthetic_benevity_like.csv",
+      "row": 43,
+      "reason": "name_employer"
+    },
+    {
+      "file": "synthetic_benevity_like.csv",
+      "row": 50,
+      "reason": "name_employer"
+    },
+    {
+      "file": "synthetic_benevity_like.csv",
+      "row": 51,
+      "reason": "name_employer"
+    },
+    {
+      "file": "synthetic_benevity_like.csv",
+      "row": 52,
+      "reason": "name_employer"
+    },
+    {
+      "file": "synthetic_benevity_like.csv",
+      "row": 53,
+      "reason": "name_employer"
+    },
+    {
+      "file": "synthetic_benevity_like.csv",
+      "row": 69,
+      "reason": "name_employer"
+    }
+  ],
+  "retention": {
+    "as_of": "2026-11-15",
+    "basis": "rolling",
+    "classes": {
+      "new": {
+        "donors": 37,
+        "cents_cur": 3242500,
+        "cents_prev": 0
+      },
+      "reactivated": {
+        "donors": 10,
+        "cents_cur": 140000,
+        "cents_prev": 0
+      },
+      "increased": {
+        "donors": 24,
+        "cents_cur": 1997500,
+        "cents_prev": 697500
+      },
+      "same": {
+        "donors": 16,
+        "cents_cur": 195000,
+        "cents_prev": 195000
+      },
+      "decreased": {
+        "donors": 32,
+        "cents_cur": 1820000,
+        "cents_prev": 4165000
+      },
+      "lapsed": {
+        "donors": 38,
+        "cents_cur": 0,
+        "cents_prev": 2502500
+      }
+    }
+  }
+}
