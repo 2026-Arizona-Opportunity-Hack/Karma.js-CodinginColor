@@ -17,8 +17,14 @@ from pydantic import BaseModel, Field
 
 from app.clock import Clock, today
 from app.errors import NotFound
-from app.schemas.common import CountCents, ImportSource, MemberRef
-from app.schemas.imports import ImportBatchOut, ImportPreviewOut, ImportSummary, InvalidRow
+from app.schemas.common import ImportSource, MemberRef
+from app.schemas.imports import (
+    ImportBatchOut,
+    ImportClassSummary,
+    ImportPreviewOut,
+    ImportSummary,
+    InvalidRow,
+)
 from app.services.ingest.adapters import IncomingDonor, IncomingGift, IncomingRow
 from app.services.ingest.normalizers import email, name, phone
 from app.services.ingest.row_keys import row_key
@@ -133,7 +139,9 @@ def build_preview(
     occurrences: Counter[str] = Counter()
     seen = snapshot.row_keys.copy()
     counts: Counter[str] = Counter()
-    amounts: Counter[str] = Counter()
+    gift_counts: Counter[str] = Counter()
+    donations: Counter[str] = Counter()
+    matches: Counter[str] = Counter()
     rows: list[PlannedRow] = []
     unmapped: set[str] = set()
     created: set[int] = set()
@@ -178,28 +186,46 @@ def build_preview(
                     if source == "spreadsheet":
                         row.status = "already_imported"
                 row.donor_token = did
-        amount = sum(g.gift.gross_cents for g in row.gifts)
+        donation = sum(g.gift.gross_cents for g in row.gifts if not g.gift.is_matching_gift)
+        match = sum(g.gift.gross_cents for g in row.gifts if g.gift.is_matching_gift)
         counts[row.status] += 1
-        amounts[row.status] += amount
+        gift_counts[row.status] += len(row.gifts)
+        donations[row.status] += donation
+        matches[row.status] += match
         if row.status == "new" and incoming_row.donor.anonymous:
             counts["anonymous"] += 1
-            amounts["anonymous"] += amount
+            gift_counts["anonymous"] += len(row.gifts)
+            donations["anonymous"] += donation
+            matches["anonymous"] += match
+
+    def bucket(status: str) -> ImportClassSummary:
+        return ImportClassSummary(
+            count=counts[status],
+            gift_count=gift_counts[status],
+            cents=donations[status] + matches[status],
+            donation_cents=donations[status],
+            match_cents=matches[status],
+        )
+
+    # Independent source totals make a missing or corrupted planned gift fail
+    # reconciliation even if the physical-row counts still add up.
+    source_gifts = [gift for row in incoming for gift in row.gifts]
+    donation_total = sum(g.gross_cents for g in source_gifts if not g.is_matching_gift)
+    match_total = sum(g.gross_cents for g in source_gifts if g.is_matching_gift)
     summary = ImportSummary(
         rows_read=len(incoming),
-        new_gifts=CountCents(count=counts["new"], cents=amounts["new"]),
-        already_imported=CountCents(
-            count=counts["already_imported"], cents=amounts["already_imported"]
-        ),
-        needs_review=CountCents(count=counts["needs_review"], cents=amounts["needs_review"]),
-        invalid=CountCents(count=counts["invalid"], cents=amounts["invalid"]),
-        anonymous=CountCents(count=counts["anonymous"], cents=amounts["anonymous"]),
+        gift_count=len(source_gifts),
+        donation_cents=donation_total,
+        match_cents=match_total,
+        total_cents=donation_total + match_total,
+        new_gifts=bucket("new"),
+        already_imported=bucket("already_imported"),
+        needs_review=bucket("needs_review"),
+        invalid=bucket("invalid"),
+        anonymous=bucket("anonymous"),
         new_donors=len(created),
         donors_matched=len(matched),
         unmapped_campaigns=sorted(unmapped),
-        reconciles=(
-            sum(counts[k] for k in ("new", "already_imported", "needs_review", "invalid"))
-            == len(incoming)
-        ),
     )
     batch = ImportBatchOut(
         id=randbits(52) or 1,

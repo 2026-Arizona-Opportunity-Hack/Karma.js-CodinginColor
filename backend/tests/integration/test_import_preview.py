@@ -50,7 +50,14 @@ def test_preview_allowed_and_writes_no_import_donor_or_gift_rows(member, db):
     assert response.status_code == 200, response.text
     body = response.json()
     assert body["summary"]["new_donors"] == 1
-    assert body["summary"]["new_gifts"] == {"count": 1, "cents": 1000}
+    assert body["summary"]["new_gifts"] == {
+        "count": 1,
+        "cents": 1000,
+        "gift_count": 1,
+        "donation_cents": 1000,
+        "match_cents": 0,
+    }
+    assert body["summary"]["rows_reconcile"] and body["summary"]["cents_reconcile"]
     assert body["commit_allowed"]
     assert body["batch"]["cutoff_date"] == "2026-09-15"
     for model in (ImportBatch, ImportRow, Donor, Gift, MatchReview):
