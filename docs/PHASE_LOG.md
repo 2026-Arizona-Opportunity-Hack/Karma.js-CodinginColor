@@ -14,7 +14,7 @@
 | 3C messaging backend | ready-for-review | Sun 01:30 | #36–#39, #100, #113, #126 | #108–#111, #114 merged; PR #128, PR #129 open | no messaging UI until lane B Phase 4 |
 | 4A reports/P1 | todo | Sun 09:00 | | | |
 | 4B messaging/reports UI | todo | Sun 09:00 | | | |
-| 4C hardening | todo | Sun 09:00 | | | |
+| 4C hardening | ready-for-review | Sun 09:00 | #45, #46, #47 | #131, #133, #141 | merge in that order; #131 is `shared` (main.py) |
 | 5 a11y/acceptance | todo | Sun 10:30 | | | |
 | 6 docs/video/submit | todo | Sun 13:30 | | | |
 
@@ -93,6 +93,30 @@ green until it is addressed separately.
 - Change-password page in Settings.
 
 ## Reports
+
+### Phase 4 lane C: hardening  (Sun 2026-11-15, morning MST)
+**Issues / PRs (merge in this order, with "Create a merge commit"):** #45 security headers, CSP, rate limits `shared` → PR #131 · #46 audit coverage test → PR #133 · #47 demo seed and reset → PR #141. No migrations. No stacking; each is based on `main`.
+**What changed:** Every response now carries CSP (self only, no inline scripts, `frame-ancestors 'none'`), HSTS, nosniff, X-Frame-Options, Referrer and Permissions policies; only `/api/docs` may load the Swagger viewer from jsDelivr. In-memory per-IP limits: 20 login attempts and 300 requests per minute on `/api/app/*`, 429 with `Retry-After` in the normal error shape (off when `APP_ENV=test`). A test now fails if an audited action is added, dropped or untested, if an SRS NFR-2 category loses its actions, or if the app can update/delete audit rows; eight untested actions got a one-line assertion in the test that already drives them. `seed-demo` imports the four synthetic files through the real importer (refuses on a database with donors); `reset-demo` now restores programs, settings and governance after its wipe (it did not before, so a reset database could not import: "The General program is missing"). The Dockerfile copies `fixtures/`.
+**Gate** (acceptance tests 9 and 11, full suite):
+- [x] **Test 9** (draft, approve, send, no network in dry run): `test_message_send.py::test_dry_run_thank_you_draft_approve_send_and_it_makes_no_network_call` PASSED.
+- [x] **Test 11** (retention classes match the manifest): `test_reports.py::test_retention_matches_the_fixture_manifest` and `test_import_commit.py::test_finished_importer_matches_manifest_and_acceptance_1_to_4` PASSED (`uv run pytest ... -k "dry_run_thank_you or manifest"` → 3 passed).
+- [x] Full suite on the #47 branch (contains #45/#46 changes only via main merges, so rerun once all three are merged): `uv run pytest` → 627 passed; `ruff format --check .` → 158 files already formatted; `ruff check .` → All checks passed; `mypy app` → no issues found in 111 source files.
+- [x] New tests: `test_security_headers.py` (4), `test_audit_coverage.py` (4 + 2 pending-skips), `test_demo_seed.py` (5).
+- [ ] Not run: GitHub CI on the three PRs, anything against Render or Neon, the frontend (no frontend change), the SPA under the new CSP in a real browser.
+**How to verify (exact steps):**
+1. Merge #131, #133, #141 with merge commits. Render redeploys; no migrations.
+2. Headers: `curl -sI https://cic-compass.onrender.com/healthz` shows `content-security-policy`, `strict-transport-security`, `x-content-type-options: nosniff`, `x-frame-options: DENY`. Open the site and `/api/docs` in a browser with the console open: no CSP violations (report any `Refused to ...` line).
+3. Rate limit: 21 wrong-password `POST /api/app/auth/login` calls within a minute from one address → the 21st returns 429 with `Retry-After`. Wait a minute and a correct login works.
+4. Demo (only on a demo database with `DEMO_MODE=true`, never the real one): `python -m app.cli reset-demo` prints three passwords once and four "imported ..." lines; log in as `diana@demo.cic.test`; the donor list is full and Needs review shows open items. Without `DEMO_MODE`, both commands refuse.
+**Decisions made:** The rate limits are in memory, per IP, exact for Render's single worker, reset on restart. The CSP allows inline style attributes only (`style-src-attr`), not inline style or script elements. Funder export audit (`report.funder_export`) and merge audit (`donor.merge`) are listed as pending in `test_audit_coverage.py`; when lane A / the merge endpoint land them, those two tests fail until the actions move into the required list.
+**Known gaps:**
+- The per-IP limit uses `request.client`, and uvicorn runs with `--forwarded-allow-ips='*'`, so a client can vary `X-Forwarded-For` to dodge it (also noted in the Phase 0 gaps). Fix is to trust only Render's proxy range, a Dockerfile `CMD` change that needs Render's addresses; not done.
+- The CSP was tested for headers only, not rendered in a browser; if the built SPA injects an inline `<style>` or script, the page will break and the fix is a one-line CSP change in `app/middleware.py`.
+- Rate limits and counters live in memory: a restart clears them and several workers would each count separately.
+- The audit coverage test checks that each action is named in some test, not that the test asserts it.
+- `reset-demo` has no confirmation prompt (only `DEMO_MODE`). Merge audit (DED-7) and export audit are not covered until those features land.
+**Questions for the human:** none blocking.
+**Shared-file changes requested:** `backend/app/main.py` (one line adding the middleware) in PR #131, labelled `shared`, merge first. `Dockerfile` also changed in PR #141 (lane C deploy file).
 
 ### Phase 3 lane C: messaging backend  (Sun 2026-11-15, MST)
 **Issues / PRs (merge in this order, with "Create a merge commit"):** #100 mail settings and reminders handoff note `shared` → PR #108 (merged) · #36 templates and drafts → PR #109 (merged) · #37 approval state machine → PR #110 (merged) · #38 email dry-run sender, SMS mark-sent, send history → PR #111 (merged) · #113 next-step timestamps use the app clock (CI fix on main) → PR #114 (merged) · #39 reminder digest → PR #128 · #126 bulk quarterly drafts → PR #129 (stacked on PR #128: both edit `app_messages.py` and the contract test).
