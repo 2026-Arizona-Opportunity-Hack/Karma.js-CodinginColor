@@ -13,10 +13,31 @@
 | 3B dashboard/people | todo | Sun 01:30 | | | |
 | 3C messaging backend | ready-for-review | Sun 01:30 | #36–#39, #100, #113, #126 | #108–#111, #114 merged; PR #128, PR #129 open | no messaging UI until lane B Phase 4 |
 | 4A reports/P1 | ready-for-review | Sun 09:00 | #40, #135, #41 | #134, #136, #137, #138 | merge in that order; #136 and #137 are stacked on #134 |
-| 4B messaging/reports UI | todo | Sun 09:00 | | | |
+| 4B messaging/reports UI | ready-for-review | Sun 09:00 | #42, #43, #44 | #151, #152 (stacked on #151), #153 | merge in that order; program and program-map UI cut (backend still 501) |
 | 4C hardening | ready-for-review | Sun 09:00 | #45, #46, #47 | #131, #133, #141 | merge in that order; #131 is `shared` (main.py) |
 | 5 a11y/acceptance | todo | Sun 10:30 | | | |
 | 6 docs/video/submit | todo | Sun 13:30 | | | |
+
+## Phase 4 lane B: messaging and reports UI (Sun 2026-11-15, 07:50–09:10 MST)
+**Issues / PRs (merge in this order, "Create a merge commit"):** #42 → PR #151 · #43 → PR #152 (stacked on #151) · #44 → PR #153 (templates part only; independent of the other two).
+**What changed:** A Messages page lets board members edit, approve and send drafts. Email is sent with Send email; texts use an `sms:` link, then Mark sent. Sent messages show Dry run, manual or live delivery. The dashboard's thank-you and update reminders now create a draft and open it. A Reports page shows the RPT-1 giving summary and the RPT-2 retention ledger (rolling or calendar basis, as-of date, donor drill-down). Settings gains a message-template editor with merge-field buttons, editable under GOV-4.
+**Gate:**
+- [x] Frontend checks on each branch and on all three merged together: `npm run typecheck`, `npm run lint` clean; `npm run build` succeeds. `prettier --check --end-of-line auto` clean on changed files (plain `--check` flags every file on Windows because of CRLF checkouts).
+- [x] Browser walk-through against a synthetic mock API (all names start with "Demo"/"Synthetic"): draft → approve → send shows the Dry run note; text message link and Mark sent; dashboard Draft thank-you opens the new draft; retention basis toggle requests `basis=calendar`; template save rejects `{nickname}` with the server message and keeps the text. Desktop and 390 px, no horizontal scroll.
+- [ ] Acceptance tests 9 and 11 against the real backend: not run here (no Docker/Postgres on this machine). Lane C's backend tests cover the message state machine; the retention numbers come from lane C's tested queries.
+**How to verify (exact steps):**
+1. Merge #151, #152, #153 in that order.
+2. Local stack per README, `MESSAGING_MODE=dry_run`. Import the four fixtures.
+3. Dashboard → Draft thank-you → edit → Approve → Send: the message shows Dry run and the reminder clears.
+4. Reports with as-of 2026-11-15: retention 33 / 10 / 25 / 18 / 31 / 40 matches `fixtures/manifest.json`.
+5. Settings → Message templates: add `{program}` with the button, save, then draft again and see the new words.
+**Decisions made:** none new. Program and program-map UI cut per the Phase 4 cut list: `GET/POST/PUT /programs` and `/program-map` still return 501.
+**Known gaps:**
+- The MSG-6 Dry run badge appears only on sent messages; showing it before sending needs an endpoint that exposes `MESSAGING_MODE` (`GET /settings` is still a lane A stub).
+- #151 (~730 lines) and #152 (~510 lines) exceed the ~400-line target; the page, hook and styles in each depend on one another.
+- Issue #44 stays open for the program and program-map screens.
+**Questions for the human:** Should #44 be closed with programs moved to the roadmap?
+**Shared-file changes requested:** none.
 
 ## Phase 3 targeted work: confirmed spreadsheet updates (#105)
 
