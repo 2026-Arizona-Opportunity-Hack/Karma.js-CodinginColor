@@ -25,8 +25,8 @@ from app.schemas.imports import (
     ImportSummary,
     InvalidRow,
 )
+from app.services.dedupe.resolver import IdentityIndex
 from app.services.ingest.adapters import IncomingDonor, IncomingGift, IncomingRow
-from app.services.ingest.normalizers import email, name, phone
 from app.services.ingest.row_keys import row_key
 from app.services.ingest.uploads import UploadTooLarge
 
@@ -40,66 +40,7 @@ class Snapshot:
     programs: dict[str, int] = field(default_factory=dict)
     donors: dict[int, IncomingDonor] = field(default_factory=dict)
     identities: list[tuple[int, str, str]] = field(default_factory=list)
-
-
-class PreviewIdentities:
-    """Transient DED-3 index, including identities learned earlier in the same file."""
-
-    def __init__(self, snapshot: Snapshot) -> None:
-        self.donors = snapshot.donors.copy()
-        self.index: dict[tuple[str, str], list[int]] = {}
-        for did, donor in sorted(self.donors.items()):
-            self.learn(did, donor)
-        for did, kind, value in snapshot.identities:
-            self._add(did, kind, value)
-
-    @staticmethod
-    def keys(donor: IncomingDonor) -> list[tuple[str, str]]:
-        keys = [
-            ("email", email(donor.email)),
-            ("phone", phone(donor.phone)),
-            ("zeffy_contact", donor.zeffy_contact),
-        ]
-        if donor.display_name and donor.organization and donor.kind == "person":
-            keys.append(("name_org", name(donor.display_name) + "|" + name(donor.organization)))
-        return [(kind, value) for kind, value in keys if value]
-
-    def _add(self, did: int, kind: str, value: str) -> None:
-        ids = self.index.setdefault((kind, value), [])
-        if not ids or (kind == "name_org" and did not in ids):
-            ids.append(did)
-
-    def learn(self, did: int, donor: IncomingDonor) -> None:
-        for kind, value in self.keys(donor):
-            self._add(did, kind, value)
-
-    def resolve(self, donor: IncomingDonor) -> tuple[int | None, list[int], str | None]:
-        platform = self.index.get(("zeffy_contact", donor.zeffy_contact), [])
-        if platform:
-            return platform[0], [], None
-        emails = self.index.get(("email", email(donor.email)), [])
-        if emails:
-            old = self.donors[emails[0]]
-            first, other = name(donor.first_name), name(old.first_name)
-            conflict = (
-                donor.last_name and old.last_name and name(donor.last_name) != name(old.last_name)
-            ) or (first and other and first[0] != other[0])
-            if conflict:
-                return None, emails, "name_conflict"
-            return emails[0], [], None
-        phones = self.index.get(("phone", phone(donor.phone)), [])
-        if phones:
-            return None, phones, "phone"
-        for kind, value in self.keys(donor):
-            if kind == "name_org" and (ids := self.index.get((kind, value))):
-                return None, ids, "name_employer"
-        return None, [], None
-
-    def create(self, donor: IncomingDonor) -> int:
-        did = min([0, *self.donors]) - 1
-        self.donors[did] = donor
-        self.learn(did, donor)
-        return did
+    remembered: dict[str, int | None] = field(default_factory=dict)
 
 
 class PlannedGift(BaseModel):
@@ -135,7 +76,7 @@ def build_preview(
     clock: Clock,
 ) -> PreviewState:
     cutoff = today(clock) - timedelta(days=snapshot.cutoff_days)
-    resolver = PreviewIdentities(snapshot)
+    resolver = IdentityIndex(snapshot.donors, snapshot.identities, snapshot.remembered)
     occurrences: Counter[str] = Counter()
     seen = snapshot.row_keys.copy()
     counts: Counter[str] = Counter()
@@ -170,8 +111,13 @@ def build_preview(
         elif row.gifts and all(g.already_imported for g in row.gifts):
             row.status = "already_imported"
         elif not incoming_row.donor.anonymous:
-            did, row.candidates, row.reason = resolver.resolve(incoming_row.donor)
-            if row.candidates:
+            result = resolver.resolve(incoming_row.donor)
+            did, row.candidates, row.reason = result.donor_id, result.candidates, result.reason
+            if result.verdict == "anonymous":
+                row.incoming = incoming_row.model_copy(
+                    update={"donor": incoming_row.donor.model_copy(update={"anonymous": True})}
+                )
+            elif row.candidates:
                 row.status = "needs_review"
                 if source == "spreadsheet" and row.reason == "name_conflict":
                     row.reason = "household"
@@ -192,7 +138,7 @@ def build_preview(
         gift_counts[row.status] += len(row.gifts)
         donations[row.status] += donation
         matches[row.status] += match
-        if row.status == "new" and incoming_row.donor.anonymous:
+        if row.status == "new" and row.incoming.donor.anonymous:
             counts["anonymous"] += 1
             gift_counts["anonymous"] += len(row.gifts)
             donations["anonymous"] += donation
