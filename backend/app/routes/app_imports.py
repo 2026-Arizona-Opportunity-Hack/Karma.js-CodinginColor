@@ -5,7 +5,7 @@ from typing import Annotated, Literal
 from fastapi import File, Form, Query, UploadFile
 
 from app.routes.deps import DB, ClockDep, CurrentDep
-from app.routes.stubs import session_router, todo
+from app.routes.stubs import session_router
 from app.schemas.common import ErrorOut, ImportSource
 from app.schemas.donors import GiftAttributeIn, GiftOut
 from app.schemas.imports import (
@@ -16,7 +16,7 @@ from app.schemas.imports import (
     ReviewListOut,
     ReviewOut,
 )
-from app.services.dedupe import reviews
+from app.services.dedupe import attribution, reviews
 from app.services.ingest import batches, service
 from app.services.ingest.uploads import MAX_BYTES
 
@@ -79,6 +79,8 @@ def decide_review(
 
 
 @router.post("/gifts/{gift_id}/attribute", responses={409: {"model": ErrorOut}})
-def attribute_gift(gift_id: int, body: GiftAttributeIn) -> GiftOut:
+def attribute_gift(
+    gift_id: int, body: GiftAttributeIn, db: DB, cur: CurrentDep, clock: ClockDep
+) -> GiftOut:
     """Only anonymous gifts; pending-review gifts use the review flow (DED-8, issue #71)."""
-    todo("lane A, phase 2")
+    return attribution.attribute(db, cur.actor, clock, gift_id, body.donor_id)
