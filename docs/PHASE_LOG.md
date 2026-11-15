@@ -48,7 +48,7 @@
 - [x] MCP works end to end (run by hand, local Docker database): the server over stdio listed the six tools and returned data for all six against a local backend; a wrong key gave "The API key was rejected".
 - [x] Guide examples run: every `curl` in `docs/API_GUIDE.md` was run against a local backend; example responses are the real output, including the 429 `retry-after` header and the login, create, list and revoke key flow.
 - [x] Speed (NFR-7), local Docker database, 1,000 donors and 5,000 gifts, in-process test client: donor list median 146 ms (slowest run 387 ms, cold), search 69 ms, status filter 144 ms, donor detail 51 ms, timeline 46 ms, retention 164 ms, report summary 303 ms. Not measured against Neon over the network.
-- [x] **#73** manual donor create (duplicate warning with candidates, round-robin owner), edit, soft delete and manual gift: `tests/integration/test_donor_writes.py` (32 tests) and `test_manual_gifts.py` (17 tests); full suite 711 passed, 2 skipped on the gift branch.
+- [x] **#73** manual donor create (duplicate warning with candidates, round-robin owner), edit, soft delete and manual gift: `tests/integration/test_donor_writes.py` (8 tests) and `test_manual_gifts.py` (6 tests), kept to the MVP cases.
 **How to verify (exact steps):**
 1. Merge the open PRs with merge commits, in this order: #83 (MCP), #85 (guide), #90 (CLI), #91 (audit), then this report.
 2. `docker compose up -d db`, `cd backend && uv run alembic upgrade head && uv run python -m app.cli setup`, `uv run uvicorn app.main:app`.
