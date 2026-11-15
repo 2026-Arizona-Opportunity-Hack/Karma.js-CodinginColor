@@ -329,6 +329,20 @@
         "title": "Body_preview_import_api_app_imports_preview_post",
         "type": "object"
       },
+      "Body_upload_outcomes_api_app_program_outcomes_upload_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_outcomes_api_app_program_outcomes_upload_post",
+        "type": "object"
+      },
       "ByBoardMember": {
         "properties": {
           "as_of": {
@@ -2032,6 +2046,119 @@
           "expires_at"
         ],
         "title": "InviteOut",
+        "type": "object"
+      },
+      "LapsedDonor": {
+        "properties": {
+          "can_draft": {
+            "title": "Can Draft",
+            "type": "boolean"
+          },
+          "cents_prev": {
+            "title": "Cents Prev",
+            "type": "integer"
+          },
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "donor_id": {
+            "title": "Donor Id",
+            "type": "integer"
+          },
+          "draft_message_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Draft Message Id"
+          },
+          "last_gift_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Gift Date"
+          }
+        },
+        "required": [
+          "donor_id",
+          "display_name",
+          "cents_prev",
+          "last_gift_date",
+          "can_draft",
+          "draft_message_id"
+        ],
+        "title": "LapsedDonor",
+        "type": "object"
+      },
+      "LapsedOwner": {
+        "properties": {
+          "donors": {
+            "items": {
+              "$ref": "#/components/schemas/LapsedDonor"
+            },
+            "title": "Donors",
+            "type": "array"
+          },
+          "owner_name": {
+            "title": "Owner Name",
+            "type": "string"
+          },
+          "owner_user_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner User Id"
+          }
+        },
+        "required": [
+          "owner_user_id",
+          "owner_name",
+          "donors"
+        ],
+        "title": "LapsedOwner",
+        "type": "object"
+      },
+      "LapsedReport": {
+        "properties": {
+          "as_of": {
+            "format": "date",
+            "title": "As Of",
+            "type": "string"
+          },
+          "owners": {
+            "items": {
+              "$ref": "#/components/schemas/LapsedOwner"
+            },
+            "title": "Owners",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "as_of",
+          "owners",
+          "total"
+        ],
+        "title": "LapsedReport",
         "type": "object"
       },
       "LoginIn": {
@@ -7709,6 +7836,98 @@
         ]
       }
     },
+    "/api/app/program-outcomes/upload": {
+      "post": {
+        "description": "CSV columns: program, period_start, period_end, metric_label, value, unit, source_note.\nAny bad row rejects the whole file and names the rows.",
+        "operationId": "upload_outcomes_api_app_program_outcomes_upload_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_outcomes_api_app_program_outcomes_upload_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OutcomeListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Validation failed"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "No session"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Policy denied or bad CSRF token"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not found or not visible"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "File over 1 MB"
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not a CSV file"
+          }
+        },
+        "summary": "Upload Outcomes",
+        "tags": [
+          "app:settings"
+        ]
+      }
+    },
     "/api/app/programs": {
       "get": {
         "operationId": "list_programs_api_app_programs_get",
@@ -8059,6 +8278,7 @@
     },
     "/api/app/reports/funder/{donor_id}": {
       "get": {
+        "description": "Any member may export gift history; defaults to the last 12 months.",
         "operationId": "funder_export_api_app_reports_funder__donor_id__get",
         "parameters": [
           {
@@ -8082,6 +8302,40 @@
               ],
               "title": "Format",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "from",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "From"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "To"
             }
           }
         ],
@@ -8135,6 +8389,149 @@
           }
         },
         "summary": "Funder Export",
+        "tags": [
+          "app:reports"
+        ]
+      }
+    },
+    "/api/app/reports/lapsed": {
+      "get": {
+        "description": "Lapsed donors (RPT-2) per owner, without do-not-contact donors (MSG-8).",
+        "operationId": "report_lapsed_api_app_reports_lapsed_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "as_of",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "As Of"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LapsedReport"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Validation failed"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "No session"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Policy denied or bad CSRF token"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not found or not visible"
+          }
+        },
+        "summary": "Report Lapsed",
+        "tags": [
+          "app:reports"
+        ]
+      }
+    },
+    "/api/app/reports/lapsed/draft": {
+      "post": {
+        "description": "Draft a lapsed nudge for each of my lapsed donors. Idempotent (MSG-2); a human approves.",
+        "operationId": "draft_lapsed_api_app_reports_lapsed_draft_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DraftBatchOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Validation failed"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "No session"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Policy denied or bad CSRF token"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not found or not visible"
+          }
+        },
+        "summary": "Draft Lapsed",
         "tags": [
           "app:reports"
         ]

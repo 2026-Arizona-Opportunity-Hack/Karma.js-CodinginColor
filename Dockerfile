@@ -25,6 +25,8 @@ COPY backend/pyproject.toml backend/uv.lock backend/.python-version ./
 RUN uv sync --locked --no-dev
 COPY backend/ ./
 COPY --from=web /web/dist /app/frontend/dist
+# Synthetic demo data, loaded only by `seed-demo` / `reset-demo` when DEMO_MODE=true.
+COPY fixtures/ /app/fixtures/
 
 RUN useradd --create-home --uid 10001 app
 USER app

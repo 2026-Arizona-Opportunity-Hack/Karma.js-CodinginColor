@@ -4,12 +4,15 @@ In flat mode any member may change these; while a super admin is active only the
 Lane C owns templates and API keys; lane A owns settings, programs, the map and outcomes.
 """
 
-from fastapi import Response
+from typing import Annotated
+
+from fastapi import File, Response, UploadFile
 
 from app.db.models import ApiKey
 from app.repos import apikeys
 from app.routes.deps import DB, ClockDep, CurrentDep
 from app.routes.stubs import session_router, todo
+from app.schemas.common import ErrorOut
 from app.schemas.settings import (
     ApiKeyCreate,
     ApiKeyCreated,
@@ -33,6 +36,7 @@ from app.schemas.settings import (
 )
 from app.services.apikeys import service as apikey_service
 from app.services.messaging import service as messaging
+from app.services.reports import outcomes as outcome_service
 
 router = session_router("settings")
 
@@ -89,13 +93,28 @@ def update_program_map(entry_id: int, body: ProgramMapIn) -> ProgramMapEntry:
 
 
 @router.get("/program-outcomes")
-def list_outcomes() -> OutcomeListOut:
-    todo("lane A, phase 4")
+def list_outcomes(cur: CurrentDep, db: DB) -> OutcomeListOut:
+    return outcome_service.list_outcomes(db, cur.actor)
+
+
+@router.post(
+    "/program-outcomes/upload",
+    status_code=201,
+    responses={
+        413: {"model": ErrorOut, "description": "File over 1 MB"},
+        415: {"model": ErrorOut, "description": "Not a CSV file"},
+    },
+)
+def upload_outcomes(file: Annotated[UploadFile, File()], cur: CurrentDep, db: DB) -> OutcomeListOut:
+    """CSV columns: program, period_start, period_end, metric_label, value, unit, source_note.
+    Any bad row rejects the whole file and names the rows."""
+    data = file.file.read(outcome_service.UPLOAD_MAX_BYTES + 1)
+    return outcome_service.upload_outcomes(db, cur.actor, file.filename or "upload.csv", data)
 
 
 @router.post("/program-outcomes", status_code=201)
-def create_outcome(body: OutcomeIn) -> OutcomeOut:
-    todo("lane A, phase 4")
+def create_outcome(body: OutcomeIn, cur: CurrentDep, db: DB) -> OutcomeOut:
+    return outcome_service.create_outcome(db, cur.actor, body)
 
 
 def _key_out(row: ApiKey) -> ApiKeyOut:

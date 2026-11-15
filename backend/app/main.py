@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 
 from app.errors import NotFound, register_error_handlers
+from app.middleware import SecurityMiddleware
 from app.openapi import install as install_openapi
 from app.routes import (
     app_auth,
@@ -30,6 +31,8 @@ def create_app() -> FastAPI:
         redoc_url=None,
     )
     register_error_handlers(app)
+    # Headers and per-IP rate limits (NFR-1). Off in tests so suites do not trip the limits.
+    app.add_middleware(SecurityMiddleware, rate_limits=settings.app_env != "test")
     install_openapi(app)
 
     @app.get("/healthz", tags=["ops"])

@@ -833,6 +833,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/app/program-outcomes/upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload Outcomes
+         * @description CSV columns: program, period_start, period_end, metric_label, value, unit, source_note.
+         *     Any bad row rejects the whole file and names the rows.
+         */
+        post: operations["upload_outcomes_api_app_program_outcomes_upload_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/app/programs": {
         parameters: {
             query?: never;
@@ -912,10 +933,53 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Funder Export */
+        /**
+         * Funder Export
+         * @description Any member may export gift history; defaults to the last 12 months.
+         */
         get: operations["funder_export_api_app_reports_funder__donor_id__get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/app/reports/lapsed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Report Lapsed
+         * @description Lapsed donors (RPT-2) per owner, without do-not-contact donors (MSG-8).
+         */
+        get: operations["report_lapsed_api_app_reports_lapsed_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/app/reports/lapsed/draft": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Draft Lapsed
+         * @description Draft a lapsed nudge for each of my lapsed donors. Idempotent (MSG-2); a human approves.
+         */
+        post: operations["draft_lapsed_api_app_reports_lapsed_draft_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1303,6 +1367,11 @@ export interface components {
              * @enum {string}
              */
             source: "spreadsheet" | "zeffy" | "benevity" | "generic";
+        };
+        /** Body_upload_outcomes_api_app_program_outcomes_upload_post */
+        Body_upload_outcomes_api_app_program_outcomes_upload_post: {
+            /** File */
+            file: string;
         };
         /** ByBoardMember */
         ByBoardMember: {
@@ -1967,6 +2036,42 @@ export interface components {
              * @description Shown once; the server stores only a hash
              */
             invite_url: string;
+        };
+        /** LapsedDonor */
+        LapsedDonor: {
+            /** Can Draft */
+            can_draft: boolean;
+            /** Cents Prev */
+            cents_prev: number;
+            /** Display Name */
+            display_name: string;
+            /** Donor Id */
+            donor_id: number;
+            /** Draft Message Id */
+            draft_message_id: number | null;
+            /** Last Gift Date */
+            last_gift_date: string | null;
+        };
+        /** LapsedOwner */
+        LapsedOwner: {
+            /** Donors */
+            donors: components["schemas"]["LapsedDonor"][];
+            /** Owner Name */
+            owner_name: string;
+            /** Owner User Id */
+            owner_user_id: number | null;
+        };
+        /** LapsedReport */
+        LapsedReport: {
+            /**
+             * As Of
+             * Format: date
+             */
+            as_of: string;
+            /** Owners */
+            owners: components["schemas"]["LapsedOwner"][];
+            /** Total */
+            total: number;
         };
         /** LoginIn */
         LoginIn: {
@@ -5596,6 +5701,84 @@ export interface operations {
             };
         };
     };
+    upload_outcomes_api_app_program_outcomes_upload_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_outcomes_api_app_program_outcomes_upload_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OutcomeListOut"];
+                };
+            };
+            /** @description Validation failed */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description No session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Policy denied or bad CSRF token */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not found or not visible */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description File over 1 MB */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not a CSV file */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
     list_programs_api_app_programs_get: {
         parameters: {
             query?: never;
@@ -5892,6 +6075,8 @@ export interface operations {
         parameters: {
             query?: {
                 format?: "html" | "csv";
+                from?: string | null;
+                to?: string | null;
             };
             header?: never;
             path: {
@@ -5909,6 +6094,120 @@ export interface operations {
                 content: {
                     "text/csv": unknown;
                     "text/html": unknown;
+                };
+            };
+            /** @description Validation failed */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description No session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Policy denied or bad CSRF token */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not found or not visible */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    report_lapsed_api_app_reports_lapsed_get: {
+        parameters: {
+            query?: {
+                as_of?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LapsedReport"];
+                };
+            };
+            /** @description Validation failed */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description No session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Policy denied or bad CSRF token */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not found or not visible */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    draft_lapsed_api_app_reports_lapsed_draft_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DraftBatchOut"];
                 };
             };
             /** @description Validation failed */

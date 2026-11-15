@@ -3,7 +3,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from app.authz.actor import CLI
@@ -115,6 +115,10 @@ def test_logout_revokes_the_session_server_side(db: Session, clock: FixedClock, 
     thief = client()
     thief.cookies.set("cic_session", stolen or "")
     assert thief.get("/api/app/auth/me").status_code == 401
+    assert (
+        db.execute(text("SELECT count(*) FROM audit_log WHERE action = 'auth.logout'")).scalar_one()
+        == 1
+    )
 
 
 def test_idle_and_absolute_expiry(db: Session, clock: FixedClock, members) -> None:

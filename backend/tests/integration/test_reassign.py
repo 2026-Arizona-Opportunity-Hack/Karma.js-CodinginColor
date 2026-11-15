@@ -121,6 +121,12 @@ def test_bulk_move_is_super_admin_only_and_records_each_donor(db: Session, w) ->
     assert r.status_code == 200 and r.json() == {"moved": 2}
     rows = db.execute(text("SELECT method FROM owner_history WHERE method = 'bulk'")).all()
     assert len(rows) == 2
+    assert (
+        db.execute(
+            text("SELECT count(*) FROM audit_log WHERE action = 'donor.bulk_move'")
+        ).scalar_one()
+        == 1
+    )  # one audit entry per bulk move
     sql = "SELECT count(*) FROM donors WHERE owner_user_id = :g AND deleted_at IS NULL"
     left = db.execute(text(sql), {"g": w["gone"]}).scalar_one()
     assert left == 0

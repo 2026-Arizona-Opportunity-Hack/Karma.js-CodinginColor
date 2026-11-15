@@ -350,6 +350,7 @@ def test_reverse_closes_open_reviews_without_remembering_an_anonymous_identity(w
     assert count(db, MatchReview, MatchReview.status == "open") == 1
     assert post(world, f"/imports/{saved['id']}/reverse").status_code == 200
     assert count(db, MatchReview, MatchReview.status == "open") == 0
+    assert count(db, AuditLog, AuditLog.action == "review.reverse") == 1
     again = preview(world, data, "spreadsheet", "donors.csv")
     assert again["summary"]["new_donors"] == 1
     assert again["summary"]["needs_review"]["count"] == 1

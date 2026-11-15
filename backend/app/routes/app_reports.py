@@ -1,15 +1,17 @@
 """Reports. Lane C builds the queries (Phase 2) and A takes the funder export (Phase 4)."""
 
-from datetime import date
+from datetime import date, timedelta
 from typing import Annotated, Literal
 
 from fastapi import Query, Response
 
 from app.clock import today
+from app.errors import Invalid
 from app.routes.deps import DB, ClockDep, CurrentDep
-from app.routes.stubs import session_router, todo
+from app.routes.stubs import session_router
+from app.schemas.messages import DraftBatchOut
 from app.schemas.reports import ReportSummary, RetentionReport
-from app.services.reports import retention, summary
+from app.services.reports import funder, lapsed, retention, summary
 
 router = session_router("reports")
 
@@ -42,6 +44,38 @@ def report_retention(
     },
 )
 def funder_export(
-    donor_id: int, format: Annotated[Literal["html", "csv"], Query()] = "html"
+    donor_id: int,
+    cur: CurrentDep,
+    db: DB,
+    clock: ClockDep,
+    format: Annotated[Literal["html", "csv"], Query()] = "html",
+    from_: Annotated[date | None, Query(alias="from")] = None,
+    to: Annotated[date | None, Query()] = None,
 ) -> Response:
-    todo("lane A, phase 4")
+    """Any member may export gift history; defaults to the last 12 months."""
+    end = to or today(clock)
+    start = from_ or end - timedelta(days=364)
+    if start > end:
+        raise Invalid("The start date must be on or before the end date.")
+    x = funder.build(db, cur.actor, donor_id=donor_id, start=start, end=end)
+    if format == "csv":
+        return Response(
+            funder.render_csv(x),
+            media_type="text/csv",
+            headers={"Content-Disposition": f'attachment; filename="giving-{donor_id}.csv"'},
+        )
+    return Response(funder.render_html(x), media_type="text/html")
+
+
+@router.get("/reports/lapsed")
+def report_lapsed(
+    cur: CurrentDep, db: DB, clock: ClockDep, as_of: Annotated[date | None, Query()] = None
+) -> lapsed.LapsedReport:
+    """Lapsed donors (RPT-2) per owner, without do-not-contact donors (MSG-8)."""
+    return lapsed.build(db, cur.actor, as_of=as_of or today(clock))
+
+
+@router.post("/reports/lapsed/draft")
+def draft_lapsed(cur: CurrentDep, db: DB, clock: ClockDep) -> DraftBatchOut:
+    """Draft a lapsed nudge for each of my lapsed donors. Idempotent (MSG-2); a human approves."""
+    return lapsed.draft_mine(db, clock, cur.actor)
