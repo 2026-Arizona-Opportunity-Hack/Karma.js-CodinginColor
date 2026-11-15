@@ -5027,6 +5027,7 @@
     },
     "/api/app/donors/{donor_id}/gifts": {
       "post": {
+        "description": "A gift typed in by hand, for example a check (DON-8). Owner and active super admin only.\n\n`source` is `manual`; the program defaults to General. A non-empty `note` is refused (400)\nuntil gifts can store one.",
         "operationId": "add_gift_api_app_donors__donor_id__gifts_post",
         "parameters": [
           {

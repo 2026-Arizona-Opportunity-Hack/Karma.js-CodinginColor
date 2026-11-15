@@ -5,16 +5,18 @@ cannot race with an import) and reuses lane A's round-robin and identity memory.
 deleting need `donor.edit` (the owner and an active super admin). Audit entries record which
 fields changed, never their values."""
 
-from datetime import datetime
+from datetime import date, datetime
+from hashlib import sha256
 from typing import Any
+from uuid import uuid4
 
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from app.authz.actor import Actor
 from app.authz.policy import Action, can
-from app.db.models import Donor
-from app.errors import Forbidden, NotFound
+from app.db.models import Donor, Gift, Program
+from app.errors import Forbidden, Invalid, NotFound
 from app.repos import audit, dedupe, ownership
 from app.services.dedupe.resolver import identity_keys
 from app.services.ingest.adapters import IncomingDonor
@@ -125,3 +127,48 @@ def soft_delete(db: Session, actor: Actor, donor_id: int, at: datetime) -> None:
     donor.deleted_at, donor.updated_at = at, at
     audit.write(db, actor, "donor.delete", entity="donor", entity_id=donor.id, at=at)
     db.flush()
+
+
+def add_manual_gift(
+    db: Session,
+    actor: Actor,
+    donor_id: int,
+    *,
+    gift_date: date,
+    gross_cents: int,
+    program_id: int | None,
+    assumed_thanked: bool,
+    at: datetime,
+) -> Gift:
+    """A gift typed in by hand, for example a check (DON-8). Owner and active super admin only.
+
+    The row key is random so a manual gift never collides with an imported one, and two
+    identical checks on the same day stay two gifts."""
+    donor = _editable(db, actor, donor_id)
+    if program_id is None:
+        program = db.scalar(select(Program).where(Program.slug == "general"))
+    else:
+        program = db.get(Program, program_id)
+    if program is None or not program.is_active:
+        raise Invalid("Choose an active program.")
+    gift = Gift(
+        donor_id=donor.id,
+        attribution="linked",
+        source="manual",
+        row_key=sha256(f"v1|manual|{uuid4()}".encode()).hexdigest(),
+        gift_date=gift_date,
+        gross_cents=gross_cents,
+        fee_cents=0,
+        net_cents=gross_cents,
+        program_id=program.id,
+        assumed_thanked=assumed_thanked,
+        created_by=actor.user_id,
+    )
+    db.add(gift)
+    db.flush()
+    audit.write(
+        db, actor, "gift.create", entity="gift", entity_id=gift.id,
+        data={"donor_id": donor.id, "source": "manual"},
+        at=at,
+    )  # fmt: skip
+    return gift
