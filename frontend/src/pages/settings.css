@@ -22,9 +22,8 @@
 }
 .charter-heading h2,
 .members-heading h2 {
-  font: 400 29px/1.2 var(--font-editorial);
+  font: 700 29px/1.2 var(--font-editorial);
   margin: 0;
-  letter-spacing: -0.6px;
 }
 .charter-grid {
   display: grid;
@@ -46,7 +45,7 @@
   text-transform: uppercase;
 }
 .charter-grid h3 {
-  font: 400 24px/1.25 var(--font-editorial);
+  font: 700 24px/1.25 var(--font-editorial);
   margin: 12px 0;
 }
 .charter-grid p {
@@ -196,7 +195,7 @@
 }
 .deactivation-consequence > strong {
   display: block;
-  font: 400 25px/1.2 var(--font-editorial);
+  font: 700 25px/1.2 var(--font-editorial);
   margin-top: 12px;
 }
 .invite-entry {
@@ -211,7 +210,7 @@
   gap: 24px;
 }
 .invite-entry h1 {
-  font: 400 40px/1.1 var(--font-editorial);
+  font: 700 40px/1.1 var(--font-editorial);
 }
 @media (max-width: 1100px) {
   .charter-grid {
