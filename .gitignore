@@ -1,4 +1,4 @@
-# Secrets — never commit these (see AGENTS.md)
+# Secrets — never commit these (see docs/SETUP.md)
 .env
 .env.*
 !.env.example
@@ -12,6 +12,7 @@ node_modules/
 dist/
 build/
 .test-build/
+frontend/qa/
 .next/
 out/
 __pycache__/

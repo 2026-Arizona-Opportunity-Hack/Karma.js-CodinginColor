@@ -7,7 +7,7 @@ description: Read-only adversarial review of a CIC Compass phase or lane (Review
 
 You change no code and push nothing. You produce findings.
 
-1. Read `docs/ENGINEERING.md`, the phase in `docs/PLAN.md`, the cited SRS IDs, and the phase report in `docs/PHASE_LOG.md`.
+1. Read `docs/archive/ENGINEERING.md`, the phase in `docs/archive/PLAN.md`, the cited SRS IDs, and the phase report in `docs/archive/PHASE_LOG.md`.
 2. Check out the phase's PR branches (or `main` after merge). Re-run every gate command yourself. Compare results with the report; any mismatch is a finding.
 3. Try to break it. Minimum attempts for any phase that touches these areas:
    - **Authz:** call each new route as owner, other member, active super admin, dormant super admin, logged out, and with an API key. Try another member's donor id (IDOR). Try reassigning under `own_only`.
@@ -17,4 +17,4 @@ You change no code and push nothing. You produce findings.
    - **API:** no key, wrong key, revoked key, wrong scope; scan responses for donor names or emails.
    - **Governance:** any path from the app that creates, re-activates or deletes the super admin.
    - **Accessibility:** keyboard-only through the phase's screens; axe on each page; 390 px.
-4. Output in `docs/PHASE_LOG.md` under the phase report, section "Review": findings ranked by severity, each with reproduction steps and the requirement ID, plus a ready-to-paste `Fix Phase N: ...` prompt for the builder.
+4. Output in `docs/archive/PHASE_LOG.md` under the phase report, section "Review": findings ranked by severity, each with reproduction steps and the requirement ID, plus a ready-to-paste `Fix Phase N: ...` prompt for the builder.

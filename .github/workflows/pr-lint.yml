@@ -39,7 +39,7 @@ jobs:
               if (mine) await github.rest.issues.deleteComment({ owner: context.repo.owner, repo: context.repo.repo, comment_id: mine.id });
               return;
             }
-            const text = `${marker}\n👋 Quick PR hygiene check (nothing is blocked):\n\n- ${notes.join("\n- ")}\n\n_Small PRs with short, clear descriptions are what judges and recruiters read. See \`AGENTS.md\`._`;
+            const text = `${marker}\n👋 Quick PR hygiene check (nothing is blocked):\n\n- ${notes.join("\n- ")}\n\n_Small PRs with short, clear descriptions are what judges and recruiters read. See \`docs/agents/AGENTS.md\`._`;
             if (mine) {
               await github.rest.issues.updateComment({ owner: context.repo.owner, repo: context.repo.repo, comment_id: mine.id, body: text });
             } else {
