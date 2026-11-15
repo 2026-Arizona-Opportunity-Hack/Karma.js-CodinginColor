@@ -2,7 +2,7 @@
 
 from datetime import date
 
-from sqlalchemy import select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from app.authz.actor import Actor
@@ -46,6 +46,11 @@ def for_programs(
     return [(o, p) for o, p in db.execute(stmt).all()]
 
 
+def require_manage(actor: Actor) -> None:
+    if not can(actor, Action.PROGRAMS_MANAGE):
+        raise Forbidden("Only a super admin can enter outcomes while one is active.")
+
+
 def create(
     db: Session,
     actor: Actor,
@@ -58,8 +63,7 @@ def create(
     unit: str,
     source_note: str | None,
 ) -> tuple[ProgramOutcome, Program]:
-    if not can(actor, Action.PROGRAMS_MANAGE):
-        raise Forbidden("Only a super admin can enter outcomes while one is active.")
+    require_manage(actor)
     program = db.get(Program, program_id)
     if program is None:
         raise Invalid("That program does not exist.")
@@ -77,3 +81,18 @@ def create(
     db.add(row)
     db.flush()
     return row, program
+
+
+def program_by_name(db: Session, actor: Actor, name: str) -> Program | None:
+    """Match a program by name or slug, ignoring case."""
+    _require_member(actor)
+    key = name.strip().lower()
+    return (
+        db.execute(
+            select(Program).where(
+                or_(func.lower(Program.name) == key, func.lower(Program.slug) == key)
+            )
+        )
+        .scalars()
+        .first()
+    )

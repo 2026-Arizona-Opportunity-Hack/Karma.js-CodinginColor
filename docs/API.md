@@ -91,7 +91,7 @@ All non-GET calls need header `X-CSRF-Token`. Authorization is decided in `authz
 | Messages | `POST /donors/{id}/messages` (create draft from template), `POST /messages/draft-quarterly` (bulk for my due donors), `PATCH /messages/{id}`, `POST /messages/{id}/approve`, `POST /messages/{id}/send`, `POST /messages/{id}/mark-sent`, `POST /messages/{id}/cancel`, `GET /messages?status=` |
 | Digest | `POST /digest/send` |
 | Reports | `GET /reports/summary`, `GET /reports/retention`, `GET /reports/funder/{donor_id}?format=html\|csv` |
-| Settings | `GET/PUT /settings`, `GET/PUT /templates`, `GET/POST/PUT /programs`, `GET/POST/PUT /program-map`, `GET/POST /api-keys`, `POST /api-keys/{id}/revoke`, `GET/POST /program-outcomes` |
+| Settings | `GET/PUT /settings`, `GET/PUT /templates`, `GET/POST/PUT /programs`, `GET/POST/PUT /program-map`, `GET/POST /api-keys`, `POST /api-keys/{id}/revoke`, `GET/POST /program-outcomes`, `POST /program-outcomes/upload` (CSV, all or nothing) |
 | Ops | `GET /healthz` (no auth), `POST /demo/reset` (only `DEMO_MODE=true`) |
 
 Status codes: `400` validation, `401` no session, `403` policy denied, `404` not found or not visible, `409` state conflict (sending a draft, duplicate open draft, already-imported file, possible duplicate donor), `413` file too large, `415` wrong file type.
