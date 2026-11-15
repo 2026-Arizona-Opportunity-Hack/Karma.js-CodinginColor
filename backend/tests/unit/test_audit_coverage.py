@@ -31,11 +31,11 @@ REQUIRED: dict[str, set[str]] = {
     "approvals": {"message.approve"},
     "sends": {"message.send", "digest.send"},
     "key changes": {"apikey.create", "apikey.revoke"},
+    "exports": {"report.funder_export"},
 }
 # Not built yet, or built by another lane in the same phase. Remove from here when it lands.
 PENDING: dict[str, str] = {
     "merges": "donor.merge",  # POST /donors/{id}/merge is still a 501 stub (DED-7 is "S")
-    "exports": "report.funder_export",  # lane A, Phase 4 issue #40 (DON-12)
 }
 
 
