@@ -774,6 +774,28 @@
         "title": "DonorCard",
         "type": "object"
       },
+      "DonorChoice": {
+        "properties": {
+          "donor_id": {
+            "title": "Donor Id",
+            "type": "integer"
+          },
+          "donor_name": {
+            "title": "Donor Name",
+            "type": "string"
+          },
+          "request": {
+            "$ref": "#/components/schemas/ProposedRequest"
+          }
+        },
+        "required": [
+          "donor_id",
+          "donor_name",
+          "request"
+        ],
+        "title": "DonorChoice",
+        "type": "object"
+      },
       "DonorCreate": {
         "properties": {
           "confirm_new": {
@@ -2057,6 +2079,57 @@
         "title": "InteractionOut",
         "type": "object"
       },
+      "InterpretIn": {
+        "properties": {
+          "text": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "InterpretIn",
+        "type": "object"
+      },
+      "InterpretOut": {
+        "properties": {
+          "actions": {
+            "items": {
+              "$ref": "#/components/schemas/ProposedAction"
+            },
+            "title": "Actions",
+            "type": "array"
+          },
+          "examples": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Examples",
+            "type": "array"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A question from the model, or what is supported",
+            "title": "Message"
+          }
+        },
+        "required": [
+          "actions",
+          "examples"
+        ],
+        "title": "InterpretOut",
+        "type": "object"
+      },
       "InvalidRow": {
         "properties": {
           "reason": {
@@ -3319,6 +3392,89 @@
         "title": "ProgramUpdate",
         "type": "object"
       },
+      "ProposedAction": {
+        "properties": {
+          "choices": {
+            "default": [],
+            "description": "One entry when ready, several when the name is ambiguous",
+            "items": {
+              "$ref": "#/components/schemas/DonorChoice"
+            },
+            "title": "Choices",
+            "type": "array"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "status": {
+            "description": "ready: one donor. choose_donor: pick one of `choices`. error: see `error`.",
+            "enum": [
+              "ready",
+              "choose_donor",
+              "error"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "tool": {
+            "enum": [
+              "log_contact",
+              "create_next_step",
+              "draft_thank_you"
+            ],
+            "title": "Tool",
+            "type": "string"
+          }
+        },
+        "required": [
+          "tool",
+          "summary",
+          "status"
+        ],
+        "title": "ProposedAction",
+        "type": "object"
+      },
+      "ProposedRequest": {
+        "description": "The existing endpoint to call on Confirm. Same call the matching screen makes.",
+        "properties": {
+          "body": {
+            "additionalProperties": true,
+            "title": "Body",
+            "type": "object"
+          },
+          "method": {
+            "enum": [
+              "POST",
+              "PUT"
+            ],
+            "title": "Method",
+            "type": "string"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          }
+        },
+        "required": [
+          "method",
+          "path",
+          "body"
+        ],
+        "title": "ProposedRequest",
+        "type": "object"
+      },
       "ReassignIn": {
         "properties": {
           "reason": {
@@ -4546,6 +4702,98 @@
         "summary": "Revoke Api Key",
         "tags": [
           "app:settings"
+        ]
+      }
+    },
+    "/api/app/assistant/interpret": {
+      "post": {
+        "description": "Proposes actions from one sentence (max 500 characters). The donor list never goes to\nthe model; names are matched here, among donors you may act on. Full-access keys get 403.",
+        "operationId": "interpret_api_app_assistant_interpret_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InterpretIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterpretOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Validation failed"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "No session"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Policy denied or bad CSRF token"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "The assistant setting is off"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "More than 20 requests a minute"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "The AI gateway is down"
+          }
+        },
+        "summary": "Interpret",
+        "tags": [
+          "app:assistant"
         ]
       }
     },

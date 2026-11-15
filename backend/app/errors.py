@@ -39,6 +39,12 @@ class TooManyRequests(AppError):
     status, code = 429, "too_many_requests"
 
 
+class Unavailable(AppError):
+    """A service we depend on (such as the AI gateway) is down. The message is user-facing."""
+
+    status, code = 503, "unavailable"
+
+
 class NotImplementedYet(AppError):
     """Contract stub: the route and its schemas exist, the behaviour lands in a later phase."""
 

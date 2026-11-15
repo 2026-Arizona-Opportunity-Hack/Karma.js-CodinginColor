@@ -42,6 +42,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/app/assistant/interpret": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Interpret
+         * @description Proposes actions from one sentence (max 500 characters). The donor list never goes to
+         *     the model; names are matched here, among donors you may act on. Full-access keys get 403.
+         */
+        post: operations["interpret_api_app_assistant_interpret_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/app/auth/invite/{token}/accept": {
         parameters: {
             query?: never;
@@ -1558,6 +1579,14 @@ export interface components {
             /** Total Lifetime Cents */
             total_lifetime_cents: number;
         };
+        /** DonorChoice */
+        DonorChoice: {
+            /** Donor Id */
+            donor_id: number;
+            /** Donor Name */
+            donor_name: string;
+            request: components["schemas"]["ProposedRequest"];
+        };
         /** DonorCreate */
         DonorCreate: {
             /**
@@ -2035,6 +2064,23 @@ export interface components {
             summary?: string | null;
             user?: components["schemas"]["MemberRef"] | null;
         };
+        /** InterpretIn */
+        InterpretIn: {
+            /** Text */
+            text: string;
+        };
+        /** InterpretOut */
+        InterpretOut: {
+            /** Actions */
+            actions: components["schemas"]["ProposedAction"][];
+            /** Examples */
+            examples: string[];
+            /**
+             * Message
+             * @description A question from the model, or what is supported
+             */
+            message?: string | null;
+        };
         /** InvalidRow */
         InvalidRow: {
             /** Reason */
@@ -2494,6 +2540,47 @@ export interface components {
             is_active?: boolean | null;
             /** Name */
             name?: string | null;
+        };
+        /** ProposedAction */
+        ProposedAction: {
+            /**
+             * Choices
+             * @description One entry when ready, several when the name is ambiguous
+             * @default []
+             */
+            choices: components["schemas"]["DonorChoice"][];
+            /** Error */
+            error?: string | null;
+            /**
+             * Status
+             * @description ready: one donor. choose_donor: pick one of `choices`. error: see `error`.
+             * @enum {string}
+             */
+            status: "ready" | "choose_donor" | "error";
+            /** Summary */
+            summary: string;
+            /**
+             * Tool
+             * @enum {string}
+             */
+            tool: "log_contact" | "create_next_step" | "draft_thank_you";
+        };
+        /**
+         * ProposedRequest
+         * @description The existing endpoint to call on Confirm. Same call the matching screen makes.
+         */
+        ProposedRequest: {
+            /** Body */
+            body: {
+                [key: string]: unknown;
+            };
+            /**
+             * Method
+             * @enum {string}
+             */
+            method: "POST" | "PUT";
+            /** Path */
+            path: string;
         };
         /** ReassignIn */
         ReassignIn: {
@@ -3052,6 +3139,84 @@ export interface operations {
             };
             /** @description Not found or not visible */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    interpret_api_app_assistant_interpret_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InterpretIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InterpretOut"];
+                };
+            };
+            /** @description Validation failed */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description No session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Policy denied or bad CSRF token */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description The assistant setting is off */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description More than 20 requests a minute */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description The AI gateway is down */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
